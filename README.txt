@@ -1,0 +1,6 @@
+RotinaMaisDesktop (estrutura completa)
+=====================================
+- Código refatorado em PT-BR (component, swing, evento, model, dialog, form, main).
+- Utilitário de ícones: swing.icon.Icones (PNG/JPG em /resources/icon + fallback Material Icons).
+- Coloque seus PNGs/JPGs de ícones em: src/main/resources/icon/
+- Coloque TimingFramework-0.55.jar em: libs/TimingFramework-0.55.jar (ou ajuste o pom.xml).
