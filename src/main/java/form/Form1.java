@@ -1,6 +1,8 @@
 package form;
 
+import dialog.Message;
 import javax.swing.ImageIcon;
+import main.Main;
 import model.ModelStudent;
 import swing.table.EventAction;
 
@@ -21,12 +23,20 @@ public class Form1 extends javax.swing.JPanel {
         EventAction eventAction = new EventAction() {
             @Override
             public void delete(ModelStudent student) {
-                System.out.println("Delete Student : " + student.getName());
+                if (showMessage("Delete Student : " + student.getName())) {
+                    System.out.println("User click OK");
+                } else {
+                    System.out.println("User click Cancel");
+                }
             }
 
             @Override
             public void update(ModelStudent student) {
-                System.out.println("Update Student : " + student.getName());
+                if (showMessage("Update Student : " + student.getName())) {
+                    System.out.println("User click OK");
+                } else {
+                    System.out.println("User click Cancel");
+                }
             }
         };
 
@@ -40,6 +50,12 @@ public class Form1 extends javax.swing.JPanel {
                 "Bora", "Male", "C#", 300).toRowTable(eventAction));
     }
 
+    private boolean showMessage(String message) {
+        Message obj = new Message(Main.getFrames()[0], true);
+        obj.showMessage(message);
+        return obj.isOk();
+    }
+
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
@@ -50,7 +66,7 @@ public class Form1 extends javax.swing.JPanel {
 
         jLabel1.setFont(new java.awt.Font("sansserif", 1, 15)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(76, 76, 76));
-        jLabel1.setText("Data Student");
+        jLabel1.setText("Data Buttons");
         jLabel1.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 10, 1, 1));
 
         table1.setModel(new javax.swing.table.DefaultTableModel(
@@ -78,21 +94,15 @@ public class Form1 extends javax.swing.JPanel {
         this.setLayout(layout);
         layout.setHorizontalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addComponent(jLabel1)
-                    .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 388, Short.MAX_VALUE))
-                .addContainerGap())
+            .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
                 .addComponent(jLabel1)
                 .addGap(0, 0, 0)
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 288, Short.MAX_VALUE)
-                .addContainerGap())
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
     }// </editor-fold>//GEN-END:initComponents
 
