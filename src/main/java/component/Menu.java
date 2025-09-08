@@ -55,19 +55,19 @@ public class Menu extends javax.swing.JPanel {
 
     public void initMenuItem() {
         addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/1.png")), "Dashboard", "Home", "Buttons", "Cards", "Tabs", "Accordions", "Modals"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/2.png")), "Charts", "Morris", "Flot", "Line"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/3.png")), "Report", "Income", "Expense", "Profit"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/4.png")), "Message", "Sender", "Inbox", "User"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/5.png")), "Staff", "Sender", "Inbox", "User"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/6.png")), "Student", "Menu 001", "Menu 002", "Menu 003"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/7.png")), "Library", "Menu 001", "Menu 002", "Menu 003"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/8.png")), "Holiday", "Menu 001", "Menu 002", "Menu 003"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/9.png")), "Calendar", "Menu 001", "Menu 002", "Menu 003"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/10.png")), "Chat App", "Menu 001", "Menu 002", "Menu 003"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/11.png")), "Contace", "Menu 001", "Menu 002", "Menu 003"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/12.png")), "File Manager", "Menu 001", "Menu 002", "Menu 003"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/13.png")), "Our Centres"));
-        // addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/14.png")), "Gallery"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/2.png")), "Charts", "Morris", "Flot", "Line"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/3.png")), "Report", "Income", "Expense", "Profit"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/4.png")), "Message", "Sender", "Inbox", "User"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/5.png")), "Staff", "Sender", "Inbox", "User"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/6.png")), "Student", "Menu 001", "Menu 002", "Menu 003"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/7.png")), "Library", "Menu 001", "Menu 002", "Menu 003"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/8.png")), "Holiday", "Menu 001", "Menu 002", "Menu 003"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/9.png")), "Calendar", "Menu 001", "Menu 002", "Menu 003"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/10.png")), "Chat App", "Menu 001", "Menu 002", "Menu 003"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/11.png")), "Contace", "Menu 001", "Menu 002", "Menu 003"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/12.png")), "File Manager", "Menu 001", "Menu 002", "Menu 003"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/13.png")), "Our Centres"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/14.png")), "Gallery"));
     }
 
     private void addMenu(ModelMenu menu) {
