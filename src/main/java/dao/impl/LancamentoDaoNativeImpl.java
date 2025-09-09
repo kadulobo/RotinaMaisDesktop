@@ -1,262 +1,376 @@
 // path: src/main/java/dao/impl/LancamentoDaoNativeImpl.java
 package dao.impl;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import conexao.ConnectionFactory;
 import dao.api.LancamentoDao;
 import exception.LancamentoException;
-import infra.EntityManagerUtil;
 import infra.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import model.Evento;
 import model.Lancamento;
-import org.hibernate.query.NativeQuery;
-import org.hibernate.type.StandardBasicTypes;
+import model.Movimentacao;
 
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
+/**
+ * JDBC implementation of {@link LancamentoDao}.
+ */
 public class LancamentoDaoNativeImpl implements LancamentoDao {
+
+    private Lancamento map(ResultSet rs) throws SQLException {
+        Lancamento l = new Lancamento();
+        l.setIdLancamento(rs.getInt("id_lancamento"));
+        l.setValor(rs.getBigDecimal("valor"));
+        l.setFixo((Boolean) rs.getObject("fixo"));
+        Date dt = rs.getDate("data_pagamento");
+        if (dt != null) {
+            l.setDataPagamento(dt.toLocalDate());
+        }
+        l.setStatus((Integer) rs.getObject("status"));
+        Integer idMov = (Integer) rs.getObject("id_movimentacao");
+        if (idMov != null) {
+            Movimentacao m = new Movimentacao();
+            m.setIdMovimentacao(idMov);
+            l.setMovimentacao(m);
+        }
+        Integer idEvt = (Integer) rs.getObject("id_evento");
+        if (idEvt != null) {
+            Evento e = new Evento();
+            e.setIdEvento(idEvt);
+            l.setEvento(e);
+        }
+        return l;
+    }
 
     @Override
     public void create(Lancamento lancamento) throws LancamentoException {
         Logger.info("LancamentoDaoNativeImpl.create - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "INSERT INTO Lancamento (valor, fixo, data_pagamento, status, id_movimentacao, id_evento) VALUES (?,?,?,?,?,?)";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "INSERT INTO Lancamento (valor, fixo, data_pagamento, status, id_movimentacao, id_evento) " +
-                    "VALUES (:valor, :fixo, :dataPagamento, :status, CAST(:idMovimentacao AS INTEGER), CAST(:idEvento AS INTEGER))";
-            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
-            query.setParameter("valor", lancamento.getValor());
-            query.setParameter("fixo", lancamento.getFixo());
-            query.setParameter("dataPagamento", lancamento.getDataPagamento());
-            query.setParameter("status", lancamento.getStatus());
-            Integer idMovimentacao = lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null;
-            Integer idEvento = lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null;
-            query.setParameter("idMovimentacao", idMovimentacao, StandardBasicTypes.INTEGER);
-            query.setParameter("idEvento", idEvento, StandardBasicTypes.INTEGER);
-            query.executeUpdate();
-            em.getTransaction().commit();
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setBigDecimal(1, lancamento.getValor());
+                if (lancamento.getFixo() != null) {
+                    ps.setBoolean(2, lancamento.getFixo());
+                } else {
+                    ps.setNull(2, Types.BOOLEAN);
+                }
+                if (lancamento.getDataPagamento() != null) {
+                    ps.setDate(3, Date.valueOf(lancamento.getDataPagamento()));
+                } else {
+                    ps.setNull(3, Types.DATE);
+                }
+                if (lancamento.getStatus() != null) {
+                    ps.setInt(4, lancamento.getStatus());
+                } else {
+                    ps.setNull(4, Types.INTEGER);
+                }
+                if (lancamento.getMovimentacao() != null && lancamento.getMovimentacao().getIdMovimentacao() != null) {
+                    ps.setInt(5, lancamento.getMovimentacao().getIdMovimentacao());
+                } else {
+                    ps.setNull(5, Types.INTEGER);
+                }
+                if (lancamento.getEvento() != null && lancamento.getEvento().getIdEvento() != null) {
+                    ps.setInt(6, lancamento.getEvento().getIdEvento());
+                } else {
+                    ps.setNull(6, Types.INTEGER);
+                }
+                ps.executeUpdate();
+            }
+            conn.commit();
             Logger.info("LancamentoDaoNativeImpl.create - sucesso");
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback create", ex); }
+            }
             Logger.error("LancamentoDaoNativeImpl.create - erro", e);
             throw new LancamentoException("Erro ao criar Lancamento", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Lancamento update(Lancamento lancamento) throws LancamentoException {
         Logger.info("LancamentoDaoNativeImpl.update - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "UPDATE Lancamento SET valor=?, fixo=?, data_pagamento=?, status=?, id_movimentacao=?, id_evento=? WHERE id_lancamento=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "UPDATE Lancamento SET valor=:valor, fixo=:fixo, data_pagamento=:dataPagamento, status=:status, " +
-                    "id_movimentacao=CAST(:idMovimentacao AS INTEGER), id_evento=CAST(:idEvento AS INTEGER) WHERE id_lancamento=:id";
-            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
-            query.setParameter("valor", lancamento.getValor());
-            query.setParameter("fixo", lancamento.getFixo());
-            query.setParameter("dataPagamento", lancamento.getDataPagamento());
-            query.setParameter("status", lancamento.getStatus());
-            Integer idMovimentacao = lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null;
-            Integer idEvento = lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null;
-            query.setParameter("idMovimentacao", idMovimentacao, StandardBasicTypes.INTEGER);
-            query.setParameter("idEvento", idEvento, StandardBasicTypes.INTEGER);
-            query.setParameter("id", lancamento.getIdLancamento());
-            int updated = query.executeUpdate();
-            if (updated == 0) {
-                throw new LancamentoException("Lancamento não encontrado: id=" + lancamento.getIdLancamento());
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setBigDecimal(1, lancamento.getValor());
+                if (lancamento.getFixo() != null) {
+                    ps.setBoolean(2, lancamento.getFixo());
+                } else {
+                    ps.setNull(2, Types.BOOLEAN);
+                }
+                if (lancamento.getDataPagamento() != null) {
+                    ps.setDate(3, Date.valueOf(lancamento.getDataPagamento()));
+                } else {
+                    ps.setNull(3, Types.DATE);
+                }
+                if (lancamento.getStatus() != null) {
+                    ps.setInt(4, lancamento.getStatus());
+                } else {
+                    ps.setNull(4, Types.INTEGER);
+                }
+                if (lancamento.getMovimentacao() != null && lancamento.getMovimentacao().getIdMovimentacao() != null) {
+                    ps.setInt(5, lancamento.getMovimentacao().getIdMovimentacao());
+                } else {
+                    ps.setNull(5, Types.INTEGER);
+                }
+                if (lancamento.getEvento() != null && lancamento.getEvento().getIdEvento() != null) {
+                    ps.setInt(6, lancamento.getEvento().getIdEvento());
+                } else {
+                    ps.setNull(6, Types.INTEGER);
+                }
+                ps.setInt(7, lancamento.getIdLancamento());
+                int updated = ps.executeUpdate();
+                if (updated == 0) {
+                    throw new LancamentoException("Lancamento não encontrado: id=" + lancamento.getIdLancamento());
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("LancamentoDaoNativeImpl.update - sucesso");
             return findById(lancamento.getIdLancamento());
-        } catch (LancamentoException e) {
-            em.getTransaction().rollback();
-            Logger.error("LancamentoDaoNativeImpl.update - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback update", ex); }
+            }
             Logger.error("LancamentoDaoNativeImpl.update - erro", e);
             throw new LancamentoException("Erro ao atualizar Lancamento", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public void deleteById(Integer id) throws LancamentoException {
         Logger.info("LancamentoDaoNativeImpl.deleteById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "DELETE FROM Lancamento WHERE id_lancamento=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "DELETE FROM Lancamento WHERE id_lancamento=:id";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("id", id);
-            int deleted = query.executeUpdate();
-            if (deleted == 0) {
-                throw new LancamentoException("Lancamento não encontrado: id=" + id);
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                int deleted = ps.executeUpdate();
+                if (deleted == 0) {
+                    throw new LancamentoException("Lancamento não encontrado: id=" + id);
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("LancamentoDaoNativeImpl.deleteById - sucesso");
-        } catch (LancamentoException e) {
-            em.getTransaction().rollback();
-            Logger.error("LancamentoDaoNativeImpl.deleteById - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback delete", ex); }
+            }
             Logger.error("LancamentoDaoNativeImpl.deleteById - erro", e);
             throw new LancamentoException("Erro ao deletar Lancamento", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Lancamento findById(Integer id) throws LancamentoException {
         Logger.info("LancamentoDaoNativeImpl.findById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE id_lancamento=:id";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("id", id);
-            Lancamento l = (Lancamento) query.getSingleResult();
-            Logger.info("LancamentoDaoNativeImpl.findById - sucesso");
-            return l;
-        } catch (Exception e) {
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE id_lancamento=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("LancamentoDaoNativeImpl.findById - sucesso");
+                    return map(rs);
+                }
+            }
+            throw new LancamentoException("Lancamento não encontrado: id=" + id);
+        } catch (SQLException e) {
             Logger.error("LancamentoDaoNativeImpl.findById - erro", e);
             throw new LancamentoException("Lancamento não encontrado: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public List<Lancamento> findAll() {
         Logger.info("LancamentoDaoNativeImpl.findAll - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(map(rs));
+            }
             Logger.info("LancamentoDaoNativeImpl.findAll - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findAll - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Lancamento> findAll(int page, int size) {
         Logger.info("LancamentoDaoNativeImpl.findAll(page) - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento LIMIT :limit OFFSET :offset";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("limit", size);
-            query.setParameter("offset", page * size);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento LIMIT ? OFFSET ?";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, size);
+            ps.setInt(2, page * size);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
             Logger.info("LancamentoDaoNativeImpl.findAll(page) - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findAll(page) - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Lancamento> findByValor(java.math.BigDecimal valor) {
         Logger.info("LancamentoDaoNativeImpl.findByValor - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE valor=:valor";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("valor", valor);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE valor=?";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBigDecimal(1, valor);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
             Logger.info("LancamentoDaoNativeImpl.findByValor - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findByValor - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Lancamento> findByFixo(Boolean fixo) {
         Logger.info("LancamentoDaoNativeImpl.findByFixo - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE fixo=:fixo";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("fixo", fixo);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE fixo=?";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (fixo != null) {
+                ps.setBoolean(1, fixo);
+            } else {
+                ps.setNull(1, Types.BOOLEAN);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
             Logger.info("LancamentoDaoNativeImpl.findByFixo - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findByFixo - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Lancamento> findByDataPagamento(java.time.LocalDate dataPagamento) {
         Logger.info("LancamentoDaoNativeImpl.findByDataPagamento - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE data_pagamento=:dataPagamento";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("dataPagamento", dataPagamento);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE data_pagamento=?";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (dataPagamento != null) {
+                ps.setDate(1, Date.valueOf(dataPagamento));
+            } else {
+                ps.setNull(1, Types.DATE);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
             Logger.info("LancamentoDaoNativeImpl.findByDataPagamento - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findByDataPagamento - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Lancamento> findByStatus(Integer status) {
         Logger.info("LancamentoDaoNativeImpl.findByStatus - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE status=:status";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("status", status);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE status=?";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (status != null) {
+                ps.setInt(1, status);
+            } else {
+                ps.setNull(1, Types.INTEGER);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
             Logger.info("LancamentoDaoNativeImpl.findByStatus - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findByStatus - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Lancamento> findByIdMovimentacao(Integer idMovimentacao) {
         Logger.info("LancamentoDaoNativeImpl.findByIdMovimentacao - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE id_movimentacao=:idMovimentacao";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("idMovimentacao", idMovimentacao);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE id_movimentacao=?";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idMovimentacao);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
             Logger.info("LancamentoDaoNativeImpl.findByIdMovimentacao - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findByIdMovimentacao - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Lancamento> findByIdEvento(Integer idEvento) {
         Logger.info("LancamentoDaoNativeImpl.findByIdEvento - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE id_evento=:idEvento";
-            Query query = em.createNativeQuery(sql, Lancamento.class);
-            query.setParameter("idEvento", idEvento);
-            List<Lancamento> list = query.getResultList();
+        String sql = "SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE id_evento=?";
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idEvento);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
             Logger.info("LancamentoDaoNativeImpl.findByIdEvento - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.findByIdEvento - erro", e);
         }
+        return list;
     }
 
     @Override
@@ -267,50 +381,53 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
     @Override
     public List<Lancamento> search(Lancamento filtro, int page, int size) {
         Logger.info("LancamentoDaoNativeImpl.search - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            StringBuilder sb = new StringBuilder("SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE 1=1");
-            Map<String, Object> params = new HashMap<>();
-            if (filtro.getValor() != null) {
-                sb.append(" AND valor=:valor");
-                params.put("valor", filtro.getValor());
-            }
-            if (filtro.getFixo() != null) {
-                sb.append(" AND fixo=:fixo");
-                params.put("fixo", filtro.getFixo());
-            }
-            if (filtro.getDataPagamento() != null) {
-                sb.append(" AND data_pagamento=:dataPagamento");
-                params.put("dataPagamento", filtro.getDataPagamento());
-            }
-            if (filtro.getStatus() != null) {
-                sb.append(" AND status=:status");
-                params.put("status", filtro.getStatus());
-            }
-            if (filtro.getMovimentacao() != null && filtro.getMovimentacao().getIdMovimentacao() != null) {
-                sb.append(" AND id_movimentacao=:idMovimentacao");
-                params.put("idMovimentacao", filtro.getMovimentacao().getIdMovimentacao());
-            }
-            if (filtro.getEvento() != null && filtro.getEvento().getIdEvento() != null) {
-                sb.append(" AND id_evento=:idEvento");
-                params.put("idEvento", filtro.getEvento().getIdEvento());
-            }
-            if (page >= 0 && size > 0) {
-                sb.append(" LIMIT :limit OFFSET :offset");
-            }
-            Query query = em.createNativeQuery(sb.toString(), Lancamento.class);
-            for (Map.Entry<String, Object> e : params.entrySet()) {
-                query.setParameter(e.getKey(), e.getValue());
-            }
-            if (page >= 0 && size > 0) {
-                query.setParameter("limit", size);
-                query.setParameter("offset", page * size);
-            }
-            List<Lancamento> list = query.getResultList();
-            Logger.info("LancamentoDaoNativeImpl.search - sucesso");
-            return list;
-        } finally {
-            em.close();
+        StringBuilder sb = new StringBuilder("SELECT id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento FROM Lancamento WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (filtro.getValor() != null) {
+            sb.append(" AND valor=?");
+            params.add(filtro.getValor());
         }
+        if (filtro.getFixo() != null) {
+            sb.append(" AND fixo=?");
+            params.add(filtro.getFixo());
+        }
+        if (filtro.getDataPagamento() != null) {
+            sb.append(" AND data_pagamento=?");
+            params.add(Date.valueOf(filtro.getDataPagamento()));
+        }
+        if (filtro.getStatus() != null) {
+            sb.append(" AND status=?");
+            params.add(filtro.getStatus());
+        }
+        if (filtro.getMovimentacao() != null && filtro.getMovimentacao().getIdMovimentacao() != null) {
+            sb.append(" AND id_movimentacao=?");
+            params.add(filtro.getMovimentacao().getIdMovimentacao());
+        }
+        if (filtro.getEvento() != null && filtro.getEvento().getIdEvento() != null) {
+            sb.append(" AND id_evento=?");
+            params.add(filtro.getEvento().getIdEvento());
+        }
+        if (page >= 0 && size > 0) {
+            sb.append(" LIMIT ? OFFSET ?");
+            params.add(size);
+            params.add(page * size);
+        }
+        List<Lancamento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
+            Logger.info("LancamentoDaoNativeImpl.search - sucesso");
+        } catch (SQLException e) {
+            Logger.error("LancamentoDaoNativeImpl.search - erro", e);
+        }
+        return list;
     }
 }
+
