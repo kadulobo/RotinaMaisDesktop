@@ -9,6 +9,7 @@ import java.util.Objects;
 @Table(name = "Ingrediente_fornecedor", schema = "rotinamais")
 public class IngredienteFornecedor {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_fornecedor_ingrediente")
     private Integer idFornecedorIngrediente;
 

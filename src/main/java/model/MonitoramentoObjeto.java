@@ -8,6 +8,7 @@ import java.util.Objects;
 @Table(name = "Monitoramento_Objeto", schema = "rotinamais")
 public class MonitoramentoObjeto {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_monitoramento_objeto")
     private LocalDate idMonitoramentoObjeto;
 

@@ -7,6 +7,7 @@ import java.util.Objects;
 @Table(name = "Treino_Exercicio", schema = "rotinamais")
 public class TreinoExercicio {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_treino_exercicio")
     private Integer idTreinoExercicio;
 

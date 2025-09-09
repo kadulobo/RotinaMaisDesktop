@@ -18,19 +18,19 @@ public class TreinoControllerTest {
 
         // Criar treino fictício
         Treino treino = new Treino();
-        treino.setIdTreino(1);
         treino.setNome("Treino A");
         treino.setClasse("Força");
         treino.setIdRotina(1);
         controller.criar(treino);
 
-        // Atualizar treino
-        treino.setNome("Treino B");
-        controller.atualizar(treino);
+        // Recuperar treino persistido e atualizar
+        List<Treino> treinos = controller.listar();
+        Treino buscado = controller.buscarPorId(treinos.get(0).getIdTreino());
+        buscado.setNome("Treino B");
+        controller.atualizar(buscado);
 
         // Buscar e listar
-        Treino buscado = controller.buscarPorId(1);
-        List<Treino> treinos = controller.listar();
+        treinos = controller.listar();
         controller.listar(0, 10);
         controller.buscarPorNome("Treino");
         controller.buscarPorClasse("Força");

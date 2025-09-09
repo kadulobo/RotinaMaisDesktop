@@ -8,6 +8,7 @@ import java.util.Objects;
 @Table(name = "Papel", schema = "rotinamais")
 public class Papel {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_papel")
     private Integer idPapel;
 
