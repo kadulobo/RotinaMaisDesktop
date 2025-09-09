@@ -53,5 +53,8 @@ public class MovimentacaoControllerTest {
 
         // Remover movimentação
         controller.remover(buscado.getIdMovimentacao());
+
+        // Recriar movimentação para manter dados na tabela
+        controller.criar(mov);
     }
 }

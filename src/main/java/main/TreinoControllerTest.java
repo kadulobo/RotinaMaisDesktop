@@ -43,5 +43,8 @@ public class TreinoControllerTest {
 
         // Remover treino
         controller.remover(buscado.getIdTreino());
+
+        // Recriar treino para manter dados na tabela
+        controller.criar(treino);
     }
 }

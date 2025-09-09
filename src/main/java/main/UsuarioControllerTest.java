@@ -37,5 +37,8 @@ public class UsuarioControllerTest {
 
         // Remover usuário
         controller.remover(buscado.getIdUsuario());
+
+        // Recriar usuário para manter dados na tabela
+        controller.criar(usuario);
     }
 }
