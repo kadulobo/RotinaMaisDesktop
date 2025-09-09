@@ -8,7 +8,7 @@ import model.TreinoExercicio;
 import java.util.List;
 
 public class TreinoExercicioController {
-    private final {dao} dao;
+    private final TreinoExercicioDao dao;
 
     public TreinoExercicioController(TreinoExercicioDao dao) { this.dao = dao; }
 

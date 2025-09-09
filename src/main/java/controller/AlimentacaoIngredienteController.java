@@ -8,7 +8,7 @@ import infra.Logger;
 import model.AlimentacaoIngrediente;
 
 public class AlimentacaoIngredienteController {
-    private final {dao} dao;
+    private final AlimentacaoIngredienteDao dao;
 
     public AlimentacaoIngredienteController(AlimentacaoIngredienteDao dao) { this.dao = dao; }
 

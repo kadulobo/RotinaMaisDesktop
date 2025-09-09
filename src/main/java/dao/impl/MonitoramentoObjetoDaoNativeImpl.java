@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import model.MonitoramentoObjeto;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao {
@@ -41,21 +42,24 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
 
     @Override
     public MonitoramentoObjeto findById(LocalDate id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_monitoramento_objeto, data, id_monitoramento, id_objeto FROM Monitoramento_Objeto WHERE id_monitoramento_objeto = :id";
+        Query q = em.createNativeQuery(sql, MonitoramentoObjeto.class).setParameter("id", id);
+        return (MonitoramentoObjeto) q.getSingleResult();
     }
 
     @Override
     public List<MonitoramentoObjeto> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_monitoramento_objeto, data, id_monitoramento, id_objeto FROM Monitoramento_Objeto";
+        return em.createNativeQuery(sql, MonitoramentoObjeto.class).getResultList();
     }
 
     @Override
     public List<MonitoramentoObjeto> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_monitoramento_objeto, data, id_monitoramento, id_objeto FROM Monitoramento_Objeto LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, MonitoramentoObjeto.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

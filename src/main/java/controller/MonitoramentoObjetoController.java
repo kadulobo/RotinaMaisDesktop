@@ -5,10 +5,11 @@ import exception.MonitoramentoObjetoException;
 import infra.Logger;
 import model.MonitoramentoObjeto;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class MonitoramentoObjetoController {
-    private final {dao} dao;
+    private final MonitoramentoObjetoDao dao;
 
     public MonitoramentoObjetoController(MonitoramentoObjetoDao dao) { this.dao = dao; }
 

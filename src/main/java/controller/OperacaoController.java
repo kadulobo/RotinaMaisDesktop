@@ -5,10 +5,12 @@ import exception.OperacaoException;
 import infra.Logger;
 import model.Operacao;
 
+import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.List;
 
 public class OperacaoController {
-    private final {dao} dao;
+    private final OperacaoDao dao;
 
     public OperacaoController(OperacaoDao dao) { this.dao = dao; }
 

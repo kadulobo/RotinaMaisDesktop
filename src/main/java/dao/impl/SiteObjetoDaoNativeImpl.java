@@ -41,21 +41,24 @@ public class SiteObjetoDaoNativeImpl implements SiteObjetoDao {
 
     @Override
     public SiteObjeto findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_site_objeto, id_site, id_objeto FROM Site_Objeto WHERE id_site_objeto = :id";
+        Query q = em.createNativeQuery(sql, SiteObjeto.class).setParameter("id", id);
+        return (SiteObjeto) q.getSingleResult();
     }
 
     @Override
     public List<SiteObjeto> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_site_objeto, id_site, id_objeto FROM Site_Objeto";
+        return em.createNativeQuery(sql, SiteObjeto.class).getResultList();
     }
 
     @Override
     public List<SiteObjeto> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_site_objeto, id_site, id_objeto FROM Site_Objeto LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, SiteObjeto.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

@@ -8,7 +8,7 @@ import model.SiteObjeto;
 import java.util.List;
 
 public class SiteObjetoController {
-    private final {dao} dao;
+    private final SiteObjetoDao dao;
 
     public SiteObjetoController(SiteObjetoDao dao) { this.dao = dao; }
 

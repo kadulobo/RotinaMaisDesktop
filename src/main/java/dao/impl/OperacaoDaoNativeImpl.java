@@ -8,6 +8,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import model.Operacao;
 
+import java.math.BigDecimal;
+import java.time.LocalTime;
 import java.util.List;
 
 public class OperacaoDaoNativeImpl implements OperacaoDao {
@@ -41,21 +43,24 @@ public class OperacaoDaoNativeImpl implements OperacaoDao {
 
     @Override
     public Operacao findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE id_operacao = :id";
+        Query q = em.createNativeQuery(sql, Operacao.class).setParameter("id", id);
+        return (Operacao) q.getSingleResult();
     }
 
     @Override
     public List<Operacao> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao";
+        return em.createNativeQuery(sql, Operacao.class).getResultList();
     }
 
     @Override
     public List<Operacao> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, Operacao.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

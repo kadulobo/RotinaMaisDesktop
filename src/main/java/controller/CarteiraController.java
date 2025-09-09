@@ -5,10 +5,11 @@ import exception.CarteiraException;
 import infra.Logger;
 import model.Carteira;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class CarteiraController {
-    private final {dao} dao;
+    private final CarteiraDao dao;
 
     public CarteiraController(CarteiraDao dao) { this.dao = dao; }
 

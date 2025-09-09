@@ -8,7 +8,7 @@ import model.RotinaPeriodo;
 import java.util.List;
 
 public class RotinaPeriodoController {
-    private final {dao} dao;
+    private final RotinaPeriodoDao dao;
 
     public RotinaPeriodoController(RotinaPeriodoDao dao) { this.dao = dao; }
 

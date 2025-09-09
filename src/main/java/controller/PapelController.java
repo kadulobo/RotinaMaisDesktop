@@ -5,10 +5,11 @@ import exception.PapelException;
 import infra.Logger;
 import model.Papel;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class PapelController {
-    private final {dao} dao;
+    private final PapelDao dao;
 
     public PapelController(PapelDao dao) { this.dao = dao; }
 
