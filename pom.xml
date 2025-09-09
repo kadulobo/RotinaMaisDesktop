@@ -12,6 +12,10 @@
     <!-- Java 8 conforme seu JRE no projeto -->
     <maven.compiler.release>8</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+       <!-- versões estáveis -->
+    <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
+    <hibernate.version>6.6.6.Final</hibernate.version>
+    <postgres.version>42.7.7</postgres.version>
   </properties>
 
   <dependencies>
@@ -22,8 +26,29 @@
       <version>5.3</version>
     </dependency>
 
+  <!-- API JPA (Jakarta) -->
+    <dependency>
+      <groupId>jakarta.persistence</groupId>
+      <artifactId>jakarta.persistence-api</artifactId>
+      <version>${jakarta.persistence.version}</version>
+    </dependency>
 
+    <!-- Implementação: Hibernate ORM -->
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>${hibernate.version}</version>
+    </dependency>
+
+    <!-- Driver PostgreSQL -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgres.version}</version>
+    </dependency>
   </dependencies>
+
+
 
   <build>
     <plugins>

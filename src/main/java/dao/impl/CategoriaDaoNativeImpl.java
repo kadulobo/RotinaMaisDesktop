@@ -236,11 +236,11 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
         try {
             StringBuilder sb = new StringBuilder("SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE 1=1");
             Map<String, Object> params = new HashMap<>();
-            if (filtro.getNome() != null && !filtro.getNome().isBlank()) {
+            if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
                 sb.append(" AND nome=:nome");
                 params.put("nome", filtro.getNome());
             }
-            if (filtro.getDescricao() != null && !filtro.getDescricao().isBlank()) {
+            if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
                 sb.append(" AND descricao=:descricao");
                 params.put("descricao", filtro.getDescricao());
             }

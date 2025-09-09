@@ -25,7 +25,7 @@ public class CategoriaController {
         if (categoria.getIdCategoria() == null) {
             throw new CategoriaException("Id da Categoria é obrigatório");
         }
-        if (categoria.getNome() == null || categoria.getNome().isBlank()) {
+        if (categoria.getNome() == null || categoria.getNome().isEmpty()) {
             throw new CategoriaException("Nome da Categoria é obrigatório");
         }
         dao.create(categoria);
@@ -37,7 +37,7 @@ public class CategoriaController {
         if (categoria == null || categoria.getIdCategoria() == null) {
             throw new CategoriaException("Categoria ou Id não pode ser nulo");
         }
-        if (categoria.getNome() == null || categoria.getNome().isBlank()) {
+        if (categoria.getNome() == null || categoria.getNome().isEmpty()) {
             throw new CategoriaException("Nome da Categoria é obrigatório");
         }
         Categoria updated = dao.update(categoria);
@@ -80,7 +80,7 @@ public class CategoriaController {
 
     public List<Categoria> buscarPorNome(String nome) {
         Logger.info("CategoriaController.buscarPorNome - inicio");
-        if (nome == null || nome.isBlank()) {
+        if (nome == null || nome.isEmpty()) {
             throw new CategoriaException("Nome não pode ser vazio");
         }
         List<Categoria> list = dao.findByNome(nome);
@@ -90,7 +90,7 @@ public class CategoriaController {
 
     public List<Categoria> buscarPorDescricao(String descricao) {
         Logger.info("CategoriaController.buscarPorDescricao - inicio");
-        if (descricao == null || descricao.isBlank()) {
+        if (descricao == null || descricao.isEmpty()) {
             throw new CategoriaException("Descrição não pode ser vazia");
         }
         List<Categoria> list = dao.findByDescricao(descricao);
