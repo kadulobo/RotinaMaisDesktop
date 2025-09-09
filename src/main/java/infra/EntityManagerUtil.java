@@ -6,7 +6,8 @@ import jakarta.persistence.EntityManagerFactory;
 import jakarta.persistence.Persistence;
 
 public class EntityManagerUtil {
-    private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("rotinamaisPU");
+    private static final EntityManagerFactory emf =
+            Persistence.createEntityManagerFactory("rotinamais");
 
     private EntityManagerUtil() {
     }
