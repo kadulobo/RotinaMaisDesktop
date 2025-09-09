@@ -22,11 +22,12 @@ public class UsuarioControllerTest {
         usuario.setNome("Usuário Exemplo");
         usuario.setSenha("senha123");
         usuario.setEmail("usuario@example.com");
+        usuario.setCpf("12345678900");
         controller.criar(usuario);
 
         // Recuperar usuário persistido e atualizar
         List<Usuario> usuarios = controller.listar();
-        Usuario buscado = controller.buscarPorId(usuarios.get(0).getIdUsuario());
+        Usuario buscado = controller.buscarPorCpf("12345678900").get(0);
         buscado.setNome("Usuário Atualizado");
         controller.atualizar(buscado);
 

@@ -34,6 +34,9 @@ public class Usuario {
     @Column(name = "email")
     private String email;
 
+    @Column(name = "cpf")
+    private String cpf;
+
     @OneToMany(mappedBy = "usuario")
     private List<Movimentacao> movimentacoes = new ArrayList<>();
 
@@ -80,6 +83,14 @@ public class Usuario {
         this.email = email;
     }
 
+    public String getCpf() {
+        return cpf;
+    }
+
+    public void setCpf(String cpf) {
+        this.cpf = cpf;
+    }
+
     public List<Movimentacao> getMovimentacoes() {
         return movimentacoes;
     }
@@ -115,6 +126,7 @@ public class Usuario {
                 "idUsuario=" + idUsuario +
                 ", nome='" + nome + '\'' +
                 ", email='" + email + '\'' +
+                ", cpf='" + cpf + '\'' +
                 '}';
     }
 }

@@ -30,6 +30,9 @@ public class UsuarioController {
         if (usuario.getEmail() == null || usuario.getEmail().isEmpty()) {
             throw new UsuarioException("Email do Usuario é obrigatório");
         }
+        if (usuario.getCpf() == null || usuario.getCpf().isEmpty()) {
+            throw new UsuarioException("CPF do Usuario é obrigatório");
+        }
         dao.create(usuario);
         Logger.info("UsuarioController.criar - sucesso");
     }
@@ -47,6 +50,9 @@ public class UsuarioController {
         }
         if (usuario.getEmail() == null || usuario.getEmail().isEmpty()) {
             throw new UsuarioException("Email do Usuario é obrigatório");
+        }
+        if (usuario.getCpf() == null || usuario.getCpf().isEmpty()) {
+            throw new UsuarioException("CPF do Usuario é obrigatório");
         }
         Usuario updated = dao.update(usuario);
         Logger.info("UsuarioController.atualizar - sucesso");
@@ -123,6 +129,16 @@ public class UsuarioController {
         }
         List<Usuario> list = dao.findByEmail(email);
         Logger.info("UsuarioController.buscarPorEmail - sucesso");
+        return list;
+    }
+
+    public List<Usuario> buscarPorCpf(String cpf) {
+        Logger.info("UsuarioController.buscarPorCpf - inicio");
+        if (cpf == null || cpf.isEmpty()) {
+            throw new UsuarioException("CPF não pode ser vazio");
+        }
+        List<Usuario> list = dao.findByCpf(cpf);
+        Logger.info("UsuarioController.buscarPorCpf - sucesso");
         return list;
     }
 

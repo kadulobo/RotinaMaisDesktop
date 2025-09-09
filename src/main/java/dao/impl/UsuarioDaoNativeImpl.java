@@ -24,13 +24,14 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
             u.setFoto(rs.getBytes("foto"));
         }
         u.setEmail(rs.getString("email"));
+        u.setCpf(rs.getString("cpf"));
         return u;
     }
 
     @Override
     public void create(Usuario usuario) throws UsuarioException {
         Logger.info("UsuarioDaoNativeImpl.create - inicio");
-        String sql = "INSERT INTO Usuario (nome, senha, foto, email) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO Usuario (nome, senha, foto, email, cpf) VALUES (?,?,?,?,?)";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
@@ -40,6 +41,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
                 ps.setString(2, usuario.getSenha());
                 ps.setBytes(3, usuario.getFoto());
                 ps.setString(4, usuario.getEmail());
+                ps.setString(5, usuario.getCpf());
                 ps.executeUpdate();
             }
             conn.commit();
@@ -60,7 +62,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public Usuario update(Usuario usuario) throws UsuarioException {
         Logger.info("UsuarioDaoNativeImpl.update - inicio");
-        String sql = "UPDATE Usuario SET nome=?, senha=?, foto=?, email=? WHERE id_usuario=?";
+        String sql = "UPDATE Usuario SET nome=?, senha=?, foto=?, email=?, cpf=? WHERE id_usuario=?";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
@@ -70,7 +72,8 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
                 ps.setString(2, usuario.getSenha());
                 ps.setBytes(3, usuario.getFoto());
                 ps.setString(4, usuario.getEmail());
-                ps.setInt(5, usuario.getIdUsuario());
+                ps.setString(5, usuario.getCpf());
+                ps.setInt(6, usuario.getIdUsuario());
                 int updated = ps.executeUpdate();
                 if (updated == 0) {
                     throw new UsuarioException("Usuario não encontrado: id=" + usuario.getIdUsuario());
@@ -125,7 +128,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public Usuario findById(Integer id) throws UsuarioException {
         Logger.info("UsuarioDaoNativeImpl.findById - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email FROM Usuario WHERE id_usuario=?";
+        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario WHERE id_usuario=?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -145,7 +148,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public Usuario findWithBlobsById(Integer id) throws UsuarioException {
         Logger.info("UsuarioDaoNativeImpl.findWithBlobsById - inicio");
-        String sql = "SELECT id_usuario, nome, senha, foto, email FROM Usuario WHERE id_usuario=?";
+        String sql = "SELECT id_usuario, nome, senha, foto, email, cpf FROM Usuario WHERE id_usuario=?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -165,7 +168,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> findAll() {
         Logger.info("UsuarioDaoNativeImpl.findAll - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email FROM Usuario";
+        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -183,7 +186,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> findAll(int page, int size) {
         Logger.info("UsuarioDaoNativeImpl.findAll(page) - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email FROM Usuario LIMIT ? OFFSET ?";
+        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario LIMIT ? OFFSET ?";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -204,7 +207,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> findByNome(String nome) {
         Logger.info("UsuarioDaoNativeImpl.findByNome - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email FROM Usuario WHERE nome=?";
+        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario WHERE nome=?";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -224,7 +227,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> findBySenha(String senha) {
         Logger.info("UsuarioDaoNativeImpl.findBySenha - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email FROM Usuario WHERE senha=?";
+        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario WHERE senha=?";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -244,7 +247,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> findByEmail(String email) {
         Logger.info("UsuarioDaoNativeImpl.findByEmail - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email FROM Usuario WHERE email=?";
+        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario WHERE email=?";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -262,9 +265,29 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     }
 
     @Override
+    public List<Usuario> findByCpf(String cpf) {
+        Logger.info("UsuarioDaoNativeImpl.findByCpf - inicio");
+        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario WHERE cpf=?";
+        List<Usuario> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, cpf);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapUsuario(rs, false));
+                }
+            }
+            Logger.info("UsuarioDaoNativeImpl.findByCpf - sucesso");
+        } catch (SQLException e) {
+            Logger.error("UsuarioDaoNativeImpl.findByCpf - erro", e);
+        }
+        return list;
+    }
+
+    @Override
     public List<Usuario> findByFoto(byte[] foto) {
         Logger.info("UsuarioDaoNativeImpl.findByFoto - inicio");
-        String sql = "SELECT id_usuario, nome, senha, foto, email FROM Usuario WHERE foto=?";
+        String sql = "SELECT id_usuario, nome, senha, foto, email, cpf FROM Usuario WHERE foto=?";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -289,7 +312,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> search(Usuario filtro, int page, int size) {
         Logger.info("UsuarioDaoNativeImpl.search - inicio");
-        StringBuilder sb = new StringBuilder("SELECT id_usuario, nome, senha, email FROM Usuario WHERE 1=1");
+        StringBuilder sb = new StringBuilder("SELECT id_usuario, nome, senha, email, cpf FROM Usuario WHERE 1=1");
         List<Object> params = new ArrayList<>();
         if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
             sb.append(" AND nome=?");
@@ -302,6 +325,10 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
         if (filtro.getEmail() != null && !filtro.getEmail().isEmpty()) {
             sb.append(" AND email=?");
             params.add(filtro.getEmail());
+        }
+        if (filtro.getCpf() != null && !filtro.getCpf().isEmpty()) {
+            sb.append(" AND cpf=?");
+            params.add(filtro.getCpf());
         }
         if (page >= 0 && size > 0) {
             sb.append(" LIMIT ? OFFSET ?");
