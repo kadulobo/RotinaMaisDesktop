@@ -8,8 +8,8 @@ import model.MonitoramentoObjeto;
 public interface MonitoramentoObjetoDao {
     void create(MonitoramentoObjeto e);
     void update(MonitoramentoObjeto e);
-    void deleteById(LocalDate id);
-    MonitoramentoObjeto findById(LocalDate id);
+    void deleteById(Integer id);
+    MonitoramentoObjeto findById(Integer id);
     List<MonitoramentoObjeto> findAll();
     List<MonitoramentoObjeto> findAll(int page, int size);
     List<MonitoramentoObjeto> findByData(LocalDate data);

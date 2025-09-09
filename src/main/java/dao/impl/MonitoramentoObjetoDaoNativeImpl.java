@@ -20,9 +20,9 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
 
     private MonitoramentoObjeto map(ResultSet rs) throws SQLException {
         MonitoramentoObjeto mo = new MonitoramentoObjeto();
-        Date id = rs.getDate("id_monitoramento_objeto");
-        if (id != null) {
-            mo.setIdMonitoramentoObjeto(id.toLocalDate());
+        int id = rs.getInt("id_monitoramento_objeto");
+        if (!rs.wasNull()) {
+            mo.setIdMonitoramentoObjeto(id);
         }
         Date data = rs.getDate("data");
         if (data != null) {
@@ -42,28 +42,26 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
     @Override
     public void create(MonitoramentoObjeto e) {
         Logger.info("MonitoramentoObjetoDaoNativeImpl.create");
-        String sql = "INSERT INTO Monitoramento_Objeto (id_monitoramento_objeto, data, id_monitoramento, id_objeto) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO Monitoramento_Objeto (data, id_monitoramento, id_objeto) VALUES (?,?,?)";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                LocalDate id = e.getIdMonitoramentoObjeto() != null ? e.getIdMonitoramentoObjeto() : LocalDate.now();
-                ps.setDate(1, Date.valueOf(id));
                 if (e.getData() != null) {
-                    ps.setDate(2, Date.valueOf(e.getData()));
+                    ps.setDate(1, Date.valueOf(e.getData()));
                 } else {
-                    ps.setNull(2, Types.DATE);
+                    ps.setNull(1, Types.DATE);
                 }
                 if (e.getIdMonitoramento() != null) {
-                    ps.setInt(3, e.getIdMonitoramento());
+                    ps.setInt(2, e.getIdMonitoramento());
                 } else {
-                    ps.setNull(3, Types.INTEGER);
+                    ps.setNull(2, Types.INTEGER);
                 }
                 if (e.getIdObjeto() != null) {
-                    ps.setInt(4, e.getIdObjeto());
+                    ps.setInt(3, e.getIdObjeto());
                 } else {
-                    ps.setNull(4, Types.INTEGER);
+                    ps.setNull(3, Types.INTEGER);
                 }
                 ps.executeUpdate();
             }
@@ -106,9 +104,9 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
                     ps.setNull(3, Types.INTEGER);
                 }
                 if (e.getIdMonitoramentoObjeto() != null) {
-                    ps.setDate(4, Date.valueOf(e.getIdMonitoramentoObjeto()));
+                    ps.setInt(4, e.getIdMonitoramentoObjeto());
                 } else {
-                    ps.setNull(4, Types.DATE);
+                    ps.setNull(4, Types.INTEGER);
                 }
                 int upd = ps.executeUpdate();
                 if (upd == 0) {
@@ -130,7 +128,7 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
     }
 
     @Override
-    public void deleteById(LocalDate id) {
+    public void deleteById(Integer id) {
         Logger.info("MonitoramentoObjetoDaoNativeImpl.deleteById");
         String sql = "DELETE FROM Monitoramento_Objeto WHERE id_monitoramento_objeto=?";
         Connection conn = null;
@@ -138,7 +136,7 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setDate(1, Date.valueOf(id));
+                ps.setInt(1, id);
                 int del = ps.executeUpdate();
                 if (del == 0) {
                     throw new MonitoramentoObjetoException("MonitoramentoObjeto nao encontrado: id=" + id);
@@ -159,11 +157,11 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
     }
 
     @Override
-    public MonitoramentoObjeto findById(LocalDate id) {
+    public MonitoramentoObjeto findById(Integer id) {
         String sql = "SELECT id_monitoramento_objeto, data, id_monitoramento, id_objeto FROM Monitoramento_Objeto WHERE id_monitoramento_objeto = ?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setDate(1, Date.valueOf(id));
+            ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return map(rs);
