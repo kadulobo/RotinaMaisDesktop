@@ -1,226 +1,291 @@
-// path: src/main/java/dao/impl/CategoriaDaoNativeImpl.java
 package dao.impl;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import conexao.ConnectionFactory;
 import dao.api.CategoriaDao;
 import exception.CategoriaException;
-import infra.EntityManagerUtil;
 import infra.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
 import model.Categoria;
 
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
+
 public class CategoriaDaoNativeImpl implements CategoriaDao {
+    private Categoria map(ResultSet rs, boolean withFoto) throws SQLException {
+        Categoria c = new Categoria();
+        c.setIdCategoria(rs.getInt("id_categoria"));
+        c.setNome(rs.getString("nome"));
+        c.setDescricao(rs.getString("descricao"));
+        if (withFoto) {
+            c.setFoto(rs.getBytes("foto"));
+        }
+        Date dt = rs.getDate("data_criacao");
+        if (dt != null) {
+            c.setDataCriacao(dt.toLocalDate());
+        }
+        return c;
+    }
 
     @Override
     public void create(Categoria categoria) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.create - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "INSERT INTO Categoria (nome, descricao, foto, data_criacao) VALUES (?,?,?,?)";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "INSERT INTO Categoria (nome, descricao, foto, data_criacao) " +
-                    "VALUES (:nome, :descricao, :foto, :dataCriacao)";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("nome", categoria.getNome());
-            query.setParameter("descricao", categoria.getDescricao());
-            query.setParameter("foto", categoria.getFoto());
-            query.setParameter("dataCriacao", categoria.getDataCriacao());
-            query.executeUpdate();
-            em.getTransaction().commit();
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, categoria.getNome());
+                ps.setString(2, categoria.getDescricao());
+                ps.setBytes(3, categoria.getFoto());
+                if (categoria.getDataCriacao() != null) {
+                    ps.setDate(4, Date.valueOf(categoria.getDataCriacao()));
+                } else {
+                    ps.setNull(4, Types.DATE);
+                }
+                ps.executeUpdate();
+            }
+            conn.commit();
             Logger.info("CategoriaDaoNativeImpl.create - sucesso");
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback create", ex); }
+            }
             Logger.error("CategoriaDaoNativeImpl.create - erro", e);
             throw new CategoriaException("Erro ao criar Categoria", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Categoria update(Categoria categoria) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.update - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "UPDATE Categoria SET nome=?, descricao=?, foto=?, data_criacao=? WHERE id_categoria=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "UPDATE Categoria SET nome=:nome, descricao=:descricao, foto=:foto, data_criacao=:dataCriacao " +
-                    "WHERE id_categoria=:id";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("nome", categoria.getNome());
-            query.setParameter("descricao", categoria.getDescricao());
-            query.setParameter("foto", categoria.getFoto());
-            query.setParameter("dataCriacao", categoria.getDataCriacao());
-            query.setParameter("id", categoria.getIdCategoria());
-            int updated = query.executeUpdate();
-            if (updated == 0) {
-                throw new CategoriaException("Categoria não encontrada: id=" + categoria.getIdCategoria());
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, categoria.getNome());
+                ps.setString(2, categoria.getDescricao());
+                ps.setBytes(3, categoria.getFoto());
+                if (categoria.getDataCriacao() != null) {
+                    ps.setDate(4, Date.valueOf(categoria.getDataCriacao()));
+                } else {
+                    ps.setNull(4, Types.DATE);
+                }
+                ps.setInt(5, categoria.getIdCategoria());
+                int updated = ps.executeUpdate();
+                if (updated == 0) {
+                    throw new CategoriaException("Categoria não encontrada: id=" + categoria.getIdCategoria());
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("CategoriaDaoNativeImpl.update - sucesso");
             return findById(categoria.getIdCategoria());
-        } catch (CategoriaException e) {
-            em.getTransaction().rollback();
-            Logger.error("CategoriaDaoNativeImpl.update - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback update", ex); }
+            }
             Logger.error("CategoriaDaoNativeImpl.update - erro", e);
             throw new CategoriaException("Erro ao atualizar Categoria", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public void deleteById(Integer id) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.deleteById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "DELETE FROM Categoria WHERE id_categoria=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "DELETE FROM Categoria WHERE id_categoria=:id";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("id", id);
-            int deleted = query.executeUpdate();
-            if (deleted == 0) {
-                throw new CategoriaException("Categoria não encontrada: id=" + id);
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                int deleted = ps.executeUpdate();
+                if (deleted == 0) {
+                    throw new CategoriaException("Categoria não encontrada: id=" + id);
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("CategoriaDaoNativeImpl.deleteById - sucesso");
-        } catch (CategoriaException e) {
-            em.getTransaction().rollback();
-            Logger.error("CategoriaDaoNativeImpl.deleteById - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback delete", ex); }
+            }
             Logger.error("CategoriaDaoNativeImpl.deleteById - erro", e);
             throw new CategoriaException("Erro ao deletar Categoria", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Categoria findById(Integer id) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.findById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE id_categoria=:id";
-            Query query = em.createNativeQuery(sql, Categoria.class);
-            query.setParameter("id", id);
-            Categoria c = (Categoria) query.getSingleResult();
-            Logger.info("CategoriaDaoNativeImpl.findById - sucesso");
-            return c;
-        } catch (Exception e) {
+        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE id_categoria=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("CategoriaDaoNativeImpl.findById - sucesso");
+                    return map(rs, false);
+                }
+            }
+            throw new CategoriaException("Categoria não encontrada: id=" + id);
+        } catch (SQLException e) {
             Logger.error("CategoriaDaoNativeImpl.findById - erro", e);
             throw new CategoriaException("Categoria não encontrada: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public Categoria findWithBlobsById(Integer id) throws CategoriaException {
-        return findById(id);
+        Logger.info("CategoriaDaoNativeImpl.findWithBlobsById - inicio");
+        String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE id_categoria=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("CategoriaDaoNativeImpl.findWithBlobsById - sucesso");
+                    return map(rs, true);
+                }
+            }
+            throw new CategoriaException("Categoria não encontrada: id=" + id);
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.findWithBlobsById - erro", e);
+            throw new CategoriaException("Categoria não encontrada: id=" + id, e);
+        }
     }
 
     @Override
     public List<Categoria> findAll() {
         Logger.info("CategoriaDaoNativeImpl.findAll - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria";
-            Query query = em.createNativeQuery(sql, Categoria.class);
-            List<Categoria> list = query.getResultList();
+        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria";
+        List<Categoria> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(map(rs, false));
+            }
             Logger.info("CategoriaDaoNativeImpl.findAll - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.findAll - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Categoria> findAll(int page, int size) {
         Logger.info("CategoriaDaoNativeImpl.findAll(page) - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria LIMIT :limit OFFSET :offset";
-            Query query = em.createNativeQuery(sql, Categoria.class);
-            query.setParameter("limit", size);
-            query.setParameter("offset", page * size);
-            List<Categoria> list = query.getResultList();
+        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria LIMIT ? OFFSET ?";
+        List<Categoria> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, size);
+            ps.setInt(2, page * size);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("CategoriaDaoNativeImpl.findAll(page) - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.findAll(page) - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Categoria> findByNome(String nome) {
         Logger.info("CategoriaDaoNativeImpl.findByNome - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE nome=:nome";
-            Query query = em.createNativeQuery(sql, Categoria.class);
-            query.setParameter("nome", nome);
-            List<Categoria> list = query.getResultList();
+        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE nome=?";
+        List<Categoria> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nome);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("CategoriaDaoNativeImpl.findByNome - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.findByNome - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Categoria> findByDescricao(String descricao) {
         Logger.info("CategoriaDaoNativeImpl.findByDescricao - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE descricao=:descricao";
-            Query query = em.createNativeQuery(sql, Categoria.class);
-            query.setParameter("descricao", descricao);
-            List<Categoria> list = query.getResultList();
+        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE descricao=?";
+        List<Categoria> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, descricao);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("CategoriaDaoNativeImpl.findByDescricao - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.findByDescricao - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Categoria> findByDataCriacao(java.time.LocalDate dataCriacao) {
         Logger.info("CategoriaDaoNativeImpl.findByDataCriacao - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE data_criacao=:data";
-            Query query = em.createNativeQuery(sql, Categoria.class);
-            query.setParameter("data", dataCriacao);
-            List<Categoria> list = query.getResultList();
+        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE data_criacao=?";
+        List<Categoria> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(dataCriacao));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("CategoriaDaoNativeImpl.findByDataCriacao - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.findByDataCriacao - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Categoria> findByFoto(byte[] foto) {
         Logger.info("CategoriaDaoNativeImpl.findByFoto - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE foto=:foto";
-            Query query = em.createNativeQuery(sql, Categoria.class);
-            query.setParameter("foto", foto);
-            List<Categoria> list = query.getResultList();
+        String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE foto=?";
+        List<Categoria> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBytes(1, foto);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, true));
+                }
+            }
             Logger.info("CategoriaDaoNativeImpl.findByFoto - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.findByFoto - erro", e);
         }
+        return list;
     }
 
     @Override
@@ -231,42 +296,44 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> search(Categoria filtro, int page, int size) {
         Logger.info("CategoriaDaoNativeImpl.search - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            StringBuilder sb = new StringBuilder("SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE 1=1");
-            Map<String, Object> params = new HashMap<>();
-            if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
-                sb.append(" AND nome=:nome");
-                params.put("nome", filtro.getNome());
-            }
-            if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
-                sb.append(" AND descricao=:descricao");
-                params.put("descricao", filtro.getDescricao());
-            }
-            if (filtro.getDataCriacao() != null) {
-                sb.append(" AND data_criacao=:dataCriacao");
-                params.put("dataCriacao", filtro.getDataCriacao());
-            }
-            if (filtro.getFoto() != null) {
-                sb.append(" AND foto=:foto");
-                params.put("foto", filtro.getFoto());
-            }
-            if (page >= 0 && size > 0) {
-                sb.append(" LIMIT :limit OFFSET :offset");
-            }
-            Query query = em.createNativeQuery(sb.toString(), Categoria.class);
-            for (Map.Entry<String, Object> e : params.entrySet()) {
-                query.setParameter(e.getKey(), e.getValue());
-            }
-            if (page >= 0 && size > 0) {
-                query.setParameter("limit", size);
-                query.setParameter("offset", page * size);
-            }
-            List<Categoria> list = query.getResultList();
-            Logger.info("CategoriaDaoNativeImpl.search - sucesso");
-            return list;
-        } finally {
-            em.close();
+        StringBuilder sb = new StringBuilder("SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
+            sb.append(" AND nome=?");
+            params.add(filtro.getNome());
         }
+        if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
+            sb.append(" AND descricao=?");
+            params.add(filtro.getDescricao());
+        }
+        if (filtro.getDataCriacao() != null) {
+            sb.append(" AND data_criacao=?");
+            params.add(Date.valueOf(filtro.getDataCriacao()));
+        }
+        if (filtro.getFoto() != null) {
+            sb.append(" AND foto=?");
+            params.add(filtro.getFoto());
+        }
+        if (page >= 0 && size > 0) {
+            sb.append(" LIMIT ? OFFSET ?");
+            params.add(size);
+            params.add(page * size);
+        }
+        List<Categoria> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
+            Logger.info("CategoriaDaoNativeImpl.search - sucesso");
+        } catch (SQLException e) {
+            Logger.error("CategoriaDaoNativeImpl.search - erro", e);
+        }
+        return list;
     }
 }

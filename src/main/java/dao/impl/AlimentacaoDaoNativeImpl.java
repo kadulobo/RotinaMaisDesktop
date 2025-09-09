@@ -1,278 +1,342 @@
-// path: src/main/java/dao/impl/AlimentacaoDaoNativeImpl.java
 package dao.impl;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import conexao.ConnectionFactory;
 import dao.api.AlimentacaoDao;
 import exception.AlimentacaoException;
-import infra.EntityManagerUtil;
 import infra.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
 import model.Alimentacao;
-import org.hibernate.query.NativeQuery;
-import org.hibernate.type.StandardBasicTypes;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
+    private Alimentacao map(ResultSet rs, boolean withVideo) throws SQLException {
+        Alimentacao a = new Alimentacao();
+        a.setIdAlimentacao(rs.getInt("id_alimentacao"));
+        a.setStatus((Integer) rs.getObject("status"));
+        a.setNome(rs.getString("nome"));
+        a.setLink(rs.getString("link"));
+        if (withVideo) {
+            a.setVideo(rs.getBytes("video"));
+        }
+        a.setPreparo(rs.getString("preparo"));
+        a.setIdRotina((Integer) rs.getObject("id_rotina"));
+        return a;
+    }
 
     @Override
     public void create(Alimentacao alimentacao) throws AlimentacaoException {
         Logger.info("AlimentacaoDaoNativeImpl.create - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "INSERT INTO Alimentacao (status, nome, link, video, preparo, id_rotina) VALUES (?,?,?,?,?,?)";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "INSERT INTO Alimentacao (status, nome, link, video, preparo, id_rotina) " +
-                    "VALUES (:status, :nome, :link, :video, :preparo, CAST(:idRotina AS INTEGER))";
-            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
-            query.setParameter("status", alimentacao.getStatus());
-            query.setParameter("nome", alimentacao.getNome());
-            query.setParameter("link", alimentacao.getLink());
-            query.setParameter("video", alimentacao.getVideo());
-            query.setParameter("preparo", alimentacao.getPreparo());
-            Integer idRotina = alimentacao.getIdRotina();
-            query.setParameter("idRotina", idRotina, StandardBasicTypes.INTEGER);
-            query.executeUpdate();
-            em.getTransaction().commit();
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                if (alimentacao.getStatus() != null) {
+                    ps.setInt(1, alimentacao.getStatus());
+                } else {
+                    ps.setNull(1, Types.INTEGER);
+                }
+                ps.setString(2, alimentacao.getNome());
+                ps.setString(3, alimentacao.getLink());
+                ps.setBytes(4, alimentacao.getVideo());
+                ps.setString(5, alimentacao.getPreparo());
+                if (alimentacao.getIdRotina() != null) {
+                    ps.setInt(6, alimentacao.getIdRotina());
+                } else {
+                    ps.setNull(6, Types.INTEGER);
+                }
+                ps.executeUpdate();
+            }
+            conn.commit();
             Logger.info("AlimentacaoDaoNativeImpl.create - sucesso");
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback create", ex); }
+            }
             Logger.error("AlimentacaoDaoNativeImpl.create - erro", e);
             throw new AlimentacaoException("Erro ao criar Alimentacao", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Alimentacao update(Alimentacao alimentacao) throws AlimentacaoException {
         Logger.info("AlimentacaoDaoNativeImpl.update - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "UPDATE Alimentacao SET status=?, nome=?, link=?, video=?, preparo=?, id_rotina=? WHERE id_alimentacao=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "UPDATE Alimentacao SET status=:status, nome=:nome, link=:link, video=:video, preparo=:preparo, id_rotina=CAST(:idRotina AS INTEGER) WHERE id_alimentacao=:id";
-            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
-            query.setParameter("status", alimentacao.getStatus());
-            query.setParameter("nome", alimentacao.getNome());
-            query.setParameter("link", alimentacao.getLink());
-            query.setParameter("video", alimentacao.getVideo());
-            query.setParameter("preparo", alimentacao.getPreparo());
-            Integer idRotina = alimentacao.getIdRotina();
-            query.setParameter("idRotina", idRotina, StandardBasicTypes.INTEGER);
-            query.setParameter("id", alimentacao.getIdAlimentacao());
-            int updated = query.executeUpdate();
-            if (updated == 0) {
-                throw new AlimentacaoException("Alimentacao não encontrada: id=" + alimentacao.getIdAlimentacao());
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                if (alimentacao.getStatus() != null) {
+                    ps.setInt(1, alimentacao.getStatus());
+                } else {
+                    ps.setNull(1, Types.INTEGER);
+                }
+                ps.setString(2, alimentacao.getNome());
+                ps.setString(3, alimentacao.getLink());
+                ps.setBytes(4, alimentacao.getVideo());
+                ps.setString(5, alimentacao.getPreparo());
+                if (alimentacao.getIdRotina() != null) {
+                    ps.setInt(6, alimentacao.getIdRotina());
+                } else {
+                    ps.setNull(6, Types.INTEGER);
+                }
+                ps.setInt(7, alimentacao.getIdAlimentacao());
+                int updated = ps.executeUpdate();
+                if (updated == 0) {
+                    throw new AlimentacaoException("Alimentacao não encontrada: id=" + alimentacao.getIdAlimentacao());
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("AlimentacaoDaoNativeImpl.update - sucesso");
             return findById(alimentacao.getIdAlimentacao());
-        } catch (AlimentacaoException e) {
-            em.getTransaction().rollback();
-            Logger.error("AlimentacaoDaoNativeImpl.update - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback update", ex); }
+            }
             Logger.error("AlimentacaoDaoNativeImpl.update - erro", e);
             throw new AlimentacaoException("Erro ao atualizar Alimentacao", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public void deleteById(Integer id) throws AlimentacaoException {
         Logger.info("AlimentacaoDaoNativeImpl.deleteById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "DELETE FROM Alimentacao WHERE id_alimentacao=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "DELETE FROM Alimentacao WHERE id_alimentacao=:id";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("id", id);
-            int deleted = query.executeUpdate();
-            if (deleted == 0) {
-                throw new AlimentacaoException("Alimentacao não encontrada: id=" + id);
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                int deleted = ps.executeUpdate();
+                if (deleted == 0) {
+                    throw new AlimentacaoException("Alimentacao não encontrada: id=" + id);
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("AlimentacaoDaoNativeImpl.deleteById - sucesso");
-        } catch (AlimentacaoException e) {
-            em.getTransaction().rollback();
-            Logger.error("AlimentacaoDaoNativeImpl.deleteById - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback delete", ex); }
+            }
             Logger.error("AlimentacaoDaoNativeImpl.deleteById - erro", e);
             throw new AlimentacaoException("Erro ao deletar Alimentacao", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Alimentacao findById(Integer id) throws AlimentacaoException {
         Logger.info("AlimentacaoDaoNativeImpl.findById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE id_alimentacao=:id";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("id", id);
-            Alimentacao a = (Alimentacao) query.getSingleResult();
-            Logger.info("AlimentacaoDaoNativeImpl.findById - sucesso");
-            return a;
-        } catch (Exception e) {
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE id_alimentacao=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("AlimentacaoDaoNativeImpl.findById - sucesso");
+                    return map(rs, false);
+                }
+            }
+            throw new AlimentacaoException("Alimentacao não encontrada: id=" + id);
+        } catch (SQLException e) {
             Logger.error("AlimentacaoDaoNativeImpl.findById - erro", e);
             throw new AlimentacaoException("Alimentacao não encontrada: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public Alimentacao findWithVideoById(Integer id) throws AlimentacaoException {
         Logger.info("AlimentacaoDaoNativeImpl.findWithVideoById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, video, preparo, id_rotina FROM Alimentacao WHERE id_alimentacao=:id";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("id", id);
-            Alimentacao a = (Alimentacao) query.getSingleResult();
-            Logger.info("AlimentacaoDaoNativeImpl.findWithVideoById - sucesso");
-            return a;
-        } catch (Exception e) {
+        String sql = "SELECT id_alimentacao, status, nome, link, video, preparo, id_rotina FROM Alimentacao WHERE id_alimentacao=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("AlimentacaoDaoNativeImpl.findWithVideoById - sucesso");
+                    return map(rs, true);
+                }
+            }
+            throw new AlimentacaoException("Alimentacao não encontrada: id=" + id);
+        } catch (SQLException e) {
             Logger.error("AlimentacaoDaoNativeImpl.findWithVideoById - erro", e);
             throw new AlimentacaoException("Alimentacao não encontrada: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public List<Alimentacao> findAll() {
         Logger.info("AlimentacaoDaoNativeImpl.findAll - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(map(rs, false));
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findAll - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findAll - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Alimentacao> findAll(int page, int size) {
         Logger.info("AlimentacaoDaoNativeImpl.findAll(page) - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao LIMIT :limit OFFSET :offset";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("limit", size);
-            query.setParameter("offset", page * size);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao LIMIT ? OFFSET ?";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, size);
+            ps.setInt(2, page * size);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findAll(page) - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findAll(page) - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Alimentacao> findByStatus(Integer status) {
         Logger.info("AlimentacaoDaoNativeImpl.findByStatus - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE status=:status";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("status", status);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE status=?";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, status);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findByStatus - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findByStatus - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Alimentacao> findByNome(String nome) {
         Logger.info("AlimentacaoDaoNativeImpl.findByNome - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE nome=:nome";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("nome", nome);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE nome=?";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nome);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findByNome - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findByNome - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Alimentacao> findByLink(String link) {
         Logger.info("AlimentacaoDaoNativeImpl.findByLink - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE link=:link";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("link", link);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE link=?";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, link);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findByLink - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findByLink - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Alimentacao> findByVideo(byte[] video) {
         Logger.info("AlimentacaoDaoNativeImpl.findByVideo - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, video, preparo, id_rotina FROM Alimentacao WHERE video=:video";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("video", video);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, video, preparo, id_rotina FROM Alimentacao WHERE video=?";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBytes(1, video);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, true));
+                }
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findByVideo - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findByVideo - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Alimentacao> findByPreparo(String preparo) {
         Logger.info("AlimentacaoDaoNativeImpl.findByPreparo - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE preparo=:preparo";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("preparo", preparo);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE preparo=?";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, preparo);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findByPreparo - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findByPreparo - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Alimentacao> findByIdRotina(Integer idRotina) {
         Logger.info("AlimentacaoDaoNativeImpl.findByIdRotina - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE id_rotina=:idRotina";
-            Query query = em.createNativeQuery(sql, Alimentacao.class);
-            query.setParameter("idRotina", idRotina);
-            List<Alimentacao> list = query.getResultList();
+        String sql = "SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE id_rotina=?";
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idRotina);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("AlimentacaoDaoNativeImpl.findByIdRotina - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.findByIdRotina - erro", e);
         }
+        return list;
     }
 
     @Override
@@ -283,50 +347,52 @@ public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
     @Override
     public List<Alimentacao> search(Alimentacao filtro, int page, int size) {
         Logger.info("AlimentacaoDaoNativeImpl.search - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            StringBuilder sb = new StringBuilder("SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE 1=1");
-            Map<String, Object> params = new HashMap<>();
-            if (filtro.getStatus() != null) {
-                sb.append(" AND status=:status");
-                params.put("status", filtro.getStatus());
-            }
-            if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
-                sb.append(" AND nome=:nome");
-                params.put("nome", filtro.getNome());
-            }
-            if (filtro.getLink() != null && !filtro.getLink().isEmpty()) {
-                sb.append(" AND link=:link");
-                params.put("link", filtro.getLink());
-            }
-            if (filtro.getVideo() != null) {
-                sb.append(" AND video=:video");
-                params.put("video", filtro.getVideo());
-            }
-            if (filtro.getPreparo() != null && !filtro.getPreparo().isEmpty()) {
-                sb.append(" AND preparo=:preparo");
-                params.put("preparo", filtro.getPreparo());
-            }
-            if (filtro.getIdRotina() != null) {
-                sb.append(" AND id_rotina=:idRotina");
-                params.put("idRotina", filtro.getIdRotina());
-            }
-            if (page >= 0 && size > 0) {
-                sb.append(" LIMIT :limit OFFSET :offset");
-            }
-            Query query = em.createNativeQuery(sb.toString(), Alimentacao.class);
-            for (Map.Entry<String, Object> e : params.entrySet()) {
-                query.setParameter(e.getKey(), e.getValue());
-            }
-            if (page >= 0 && size > 0) {
-                query.setParameter("limit", size);
-                query.setParameter("offset", page * size);
-            }
-            List<Alimentacao> list = query.getResultList();
-            Logger.info("AlimentacaoDaoNativeImpl.search - sucesso");
-            return list;
-        } finally {
-            em.close();
+        StringBuilder sb = new StringBuilder("SELECT id_alimentacao, status, nome, link, preparo, id_rotina FROM Alimentacao WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (filtro.getStatus() != null) {
+            sb.append(" AND status=?");
+            params.add(filtro.getStatus());
         }
+        if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
+            sb.append(" AND nome=?");
+            params.add(filtro.getNome());
+        }
+        if (filtro.getLink() != null && !filtro.getLink().isEmpty()) {
+            sb.append(" AND link=?");
+            params.add(filtro.getLink());
+        }
+        if (filtro.getVideo() != null) {
+            sb.append(" AND video=?");
+            params.add(filtro.getVideo());
+        }
+        if (filtro.getPreparo() != null && !filtro.getPreparo().isEmpty()) {
+            sb.append(" AND preparo=?");
+            params.add(filtro.getPreparo());
+        }
+        if (filtro.getIdRotina() != null) {
+            sb.append(" AND id_rotina=?");
+            params.add(filtro.getIdRotina());
+        }
+        if (page >= 0 && size > 0) {
+            sb.append(" LIMIT ? OFFSET ?");
+            params.add(size);
+            params.add(page * size);
+        }
+        List<Alimentacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
+            Logger.info("AlimentacaoDaoNativeImpl.search - sucesso");
+        } catch (SQLException e) {
+            Logger.error("AlimentacaoDaoNativeImpl.search - erro", e);
+        }
+        return list;
     }
 }

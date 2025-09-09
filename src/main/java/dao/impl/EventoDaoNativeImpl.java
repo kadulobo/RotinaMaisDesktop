@@ -1,279 +1,363 @@
-// path: src/main/java/dao/impl/EventoDaoNativeImpl.java
 package dao.impl;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import conexao.ConnectionFactory;
 import dao.api.EventoDao;
 import exception.EventoException;
-import infra.EntityManagerUtil;
 import infra.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
+import model.Categoria;
 import model.Evento;
-import org.hibernate.query.NativeQuery;
-import org.hibernate.type.StandardBasicTypes;
+
+import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EventoDaoNativeImpl implements EventoDao {
+    private Evento map(ResultSet rs, boolean withFoto) throws SQLException {
+        Evento e = new Evento();
+        e.setIdEvento(rs.getInt("id_evento"));
+        e.setVantagem((Boolean) rs.getObject("vantagem"));
+        if (withFoto) {
+            e.setFoto(rs.getBytes("foto"));
+        }
+        e.setNome(rs.getString("nome"));
+        e.setDescricao(rs.getString("descricao"));
+        Date dt = rs.getDate("data_criacao");
+        if (dt != null) {
+            e.setDataCriacao(dt.toLocalDate());
+        }
+        Integer idCategoria = (Integer) rs.getObject("id_categoria");
+        if (idCategoria != null) {
+            Categoria c = new Categoria();
+            c.setIdCategoria(idCategoria);
+            e.setCategoria(c);
+        }
+        return e;
+    }
 
     @Override
     public void create(Evento evento) throws EventoException {
         Logger.info("EventoDaoNativeImpl.create - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "INSERT INTO Evento (vantagem, foto, nome, descricao, data_criacao, id_categoria) VALUES (?,?,?,?,?,?)";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "INSERT INTO Evento (vantagem, foto, nome, descricao, data_criacao, id_categoria) " +
-                    "VALUES (:vantagem, :foto, :nome, :descricao, :dataCriacao, CAST(:idCategoria AS INTEGER))";
-            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
-            query.setParameter("vantagem", evento.getVantagem());
-            query.setParameter("foto", evento.getFoto());
-            query.setParameter("nome", evento.getNome());
-            query.setParameter("descricao", evento.getDescricao());
-            query.setParameter("dataCriacao", evento.getDataCriacao());
-            Integer idCategoria = evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null;
-            query.setParameter("idCategoria", idCategoria, StandardBasicTypes.INTEGER);
-            query.executeUpdate();
-            em.getTransaction().commit();
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                if (evento.getVantagem() != null) {
+                    ps.setBoolean(1, evento.getVantagem());
+                } else {
+                    ps.setNull(1, Types.BOOLEAN);
+                }
+                ps.setBytes(2, evento.getFoto());
+                ps.setString(3, evento.getNome());
+                ps.setString(4, evento.getDescricao());
+                if (evento.getDataCriacao() != null) {
+                    ps.setDate(5, Date.valueOf(evento.getDataCriacao()));
+                } else {
+                    ps.setNull(5, Types.DATE);
+                }
+                if (evento.getCategoria() != null && evento.getCategoria().getIdCategoria() != null) {
+                    ps.setInt(6, evento.getCategoria().getIdCategoria());
+                } else {
+                    ps.setNull(6, Types.INTEGER);
+                }
+                ps.executeUpdate();
+            }
+            conn.commit();
             Logger.info("EventoDaoNativeImpl.create - sucesso");
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback create", ex); }
+            }
             Logger.error("EventoDaoNativeImpl.create - erro", e);
             throw new EventoException("Erro ao criar Evento", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Evento update(Evento evento) throws EventoException {
         Logger.info("EventoDaoNativeImpl.update - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "UPDATE Evento SET vantagem=?, foto=?, nome=?, descricao=?, data_criacao=?, id_categoria=? WHERE id_evento=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "UPDATE Evento SET vantagem=:vantagem, foto=:foto, nome=:nome, descricao=:descricao, " +
-                    "data_criacao=:dataCriacao, id_categoria=CAST(:idCategoria AS INTEGER) WHERE id_evento=:id";
-            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
-            query.setParameter("vantagem", evento.getVantagem());
-            query.setParameter("foto", evento.getFoto());
-            query.setParameter("nome", evento.getNome());
-            query.setParameter("descricao", evento.getDescricao());
-            query.setParameter("dataCriacao", evento.getDataCriacao());
-            Integer idCategoria = evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null;
-            query.setParameter("idCategoria", idCategoria, StandardBasicTypes.INTEGER);
-            query.setParameter("id", evento.getIdEvento());
-            int updated = query.executeUpdate();
-            if (updated == 0) {
-                throw new EventoException("Evento não encontrado: id=" + evento.getIdEvento());
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                if (evento.getVantagem() != null) {
+                    ps.setBoolean(1, evento.getVantagem());
+                } else {
+                    ps.setNull(1, Types.BOOLEAN);
+                }
+                ps.setBytes(2, evento.getFoto());
+                ps.setString(3, evento.getNome());
+                ps.setString(4, evento.getDescricao());
+                if (evento.getDataCriacao() != null) {
+                    ps.setDate(5, Date.valueOf(evento.getDataCriacao()));
+                } else {
+                    ps.setNull(5, Types.DATE);
+                }
+                if (evento.getCategoria() != null && evento.getCategoria().getIdCategoria() != null) {
+                    ps.setInt(6, evento.getCategoria().getIdCategoria());
+                } else {
+                    ps.setNull(6, Types.INTEGER);
+                }
+                ps.setInt(7, evento.getIdEvento());
+                int updated = ps.executeUpdate();
+                if (updated == 0) {
+                    throw new EventoException("Evento não encontrado: id=" + evento.getIdEvento());
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("EventoDaoNativeImpl.update - sucesso");
             return findById(evento.getIdEvento());
-        } catch (EventoException e) {
-            em.getTransaction().rollback();
-            Logger.error("EventoDaoNativeImpl.update - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback update", ex); }
+            }
             Logger.error("EventoDaoNativeImpl.update - erro", e);
             throw new EventoException("Erro ao atualizar Evento", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public void deleteById(Integer id) throws EventoException {
         Logger.info("EventoDaoNativeImpl.deleteById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "DELETE FROM Evento WHERE id_evento=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "DELETE FROM Evento WHERE id_evento=:id";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("id", id);
-            int deleted = query.executeUpdate();
-            if (deleted == 0) {
-                throw new EventoException("Evento não encontrado: id=" + id);
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                int deleted = ps.executeUpdate();
+                if (deleted == 0) {
+                    throw new EventoException("Evento não encontrado: id=" + id);
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("EventoDaoNativeImpl.deleteById - sucesso");
-        } catch (EventoException e) {
-            em.getTransaction().rollback();
-            Logger.error("EventoDaoNativeImpl.deleteById - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback delete", ex); }
+            }
             Logger.error("EventoDaoNativeImpl.deleteById - erro", e);
             throw new EventoException("Erro ao deletar Evento", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Evento findById(Integer id) throws EventoException {
         Logger.info("EventoDaoNativeImpl.findById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=:id";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("id", id);
-            Evento e = (Evento) query.getSingleResult();
-            Logger.info("EventoDaoNativeImpl.findById - sucesso");
-            return e;
-        } catch (Exception e) {
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("EventoDaoNativeImpl.findById - sucesso");
+                    return map(rs, false);
+                }
+            }
+            throw new EventoException("Evento não encontrado: id=" + id);
+        } catch (SQLException e) {
             Logger.error("EventoDaoNativeImpl.findById - erro", e);
             throw new EventoException("Evento não encontrado: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public Evento findWithBlobsById(Integer id) throws EventoException {
         Logger.info("EventoDaoNativeImpl.findWithBlobsById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=:id";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("id", id);
-            Evento e = (Evento) query.getSingleResult();
-            Logger.info("EventoDaoNativeImpl.findWithBlobsById - sucesso");
-            return e;
-        } catch (Exception e) {
+        String sql = "SELECT id_evento, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("EventoDaoNativeImpl.findWithBlobsById - sucesso");
+                    return map(rs, true);
+                }
+            }
+            throw new EventoException("Evento não encontrado: id=" + id);
+        } catch (SQLException e) {
             Logger.error("EventoDaoNativeImpl.findWithBlobsById - erro", e);
             throw new EventoException("Evento não encontrado: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public List<Evento> findAll() {
         Logger.info("EventoDaoNativeImpl.findAll - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(map(rs, false));
+            }
             Logger.info("EventoDaoNativeImpl.findAll - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findAll - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Evento> findAll(int page, int size) {
         Logger.info("EventoDaoNativeImpl.findAll(page) - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento LIMIT :limit OFFSET :offset";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("limit", size);
-            query.setParameter("offset", page * size);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento LIMIT ? OFFSET ?";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, size);
+            ps.setInt(2, page * size);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("EventoDaoNativeImpl.findAll(page) - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findAll(page) - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Evento> findByVantagem(Boolean vantagem) {
         Logger.info("EventoDaoNativeImpl.findByVantagem - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE vantagem=:vantagem";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("vantagem", vantagem);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE vantagem=?";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            if (vantagem != null) {
+                ps.setBoolean(1, vantagem);
+            } else {
+                ps.setNull(1, Types.BOOLEAN);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("EventoDaoNativeImpl.findByVantagem - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findByVantagem - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Evento> findByFoto(byte[] foto) {
         Logger.info("EventoDaoNativeImpl.findByFoto - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE foto=:foto";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("foto", foto);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE foto=?";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBytes(1, foto);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, true));
+                }
+            }
             Logger.info("EventoDaoNativeImpl.findByFoto - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findByFoto - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Evento> findByNome(String nome) {
         Logger.info("EventoDaoNativeImpl.findByNome - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE nome=:nome";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("nome", nome);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE nome=?";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nome);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("EventoDaoNativeImpl.findByNome - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findByNome - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Evento> findByDescricao(String descricao) {
         Logger.info("EventoDaoNativeImpl.findByDescricao - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE descricao=:descricao";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("descricao", descricao);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE descricao=?";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, descricao);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("EventoDaoNativeImpl.findByDescricao - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findByDescricao - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Evento> findByDataCriacao(java.time.LocalDate dataCriacao) {
         Logger.info("EventoDaoNativeImpl.findByDataCriacao - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE data_criacao=:dataCriacao";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("dataCriacao", dataCriacao);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE data_criacao=?";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setDate(1, Date.valueOf(dataCriacao));
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("EventoDaoNativeImpl.findByDataCriacao - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findByDataCriacao - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Evento> findByIdCategoria(Integer idCategoria) {
         Logger.info("EventoDaoNativeImpl.findByIdCategoria - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_categoria=:idCategoria";
-            Query query = em.createNativeQuery(sql, Evento.class);
-            query.setParameter("idCategoria", idCategoria);
-            List<Evento> list = query.getResultList();
+        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_categoria=?";
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idCategoria);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
             Logger.info("EventoDaoNativeImpl.findByIdCategoria - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.findByIdCategoria - erro", e);
         }
+        return list;
     }
 
     @Override
@@ -284,46 +368,48 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> search(Evento filtro, int page, int size) {
         Logger.info("EventoDaoNativeImpl.search - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            StringBuilder sb = new StringBuilder("SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE 1=1");
-            Map<String, Object> params = new HashMap<>();
-            if (filtro.getVantagem() != null) {
-                sb.append(" AND vantagem=:vantagem");
-                params.put("vantagem", filtro.getVantagem());
-            }
-            if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
-                sb.append(" AND nome=:nome");
-                params.put("nome", filtro.getNome());
-            }
-            if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
-                sb.append(" AND descricao=:descricao");
-                params.put("descricao", filtro.getDescricao());
-            }
-            if (filtro.getDataCriacao() != null) {
-                sb.append(" AND data_criacao=:dataCriacao");
-                params.put("dataCriacao", filtro.getDataCriacao());
-            }
-            if (filtro.getCategoria() != null && filtro.getCategoria().getIdCategoria() != null) {
-                sb.append(" AND id_categoria=:idCategoria");
-                params.put("idCategoria", filtro.getCategoria().getIdCategoria());
-            }
-            if (page >= 0 && size > 0) {
-                sb.append(" LIMIT :limit OFFSET :offset");
-            }
-            Query query = em.createNativeQuery(sb.toString(), Evento.class);
-            for (Map.Entry<String, Object> e : params.entrySet()) {
-                query.setParameter(e.getKey(), e.getValue());
-            }
-            if (page >= 0 && size > 0) {
-                query.setParameter("limit", size);
-                query.setParameter("offset", page * size);
-            }
-            List<Evento> list = query.getResultList();
-            Logger.info("EventoDaoNativeImpl.search - sucesso");
-            return list;
-        } finally {
-            em.close();
+        StringBuilder sb = new StringBuilder("SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (filtro.getVantagem() != null) {
+            sb.append(" AND vantagem=?");
+            params.add(filtro.getVantagem());
         }
+        if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
+            sb.append(" AND nome=?");
+            params.add(filtro.getNome());
+        }
+        if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
+            sb.append(" AND descricao=?");
+            params.add(filtro.getDescricao());
+        }
+        if (filtro.getDataCriacao() != null) {
+            sb.append(" AND data_criacao=?");
+            params.add(Date.valueOf(filtro.getDataCriacao()));
+        }
+        if (filtro.getCategoria() != null && filtro.getCategoria().getIdCategoria() != null) {
+            sb.append(" AND id_categoria=?");
+            params.add(filtro.getCategoria().getIdCategoria());
+        }
+        if (page >= 0 && size > 0) {
+            sb.append(" LIMIT ? OFFSET ?");
+            params.add(size);
+            params.add(page * size);
+        }
+        List<Evento> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs, false));
+                }
+            }
+            Logger.info("EventoDaoNativeImpl.search - sucesso");
+        } catch (SQLException e) {
+            Logger.error("EventoDaoNativeImpl.search - erro", e);
+        }
+        return list;
     }
 }
