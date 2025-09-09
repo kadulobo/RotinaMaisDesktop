@@ -63,7 +63,7 @@ public class IngredienteFornecedor {
                 ", valor=" + valor +
                 ", data=" + data +
                 ", idFornecedor=" + idFornecedor +
-                ", idIngrediente=" + idIngrediente
+                ", idIngrediente=" + idIngrediente +
                 '}';
     }
 }

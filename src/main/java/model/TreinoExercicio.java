@@ -77,7 +77,7 @@ public class TreinoExercicio {
                 ", ordem=" + ordem +
                 ", feito=" + feito +
                 ", idExercicio=" + idExercicio +
-                ", idTreino=" + idTreino
+                ", idTreino=" + idTreino +
                 '}';
     }
 }

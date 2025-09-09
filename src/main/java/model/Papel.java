@@ -54,7 +54,7 @@ public class Papel {
                 "idPapel=" + idPapel +
                 ", codigo=" + codigo +
                 ", tipo=" + tipo +
-                ", vencimento=" + vencimento
+                ", vencimento=" + vencimento +
                 '}';
     }
 }

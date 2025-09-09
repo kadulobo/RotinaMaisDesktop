@@ -183,7 +183,7 @@ public class Operacao {
                 ", tet=" + tet +
                 ", total=" + total +
                 ", idCarteira=" + idCarteira +
-                ", idPapel=" + idPapel
+                ", idPapel=" + idPapel +
                 '}';
     }
 }

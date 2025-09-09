@@ -54,7 +54,7 @@ public class MonitoramentoObjeto {
                 "idMonitoramentoObjeto=" + idMonitoramentoObjeto +
                 ", data=" + data +
                 ", idMonitoramento=" + idMonitoramento +
-                ", idObjeto=" + idObjeto
+                ", idObjeto=" + idObjeto +
                 '}';
     }
 }

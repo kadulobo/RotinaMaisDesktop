@@ -1,11 +1,11 @@
 package controller;
 
+import java.util.List;
+
 import dao.api.AlimentacaoIngredienteDao;
 import exception.AlimentacaoIngredienteException;
 import infra.Logger;
 import model.AlimentacaoIngrediente;
-
-import java.util.List;
 
 public class AlimentacaoIngredienteController {
     private final {dao} dao;

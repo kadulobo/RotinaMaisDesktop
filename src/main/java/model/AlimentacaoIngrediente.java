@@ -53,7 +53,7 @@ public class AlimentacaoIngrediente {
                 "idAlimentacaoIngrediente=" + idAlimentacaoIngrediente +
                 ", quantidade=" + quantidade +
                 ", idAlimentacao=" + idAlimentacao +
-                ", idIngrediente=" + idIngrediente
+                ", idIngrediente=" + idIngrediente +
                 '}';
     }
 }

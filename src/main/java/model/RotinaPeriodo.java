@@ -45,7 +45,7 @@ public class RotinaPeriodo {
         return "RotinaPeriodo{" +
                 "idRotinaPeriodo=" + idRotinaPeriodo +
                 ", idRotina=" + idRotina +
-                ", idPeriodo=" + idPeriodo
+                ", idPeriodo=" + idPeriodo +
                 '}';
     }
 }

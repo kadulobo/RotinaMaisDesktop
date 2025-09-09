@@ -62,7 +62,7 @@ public class Carteira {
                 ", nome=" + nome +
                 ", tipo=" + tipo +
                 ", dataInicio=" + dataInicio +
-                ", idUsuario=" + idUsuario
+                ", idUsuario=" + idUsuario +
                 '}';
     }
 }

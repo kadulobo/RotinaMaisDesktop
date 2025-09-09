@@ -45,7 +45,7 @@ public class SiteObjeto {
         return "SiteObjeto{" +
                 "idSiteObjeto=" + idSiteObjeto +
                 ", idSite=" + idSite +
-                ", idObjeto=" + idObjeto
+                ", idObjeto=" + idObjeto +
                 '}';
     }
 }
