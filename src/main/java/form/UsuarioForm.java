@@ -1,18 +1,16 @@
 package form;
 
-import dialog.Message;
-import javax.swing.ImageIcon;
-import main.Main;
-import model.ModelStudent;
-import swing.table.EventAction;
+import controller.UsuarioController;
+import dao.impl.UsuarioDaoNativeImpl;
+import java.util.List;
+import model.Usuario;
 
 /**
- * Form shown when clicking the "Buttons" menu. Displays a table using the same
- * layout as the home form but fills the entire panel.
+ * Form that lists usuarios fetched from the database.
  */
-public class Form1 extends javax.swing.JPanel {
+public class UsuarioForm extends javax.swing.JPanel {
 
-    public Form1() {
+    public UsuarioForm() {
         initComponents();
         table1.fixTable(jScrollPane1);
         setOpaque(false);
@@ -20,40 +18,11 @@ public class Form1 extends javax.swing.JPanel {
     }
 
     private void initData() {
-        EventAction eventAction = new EventAction() {
-            @Override
-            public void delete(ModelStudent student) {
-                if (showMessage("Delete Student : " + student.getName())) {
-                    System.out.println("User click OK");
-                } else {
-                    System.out.println("User click Cancel");
-                }
-            }
-
-            @Override
-            public void update(ModelStudent student) {
-                if (showMessage("Update Student : " + student.getName())) {
-                    System.out.println("User click OK");
-                } else {
-                    System.out.println("User click Cancel");
-                }
-            }
-        };
-
-        table1.addRow(new ModelStudent(new ImageIcon(getClass().getResource("/icon/profile.jpg")),
-                "Jonh", "Male", "Java", 300).toRowTable(eventAction));
-        table1.addRow(new ModelStudent(new ImageIcon(getClass().getResource("/icon/profile1.jpg")),
-                "Dara", "Male", "C++", 300).toRowTable(eventAction));
-        table1.addRow(new ModelStudent(new ImageIcon(getClass().getResource("/icon/profile2.jpg")),
-                "Bora", "Male", "C#", 300).toRowTable(eventAction));
-        table1.addRow(new ModelStudent(new ImageIcon(getClass().getResource("/icon/profile2.jpg")),
-                "Bora", "Male", "C#", 300).toRowTable(eventAction));
-    }
-
-    private boolean showMessage(String message) {
-        Message obj = new Message(Main.getFrames()[0], true);
-        obj.showMessage(message);
-        return obj.isOk();
+        UsuarioController controller = new UsuarioController(new UsuarioDaoNativeImpl());
+        List<Usuario> usuarios = controller.listar();
+        for (Usuario u : usuarios) {
+            table1.addRow(new Object[]{u.getIdUsuario(), u.getNome(), u.getEmail(), u.getCpf()});
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -66,7 +35,7 @@ public class Form1 extends javax.swing.JPanel {
 
         jLabel1.setFont(new java.awt.Font("sansserif", 1, 15)); // NOI18N
         jLabel1.setForeground(new java.awt.Color(76, 76, 76));
-        jLabel1.setText("Data Buttons");
+        jLabel1.setText("Lista de Usuarios");
         jLabel1.setBorder(javax.swing.BorderFactory.createEmptyBorder(1, 10, 1, 1));
 
         table1.setModel(new javax.swing.table.DefaultTableModel(
@@ -74,11 +43,11 @@ public class Form1 extends javax.swing.JPanel {
 
             },
             new String [] {
-                "Name", "Gender", "Course", "Fees", "Action"
+                "ID", "Nome", "Email", "CPF"
             }
         ) {
             boolean[] canEdit = new boolean [] {
-                false, false, false, false, true
+                false, false, false, false
             };
 
             public boolean isCellEditable(int rowIndex, int columnIndex) {
@@ -87,7 +56,8 @@ public class Form1 extends javax.swing.JPanel {
         });
         jScrollPane1.setViewportView(table1);
         if (table1.getColumnModel().getColumnCount() > 0) {
-            table1.getColumnModel().getColumn(0).setPreferredWidth(150);
+            table1.getColumnModel().getColumn(0).setPreferredWidth(50);
+            table1.getColumnModel().getColumn(1).setPreferredWidth(150);
         }
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(this);
