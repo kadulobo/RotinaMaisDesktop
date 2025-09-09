@@ -4,3 +4,4 @@ RotinaMaisDesktop (estrutura completa)
 - Utilitário de ícones: swing.icon.Icones (PNG/JPG em /resources/icon + fallback Material Icons).
 - Coloque seus PNGs/JPGs de ícones em: src/main/resources/icon/
 - Coloque TimingFramework-0.55.jar em: libs/TimingFramework-0.55.jar (ou ajuste o pom.xml).
+- Exemplos de entidades JPA e DAOs nativos adicionados para Monitoramento, Alimentacao, Treino, Objeto, Site, Caixa e Periodo.
