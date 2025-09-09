@@ -24,6 +24,9 @@ public class CategoriaControllerTest {
         categoria.setNome("Saúde");
         categoria.setDescricao("Itens de saúde");
         categoria.setDataCriacao(LocalDate.now());
+        // Exemplo simples de conteúdo binário para a foto
+        byte[] foto = {1, 2, 3, 4};
+        categoria.setFoto(foto);
         controller.criar(categoria);
 
         // Atualizar categoria
@@ -36,6 +39,7 @@ public class CategoriaControllerTest {
         controller.listar(0, 10);
         controller.buscarPorNome("Saúde");
         controller.buscarPorDescricao("Itens");
+        controller.buscarPorFoto(foto);
         controller.buscarPorDataCriacao(LocalDate.now());
         controller.pesquisar(categoria);
         controller.pesquisar(categoria, 0, 10);
