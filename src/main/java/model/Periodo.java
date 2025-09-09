@@ -1,11 +1,14 @@
 // path: src/main/java/model/Periodo.java
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -21,6 +24,9 @@ public class Periodo {
 
     @Column(name = "mes")
     private Integer mes;
+
+    @OneToMany(mappedBy = "periodo")
+    private List<Movimentacao> movimentacoes = new ArrayList<>();
 
     public Integer getIdPeriodo() {
         return idPeriodo;
@@ -44,6 +50,14 @@ public class Periodo {
 
     public void setMes(Integer mes) {
         this.mes = mes;
+    }
+
+    public List<Movimentacao> getMovimentacoes() {
+        return movimentacoes;
+    }
+
+    public void setMovimentacoes(List<Movimentacao> movimentacoes) {
+        this.movimentacoes = movimentacoes;
     }
 
     @Override

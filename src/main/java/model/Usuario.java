@@ -1,12 +1,15 @@
 // path: src/main/java/model/Usuario.java
 package model;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -29,6 +32,12 @@ public class Usuario {
 
     @Column(name = "email")
     private String email;
+
+    @OneToMany(mappedBy = "usuario")
+    private List<Movimentacao> movimentacoes = new ArrayList<>();
+
+    @OneToMany(mappedBy = "usuario")
+    private List<Caixa> caixas = new ArrayList<>();
 
     public Integer getIdUsuario() {
         return idUsuario;
@@ -68,6 +77,22 @@ public class Usuario {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public List<Movimentacao> getMovimentacoes() {
+        return movimentacoes;
+    }
+
+    public void setMovimentacoes(List<Movimentacao> movimentacoes) {
+        this.movimentacoes = movimentacoes;
+    }
+
+    public List<Caixa> getCaixas() {
+        return caixas;
+    }
+
+    public void setCaixas(List<Caixa> caixas) {
+        this.caixas = caixas;
     }
 
     @Override

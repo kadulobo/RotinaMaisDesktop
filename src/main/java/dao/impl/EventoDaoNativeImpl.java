@@ -30,7 +30,7 @@ public class EventoDaoNativeImpl implements EventoDao {
             query.setParameter("nome", evento.getNome());
             query.setParameter("descricao", evento.getDescricao());
             query.setParameter("dataCriacao", evento.getDataCriacao());
-            query.setParameter("idCategoria", evento.getIdCategoria());
+            query.setParameter("idCategoria", evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("EventoDaoNativeImpl.create - sucesso");
@@ -57,7 +57,7 @@ public class EventoDaoNativeImpl implements EventoDao {
             query.setParameter("nome", evento.getNome());
             query.setParameter("descricao", evento.getDescricao());
             query.setParameter("dataCriacao", evento.getDataCriacao());
-            query.setParameter("idCategoria", evento.getIdCategoria());
+            query.setParameter("idCategoria", evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null);
             query.setParameter("id", evento.getIdEvento());
             int updated = query.executeUpdate();
             if (updated == 0) {
@@ -301,9 +301,9 @@ public class EventoDaoNativeImpl implements EventoDao {
                 sb.append(" AND data_criacao=:dataCriacao");
                 params.put("dataCriacao", filtro.getDataCriacao());
             }
-            if (filtro.getIdCategoria() != null) {
+            if (filtro.getCategoria() != null && filtro.getCategoria().getIdCategoria() != null) {
                 sb.append(" AND id_categoria=:idCategoria");
-                params.put("idCategoria", filtro.getIdCategoria());
+                params.put("idCategoria", filtro.getCategoria().getIdCategoria());
             }
             if (page >= 0 && size > 0) {
                 sb.append(" LIMIT :limit OFFSET :offset");

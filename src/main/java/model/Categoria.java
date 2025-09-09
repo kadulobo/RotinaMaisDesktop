@@ -2,12 +2,15 @@
 package model;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Lob;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -30,6 +33,9 @@ public class Categoria {
 
     @Column(name = "data_criacao")
     private LocalDate dataCriacao;
+
+    @OneToMany(mappedBy = "categoria")
+    private List<Evento> eventos = new ArrayList<>();
 
     public Integer getIdCategoria() {
         return idCategoria;
@@ -69,6 +75,14 @@ public class Categoria {
 
     public void setDataCriacao(LocalDate dataCriacao) {
         this.dataCriacao = dataCriacao;
+    }
+
+    public List<Evento> getEventos() {
+        return eventos;
+    }
+
+    public void setEventos(List<Evento> eventos) {
+        this.eventos = eventos;
     }
 
     @Override

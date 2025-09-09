@@ -2,11 +2,17 @@
 package model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -35,14 +41,20 @@ public class Movimentacao {
     @Column(name = "ponto")
     private Integer ponto;
 
-    @Column(name = "id_usuario")
-    private Integer idUsuario;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
 
-    @Column(name = "id_caixa")
-    private Integer idCaixa;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_caixa")
+    private Caixa caixa;
 
-    @Column(name = "id_periodo")
-    private Integer idPeriodo;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_periodo")
+    private Periodo periodo;
+
+    @OneToMany(mappedBy = "movimentacao")
+    private List<Lancamento> lancamentos = new ArrayList<>();
 
     public Integer getIdMovimentacao() {
         return idMovimentacao;
@@ -100,28 +112,36 @@ public class Movimentacao {
         this.ponto = ponto;
     }
 
-    public Integer getIdUsuario() {
-        return idUsuario;
+    public Usuario getUsuario() {
+        return usuario;
     }
 
-    public void setIdUsuario(Integer idUsuario) {
-        this.idUsuario = idUsuario;
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
     }
 
-    public Integer getIdCaixa() {
-        return idCaixa;
+    public Caixa getCaixa() {
+        return caixa;
     }
 
-    public void setIdCaixa(Integer idCaixa) {
-        this.idCaixa = idCaixa;
+    public void setCaixa(Caixa caixa) {
+        this.caixa = caixa;
     }
 
-    public Integer getIdPeriodo() {
-        return idPeriodo;
+    public Periodo getPeriodo() {
+        return periodo;
     }
 
-    public void setIdPeriodo(Integer idPeriodo) {
-        this.idPeriodo = idPeriodo;
+    public void setPeriodo(Periodo periodo) {
+        this.periodo = periodo;
+    }
+
+    public List<Lancamento> getLancamentos() {
+        return lancamentos;
+    }
+
+    public void setLancamentos(List<Lancamento> lancamentos) {
+        this.lancamentos = lancamentos;
     }
 
     @Override
@@ -147,9 +167,9 @@ public class Movimentacao {
                 ", tipo=" + tipo +
                 ", status=" + status +
                 ", ponto=" + ponto +
-                ", idUsuario=" + idUsuario +
-                ", idCaixa=" + idCaixa +
-                ", idPeriodo=" + idPeriodo +
+                ", usuario=" + usuario +
+                ", caixa=" + caixa +
+                ", periodo=" + periodo +
                 '}';
     }
 }

@@ -29,7 +29,7 @@ public class CaixaDaoNativeImpl implements CaixaDao {
             query.setParameter("reserva", caixa.getReservaEmergencia());
             query.setParameter("salario", caixa.getSalarioMedio());
             query.setParameter("valor", caixa.getValorTotal());
-            query.setParameter("idUsuario", caixa.getIdUsuario());
+            query.setParameter("idUsuario", caixa.getUsuario() != null ? caixa.getUsuario().getIdUsuario() : null);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("CaixaDaoNativeImpl.create - sucesso");
@@ -54,7 +54,7 @@ public class CaixaDaoNativeImpl implements CaixaDao {
             query.setParameter("reserva", caixa.getReservaEmergencia());
             query.setParameter("salario", caixa.getSalarioMedio());
             query.setParameter("valor", caixa.getValorTotal());
-            query.setParameter("idUsuario", caixa.getIdUsuario());
+            query.setParameter("idUsuario", caixa.getUsuario() != null ? caixa.getUsuario().getIdUsuario() : null);
             query.setParameter("id", caixa.getIdCaixa());
             int updated = query.executeUpdate();
             if (updated == 0) {
@@ -263,9 +263,9 @@ public class CaixaDaoNativeImpl implements CaixaDao {
                 sb.append(" AND valor_total=:valor");
                 params.put("valor", filtro.getValorTotal());
             }
-            if (filtro.getIdUsuario() != null) {
+            if (filtro.getUsuario() != null && filtro.getUsuario().getIdUsuario() != null) {
                 sb.append(" AND id_usuario=:idUsuario");
-                params.put("idUsuario", filtro.getIdUsuario());
+                params.put("idUsuario", filtro.getUsuario().getIdUsuario());
             }
             if (page >= 0 && size > 0) {
                 sb.append(" LIMIT :limit OFFSET :offset");

@@ -29,8 +29,8 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
             query.setParameter("fixo", lancamento.getFixo());
             query.setParameter("dataPagamento", lancamento.getDataPagamento());
             query.setParameter("status", lancamento.getStatus());
-            query.setParameter("idMovimentacao", lancamento.getIdMovimentacao());
-            query.setParameter("idEvento", lancamento.getIdEvento());
+            query.setParameter("idMovimentacao", lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null);
+            query.setParameter("idEvento", lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("LancamentoDaoNativeImpl.create - sucesso");
@@ -56,8 +56,8 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
             query.setParameter("fixo", lancamento.getFixo());
             query.setParameter("dataPagamento", lancamento.getDataPagamento());
             query.setParameter("status", lancamento.getStatus());
-            query.setParameter("idMovimentacao", lancamento.getIdMovimentacao());
-            query.setParameter("idEvento", lancamento.getIdEvento());
+            query.setParameter("idMovimentacao", lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null);
+            query.setParameter("idEvento", lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null);
             query.setParameter("id", lancamento.getIdLancamento());
             int updated = query.executeUpdate();
             if (updated == 0) {
@@ -282,13 +282,13 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
                 sb.append(" AND status=:status");
                 params.put("status", filtro.getStatus());
             }
-            if (filtro.getIdMovimentacao() != null) {
+            if (filtro.getMovimentacao() != null && filtro.getMovimentacao().getIdMovimentacao() != null) {
                 sb.append(" AND id_movimentacao=:idMovimentacao");
-                params.put("idMovimentacao", filtro.getIdMovimentacao());
+                params.put("idMovimentacao", filtro.getMovimentacao().getIdMovimentacao());
             }
-            if (filtro.getIdEvento() != null) {
+            if (filtro.getEvento() != null && filtro.getEvento().getIdEvento() != null) {
                 sb.append(" AND id_evento=:idEvento");
-                params.put("idEvento", filtro.getIdEvento());
+                params.put("idEvento", filtro.getEvento().getIdEvento());
             }
             if (page >= 0 && size > 0) {
                 sb.append(" LIMIT :limit OFFSET :offset");
