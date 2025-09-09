@@ -4,10 +4,18 @@ import infra.EntityManagerUtil;
 import infra.Logger;
 import jakarta.persistence.EntityManager;
 
+import java.io.InputStream;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.Map;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NodeList;
 
 /**
  * Factory responsible for creating JDBC connections based on the
@@ -32,7 +40,11 @@ public final class ConnectionFactory {
         }
         URL = (String) props.get("jakarta.persistence.jdbc.url");
         USER = (String) props.get("jakarta.persistence.jdbc.user");
-        PASSWORD = (String) props.get("jakarta.persistence.jdbc.password");
+        String pwd = (String) props.get("jakarta.persistence.jdbc.password");
+        if ("****".equals(pwd)) {
+            pwd = loadPasswordFromPersistenceXml();
+        }
+        PASSWORD = pwd;
         DRIVER = (String) props.get("jakarta.persistence.jdbc.driver");
         try {
             Class.forName(DRIVER);
@@ -43,6 +55,29 @@ public final class ConnectionFactory {
     }
 
     private ConnectionFactory() {
+    }
+
+    private static String loadPasswordFromPersistenceXml() {
+        try (InputStream in = ConnectionFactory.class.getClassLoader()
+                .getResourceAsStream("META-INF/persistence.xml")) {
+            if (in == null) {
+                Logger.error("Arquivo persistence.xml não encontrado", null);
+                return null;
+            }
+            DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
+            DocumentBuilder db = dbf.newDocumentBuilder();
+            Document doc = db.parse(in);
+            NodeList props = doc.getElementsByTagName("property");
+            for (int i = 0; i < props.getLength(); i++) {
+                Element el = (Element) props.item(i);
+                if ("jakarta.persistence.jdbc.password".equals(el.getAttribute("name"))) {
+                    return el.getAttribute("value");
+                }
+            }
+        } catch (Exception e) {
+            Logger.error("Erro ao carregar a senha do persistence.xml", e);
+        }
+        return null;
     }
 
     public static Connection getConnection() throws SQLException {
