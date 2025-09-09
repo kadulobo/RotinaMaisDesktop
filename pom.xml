@@ -9,12 +9,12 @@
   <name>RotinaMaisDesktop</name>
 
   <properties>
-    <!-- Compilar com Java 17 para compatibilidade com dependências -->
-    <maven.compiler.release>17</maven.compiler.release>
+    <!-- Compilar com Java 8 para garantir compatibilidade com as bibliotecas -->
+    <maven.compiler.release>8</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-       <!-- versões estáveis -->
-    <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
-    <hibernate.version>6.6.6.Final</hibernate.version>
+    <!-- versões estáveis compatíveis com Java 8 -->
+    <jpa.version>2.2</jpa.version>
+    <hibernate.version>5.6.15.Final</hibernate.version>
     <postgres.version>42.7.7</postgres.version>
   </properties>
 
@@ -26,16 +26,16 @@
       <version>5.3</version>
     </dependency>
 
-  <!-- API JPA (Jakarta) -->
+    <!-- API JPA -->
     <dependency>
-      <groupId>jakarta.persistence</groupId>
-      <artifactId>jakarta.persistence-api</artifactId>
-      <version>${jakarta.persistence.version}</version>
+      <groupId>javax.persistence</groupId>
+      <artifactId>javax.persistence-api</artifactId>
+      <version>${jpa.version}</version>
     </dependency>
 
     <!-- Implementação: Hibernate ORM -->
     <dependency>
-      <groupId>org.hibernate.orm</groupId>
+      <groupId>org.hibernate</groupId>
       <artifactId>hibernate-core</artifactId>
       <version>${hibernate.version}</version>
     </dependency>

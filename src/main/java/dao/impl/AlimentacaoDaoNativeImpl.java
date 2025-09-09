@@ -9,8 +9,8 @@ import dao.api.AlimentacaoDao;
 import exception.AlimentacaoException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Alimentacao;
 
 public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {

@@ -9,8 +9,8 @@ import dao.api.SiteDao;
 import exception.SiteException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Site;
 
 public class SiteDaoNativeImpl implements SiteDao {

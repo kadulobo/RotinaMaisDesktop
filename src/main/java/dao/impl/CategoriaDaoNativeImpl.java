@@ -10,8 +10,8 @@ import dao.api.CategoriaDao;
 import exception.CategoriaException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Categoria;
 
 public class CategoriaDaoNativeImpl implements CategoriaDao {

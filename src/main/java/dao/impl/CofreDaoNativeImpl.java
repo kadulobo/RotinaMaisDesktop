@@ -4,8 +4,8 @@ import dao.api.CofreDao;
 import exception.CofreException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Cofre;
 
 import java.util.List;
