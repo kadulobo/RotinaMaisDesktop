@@ -9,8 +9,8 @@
   <name>RotinaMaisDesktop</name>
 
   <properties>
-    <!-- Java 8 conforme seu JRE no projeto -->
-    <maven.compiler.release>8</maven.compiler.release>
+    <!-- Compilar com Java 17 para compatibilidade com dependências -->
+    <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
        <!-- versões estáveis -->
     <jakarta.persistence.version>3.1.0</jakarta.persistence.version>
@@ -52,6 +52,14 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <release>${maven.compiler.release}</release>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>

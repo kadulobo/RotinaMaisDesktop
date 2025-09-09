@@ -1,5 +1,7 @@
 RotinaMaisDesktop (estrutura completa)
 =====================================
+Requer **Java 17** ou superior para compilar e executar, devido às
+dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Código refatorado em PT-BR (component, swing, evento, model, dialog, form, main).
 - Utilitário de ícones: swing.icon.Icones (PNG/JPG em /resources/icon + fallback Material Icons).
 - Coloque seus PNGs/JPGs de ícones em: src/main/resources/icon/
