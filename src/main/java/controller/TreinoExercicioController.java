@@ -13,7 +13,7 @@ public class TreinoExercicioController {
     public TreinoExercicioController(TreinoExercicioDao dao) { this.dao = dao; }
 
     public void criar(TreinoExercicio e) {
-        if (e == null || e.getIdTreinoExercicio() == null) throw new TreinoExercicioException("Id obrigatorio");
+        if (e == null) throw new TreinoExercicioException("TreinoExercicio não pode ser nulo");
         if (e.getQtdRepeticao() == null) throw new TreinoExercicioException("qtdRepeticao obrigatorio");
         if (e.getTempoDescanso() == null || e.getTempoDescanso().isEmpty()) throw new TreinoExercicioException("tempoDescanso obrigatorio");
         if (e.getOrdem() == null) throw new TreinoExercicioException("ordem obrigatorio");

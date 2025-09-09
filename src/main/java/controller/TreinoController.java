@@ -21,9 +21,6 @@ public class TreinoController {
         if (treino == null) {
             throw new TreinoException("Treino não pode ser nulo");
         }
-        if (treino.getIdTreino() == null) {
-            throw new TreinoException("Id do Treino é obrigatório");
-        }
         if (treino.getNome() == null || treino.getNome().isEmpty()) {
             throw new TreinoException("Nome do Treino é obrigatório");
         }

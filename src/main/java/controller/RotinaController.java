@@ -22,9 +22,6 @@ public class RotinaController {
         if (rotina == null) {
             throw new RotinaException("Rotina não pode ser nula");
         }
-        if (rotina.getIdRotina() == null) {
-            throw new RotinaException("Id da Rotina é obrigatório");
-        }
         if (rotina.getNome() == null || rotina.getNome().isEmpty()) {
             throw new RotinaException("Nome da Rotina é obrigatório");
         }

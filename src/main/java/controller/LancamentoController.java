@@ -23,9 +23,6 @@ public class LancamentoController {
         if (lancamento == null) {
             throw new LancamentoException("Lancamento não pode ser nulo");
         }
-        if (lancamento.getIdLancamento() == null) {
-            throw new LancamentoException("Id do Lancamento é obrigatório");
-        }
         if (lancamento.getValor() == null) {
             throw new LancamentoException("Valor do Lancamento é obrigatório");
         }

@@ -22,9 +22,6 @@ public class CaixaController {
         if (caixa == null) {
             throw new CaixaException("Caixa não pode ser nula");
         }
-        if (caixa.getIdCaixa() == null) {
-            throw new CaixaException("Id da Caixa é obrigatório");
-        }
         if (caixa.getNome() == null || caixa.getNome().isEmpty()) {
             throw new CaixaException("Nome da Caixa é obrigatório");
         }

@@ -21,9 +21,6 @@ public class MonitoramentoController {
         if (monitoramento == null) {
             throw new MonitoramentoException("Monitoramento não pode ser nulo");
         }
-        if (monitoramento.getIdMonitoramento() == null) {
-            throw new MonitoramentoException("Id do Monitoramento é obrigatório");
-        }
         if (monitoramento.getNome() == null || monitoramento.getNome().isEmpty()) {
             throw new MonitoramentoException("Nome do Monitoramento é obrigatório");
         }

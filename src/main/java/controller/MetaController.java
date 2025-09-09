@@ -13,7 +13,7 @@ public class MetaController {
     public MetaController(MetaDao dao) { this.dao = dao; }
 
     public void criar(Meta meta) {
-        if (meta == null || meta.getIdMeta() == null) throw new MetaException("Id obrigatorio");
+        if (meta == null) throw new MetaException("Meta não pode ser nula");
         Logger.info("MetaController.criar");
         dao.create(meta);
     }

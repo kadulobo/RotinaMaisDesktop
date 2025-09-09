@@ -14,7 +14,7 @@ public class PapelController {
     public PapelController(PapelDao dao) { this.dao = dao; }
 
     public void criar(Papel e) {
-        if (e == null || e.getIdPapel() == null) throw new PapelException("Id obrigatorio");
+        if (e == null) throw new PapelException("Papel não pode ser nulo");
         if (e.getCodigo() == null || e.getCodigo().isEmpty()) throw new PapelException("codigo obrigatorio");
         if (e.getTipo() == null || e.getTipo().isEmpty()) throw new PapelException("tipo obrigatorio");
         if (e.getVencimento() == null) throw new PapelException("vencimento obrigatorio");

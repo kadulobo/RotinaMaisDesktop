@@ -22,9 +22,6 @@ public class CategoriaController {
         if (categoria == null) {
             throw new CategoriaException("Categoria não pode ser nula");
         }
-        if (categoria.getIdCategoria() == null) {
-            throw new CategoriaException("Id da Categoria é obrigatório");
-        }
         if (categoria.getNome() == null || categoria.getNome().isEmpty()) {
             throw new CategoriaException("Nome da Categoria é obrigatório");
         }

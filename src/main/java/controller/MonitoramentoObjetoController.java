@@ -14,7 +14,7 @@ public class MonitoramentoObjetoController {
     public MonitoramentoObjetoController(MonitoramentoObjetoDao dao) { this.dao = dao; }
 
     public void criar(MonitoramentoObjeto e) {
-        if (e == null || e.getIdMonitoramentoObjeto() == null) throw new MonitoramentoObjetoException("Id obrigatorio");
+        if (e == null) throw new MonitoramentoObjetoException("MonitoramentoObjeto não pode ser nulo");
         if (e.getData() == null) throw new MonitoramentoObjetoException("data obrigatorio");
         if (e.getIdMonitoramento() == null) throw new MonitoramentoObjetoException("idMonitoramento obrigatorio");
         if (e.getIdObjeto() == null) throw new MonitoramentoObjetoException("idObjeto obrigatorio");

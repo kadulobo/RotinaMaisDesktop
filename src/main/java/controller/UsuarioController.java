@@ -21,9 +21,6 @@ public class UsuarioController {
         if (usuario == null) {
             throw new UsuarioException("Usuario não pode ser nulo");
         }
-        if (usuario.getIdUsuario() == null) {
-            throw new UsuarioException("Id do Usuario é obrigatório");
-        }
         if (usuario.getNome() == null || usuario.getNome().isEmpty()) {
             throw new UsuarioException("Nome do Usuario é obrigatório");
         }
