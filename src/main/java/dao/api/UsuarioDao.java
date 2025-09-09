@@ -27,6 +27,8 @@ public interface UsuarioDao {
 
     List<Usuario> findByEmail(String email);
 
+    List<Usuario> findByCpf(String cpf);
+
     List<Usuario> findByFoto(byte[] foto);
 
     List<Usuario> search(Usuario filtro);
