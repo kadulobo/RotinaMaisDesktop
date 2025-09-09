@@ -5,10 +5,12 @@ import exception.IngredienteFornecedorException;
 import infra.Logger;
 import model.IngredienteFornecedor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public class IngredienteFornecedorController {
-    private final {dao} dao;
+    private final IngredienteFornecedorDao dao;
 
     public IngredienteFornecedorController(IngredienteFornecedorDao dao) { this.dao = dao; }
 

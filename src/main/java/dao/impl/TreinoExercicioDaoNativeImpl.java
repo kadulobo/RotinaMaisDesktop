@@ -41,21 +41,24 @@ public class TreinoExercicioDaoNativeImpl implements TreinoExercicioDao {
 
     @Override
     public TreinoExercicio findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_treino_exercicio, qtd_repeticao, tempo_descanso, ordem, feito, id_exercicio, id_treino FROM Treino_Exercicio WHERE id_treino_exercicio = :id";
+        Query q = em.createNativeQuery(sql, TreinoExercicio.class).setParameter("id", id);
+        return (TreinoExercicio) q.getSingleResult();
     }
 
     @Override
     public List<TreinoExercicio> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_treino_exercicio, qtd_repeticao, tempo_descanso, ordem, feito, id_exercicio, id_treino FROM Treino_Exercicio";
+        return em.createNativeQuery(sql, TreinoExercicio.class).getResultList();
     }
 
     @Override
     public List<TreinoExercicio> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_treino_exercicio, qtd_repeticao, tempo_descanso, ordem, feito, id_exercicio, id_treino FROM Treino_Exercicio LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, TreinoExercicio.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

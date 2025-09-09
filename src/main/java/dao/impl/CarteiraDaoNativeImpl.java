@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import model.Carteira;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class CarteiraDaoNativeImpl implements CarteiraDao {
@@ -41,21 +42,24 @@ public class CarteiraDaoNativeImpl implements CarteiraDao {
 
     @Override
     public Carteira findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_carteira, nome, tipo, dataInicio, id_usuario FROM Carteira WHERE id_carteira = :id";
+        Query q = em.createNativeQuery(sql, Carteira.class).setParameter("id", id);
+        return (Carteira) q.getSingleResult();
     }
 
     @Override
     public List<Carteira> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_carteira, nome, tipo, dataInicio, id_usuario FROM Carteira";
+        return em.createNativeQuery(sql, Carteira.class).getResultList();
     }
 
     @Override
     public List<Carteira> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_carteira, nome, tipo, dataInicio, id_usuario FROM Carteira LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, Carteira.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

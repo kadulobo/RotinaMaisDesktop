@@ -41,21 +41,24 @@ public class RotinaPeriodoDaoNativeImpl implements RotinaPeriodoDao {
 
     @Override
     public RotinaPeriodo findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_rotina_periodo, id_rotina, id_periodo FROM Rotina_Periodo WHERE id_rotina_periodo = :id";
+        Query q = em.createNativeQuery(sql, RotinaPeriodo.class).setParameter("id", id);
+        return (RotinaPeriodo) q.getSingleResult();
     }
 
     @Override
     public List<RotinaPeriodo> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_rotina_periodo, id_rotina, id_periodo FROM Rotina_Periodo";
+        return em.createNativeQuery(sql, RotinaPeriodo.class).getResultList();
     }
 
     @Override
     public List<RotinaPeriodo> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_rotina_periodo, id_rotina, id_periodo FROM Rotina_Periodo LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, RotinaPeriodo.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

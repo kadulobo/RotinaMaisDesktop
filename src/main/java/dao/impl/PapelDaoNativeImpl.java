@@ -8,6 +8,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import model.Papel;
 
+import java.time.LocalDate;
 import java.util.List;
 
 public class PapelDaoNativeImpl implements PapelDao {
@@ -41,21 +42,24 @@ public class PapelDaoNativeImpl implements PapelDao {
 
     @Override
     public Papel findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_papel, codigo, tipo, vencimento FROM Papel WHERE id_papel = :id";
+        Query q = em.createNativeQuery(sql, Papel.class).setParameter("id", id);
+        return (Papel) q.getSingleResult();
     }
 
     @Override
     public List<Papel> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_papel, codigo, tipo, vencimento FROM Papel";
+        return em.createNativeQuery(sql, Papel.class).getResultList();
     }
 
     @Override
     public List<Papel> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_papel, codigo, tipo, vencimento FROM Papel LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, Papel.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

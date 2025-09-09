@@ -41,21 +41,24 @@ public class AlimentacaoIngredienteDaoNativeImpl implements AlimentacaoIngredien
 
     @Override
     public AlimentacaoIngrediente findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_alimentacao_ingrediente, quantidade, id_alimentacao, id_ingrediente FROM Alimentacao_Ingrediente WHERE id_alimentacao_ingrediente = :id";
+        Query q = em.createNativeQuery(sql, AlimentacaoIngrediente.class).setParameter("id", id);
+        return (AlimentacaoIngrediente) q.getSingleResult();
     }
 
     @Override
     public List<AlimentacaoIngrediente> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_alimentacao_ingrediente, quantidade, id_alimentacao, id_ingrediente FROM Alimentacao_Ingrediente";
+        return em.createNativeQuery(sql, AlimentacaoIngrediente.class).getResultList();
     }
 
     @Override
     public List<AlimentacaoIngrediente> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_alimentacao_ingrediente, quantidade, id_alimentacao, id_ingrediente FROM Alimentacao_Ingrediente LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, AlimentacaoIngrediente.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override

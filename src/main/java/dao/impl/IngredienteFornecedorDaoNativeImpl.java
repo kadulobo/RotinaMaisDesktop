@@ -8,6 +8,8 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.Query;
 import model.IngredienteFornecedor;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 public class IngredienteFornecedorDaoNativeImpl implements IngredienteFornecedorDao {
@@ -41,21 +43,24 @@ public class IngredienteFornecedorDaoNativeImpl implements IngredienteFornecedor
 
     @Override
     public IngredienteFornecedor findById(Integer id) {
-        String sql = "SELECT {select_cols} FROM {table} WHERE {e['fields'][0][2]} = :id";
-        Query q = em.createNativeQuery(sql, {cname}.class).setParameter("id", id);
-        return ({cname}) q.getSingleResult();
+        String sql = "SELECT id_fornecedor_ingrediente, valor, data, id_fornecedor, id_ingrediente FROM Ingrediente_fornecedor WHERE id_fornecedor_ingrediente = :id";
+        Query q = em.createNativeQuery(sql, IngredienteFornecedor.class).setParameter("id", id);
+        return (IngredienteFornecedor) q.getSingleResult();
     }
 
     @Override
     public List<IngredienteFornecedor> findAll() {
-        String sql = "SELECT {select_cols} FROM {table}";
-        return em.createNativeQuery(sql, {cname}.class).getResultList();
+        String sql = "SELECT id_fornecedor_ingrediente, valor, data, id_fornecedor, id_ingrediente FROM Ingrediente_fornecedor";
+        return em.createNativeQuery(sql, IngredienteFornecedor.class).getResultList();
     }
 
     @Override
     public List<IngredienteFornecedor> findAll(int page, int size) {
-        String sql = "SELECT {select_cols} FROM {table} LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, {cname}.class).setParameter("size", size).setParameter("off", page * size).getResultList();
+        String sql = "SELECT id_fornecedor_ingrediente, valor, data, id_fornecedor, id_ingrediente FROM Ingrediente_fornecedor LIMIT :size OFFSET :off";
+        return em.createNativeQuery(sql, IngredienteFornecedor.class)
+                .setParameter("size", size)
+                .setParameter("off", page * size)
+                .getResultList();
     }
 
     @Override
