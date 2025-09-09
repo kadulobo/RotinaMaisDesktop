@@ -1,10 +1,14 @@
 package swing.table;
 
-import model.ModelStudent;
+/**
+ * Generic event callback used by table action buttons. Implementations can
+ * decide how to handle update and delete events for the provided data type.
+ *
+ * @param <T> Type of the row data associated with the action buttons
+ */
+public interface EventAction<T> {
 
-public interface EventAction {
+    void delete(T data);
 
-    public void delete(ModelStudent student);
-
-    public void update(ModelStudent student);
+    void update(T data);
 }

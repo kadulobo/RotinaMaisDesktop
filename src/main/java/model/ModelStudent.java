@@ -67,8 +67,8 @@ public class ModelStudent {
     private String course;
     private double fees;
 
-    public Object[] toRowTable(EventAction event) {
+    public Object[] toRowTable(EventAction<ModelStudent> event) {
         DecimalFormat df = new DecimalFormat("$#,##0.00");
-        return new Object[]{new ModelProfile(icon, name), gender, course, df.format(fees), new ModelAction(this, event)};
+        return new Object[]{new ModelProfile(icon, name), gender, course, df.format(fees), new ModelAction<>(this, event)};
     }
 }

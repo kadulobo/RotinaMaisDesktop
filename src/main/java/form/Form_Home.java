@@ -30,7 +30,7 @@ public class Form_Home extends javax.swing.JPanel {
     }
 
     private void initTableData() {
-        EventAction eventAction = new EventAction() {
+        EventAction<ModelStudent> eventAction = new EventAction<ModelStudent>() {
             @Override
             public void delete(ModelStudent student) {
                 if (showMessage("Delete Student : " + student.getName())) {
