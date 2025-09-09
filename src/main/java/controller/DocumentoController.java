@@ -22,9 +22,6 @@ public class DocumentoController {
         if (documento == null) {
             throw new DocumentoException("Documento não pode ser nulo");
         }
-        if (documento.getIdDocumento() == null) {
-            throw new DocumentoException("Id do Documento é obrigatório");
-        }
         if (documento.getNome() == null || documento.getNome().isEmpty()) {
             throw new DocumentoException("Nome do Documento é obrigatório");
         }

@@ -22,9 +22,6 @@ public class MovimentacaoController {
         if (movimentacao == null) {
             throw new MovimentacaoException("Movimentacao não pode ser nula");
         }
-        if (movimentacao.getIdMovimentacao() == null) {
-            throw new MovimentacaoException("Id da Movimentacao é obrigatório");
-        }
         if (movimentacao.getTipo() == null) {
             throw new MovimentacaoException("Tipo da Movimentacao é obrigatório");
         }

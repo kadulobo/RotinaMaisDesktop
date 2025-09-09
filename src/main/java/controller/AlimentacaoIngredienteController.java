@@ -13,7 +13,7 @@ public class AlimentacaoIngredienteController {
     public AlimentacaoIngredienteController(AlimentacaoIngredienteDao dao) { this.dao = dao; }
 
     public void criar(AlimentacaoIngrediente e) {
-        if (e == null || e.getIdAlimentacaoIngrediente() == null) throw new AlimentacaoIngredienteException("Id obrigatorio");
+        if (e == null) throw new AlimentacaoIngredienteException("AlimentacaoIngrediente não pode ser nulo");
         if (e.getQuantidade() == null) throw new AlimentacaoIngredienteException("quantidade obrigatorio");
         if (e.getIdAlimentacao() == null) throw new AlimentacaoIngredienteException("idAlimentacao obrigatorio");
         if (e.getIdIngrediente() == null) throw new AlimentacaoIngredienteException("idIngrediente obrigatorio");

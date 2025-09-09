@@ -21,9 +21,6 @@ public class IngredienteController {
         if (ingrediente == null) {
             throw new IngredienteException("Ingrediente não pode ser nulo");
         }
-        if (ingrediente.getIdIngrediente() == null) {
-            throw new IngredienteException("Id do Ingrediente é obrigatório");
-        }
         if (ingrediente.getNome() == null || ingrediente.getNome().isEmpty()) {
             throw new IngredienteException("Nome do Ingrediente é obrigatório");
         }

@@ -15,7 +15,7 @@ public class OperacaoController {
     public OperacaoController(OperacaoDao dao) { this.dao = dao; }
 
     public void criar(Operacao e) {
-        if (e == null || e.getIdOperacao() == null) throw new OperacaoException("Id obrigatorio");
+        if (e == null) throw new OperacaoException("Operacao não pode ser nula");
         if (e.getFechamento() == null) throw new OperacaoException("fechamento obrigatorio");
         if (e.getTempoOperacao() == null) throw new OperacaoException("tempoOperacao obrigatorio");
         if (e.getQtdCompra() == null) throw new OperacaoException("qtdCompra obrigatorio");

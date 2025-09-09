@@ -21,9 +21,6 @@ public class ExercicioController {
         if (exercicio == null) {
             throw new ExercicioException("Exercicio não pode ser nulo");
         }
-        if (exercicio.getIdExercicio() == null) {
-            throw new ExercicioException("Id do Exercicio é obrigatório");
-        }
         if (exercicio.getNome() == null || exercicio.getNome().isEmpty()) {
             throw new ExercicioException("Nome do Exercicio é obrigatório");
         }

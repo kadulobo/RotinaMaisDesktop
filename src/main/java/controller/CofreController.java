@@ -13,7 +13,7 @@ public class CofreController {
     public CofreController(CofreDao dao) { this.dao = dao; }
 
     public void criar(Cofre c) {
-        if (c == null || c.getIdCofre() == null) throw new CofreException("Id obrigatorio");
+        if (c == null) throw new CofreException("Cofre não pode ser nulo");
         if (c.getLogin() == null || c.getLogin().isEmpty()) throw new CofreException("Login obrigatorio");
         Logger.info("CofreController.criar");
         dao.create(c);

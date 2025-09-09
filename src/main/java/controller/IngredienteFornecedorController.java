@@ -15,7 +15,7 @@ public class IngredienteFornecedorController {
     public IngredienteFornecedorController(IngredienteFornecedorDao dao) { this.dao = dao; }
 
     public void criar(IngredienteFornecedor e) {
-        if (e == null || e.getIdFornecedorIngrediente() == null) throw new IngredienteFornecedorException("Id obrigatorio");
+        if (e == null) throw new IngredienteFornecedorException("IngredienteFornecedor não pode ser nulo");
         if (e.getValor() == null) throw new IngredienteFornecedorException("valor obrigatorio");
         if (e.getData() == null) throw new IngredienteFornecedorException("data obrigatorio");
         if (e.getIdFornecedor() == null) throw new IngredienteFornecedorException("idFornecedor obrigatorio");

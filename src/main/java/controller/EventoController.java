@@ -22,9 +22,6 @@ public class EventoController {
         if (evento == null) {
             throw new EventoException("Evento não pode ser nulo");
         }
-        if (evento.getIdEvento() == null) {
-            throw new EventoException("Id do Evento é obrigatório");
-        }
         if (evento.getNome() == null || evento.getNome().isEmpty()) {
             throw new EventoException("Nome do Evento é obrigatório");
         }

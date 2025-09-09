@@ -21,9 +21,6 @@ public class SiteController {
         if (site == null) {
             throw new SiteException("Site não pode ser nulo");
         }
-        if (site.getIdSite() == null) {
-            throw new SiteException("Id do Site é obrigatório");
-        }
         if (site.getUrl() == null || site.getUrl().isEmpty()) {
             throw new SiteException("URL do Site é obrigatória");
         }

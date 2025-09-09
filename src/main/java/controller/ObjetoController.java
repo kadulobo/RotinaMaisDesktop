@@ -22,9 +22,6 @@ public class ObjetoController {
         if (objeto == null) {
             throw new ObjetoException("Objeto não pode ser nulo");
         }
-        if (objeto.getIdObjeto() == null) {
-            throw new ObjetoException("Id do Objeto é obrigatório");
-        }
         if (objeto.getNome() == null || objeto.getNome().isEmpty()) {
             throw new ObjetoException("Nome do Objeto é obrigatório");
         }

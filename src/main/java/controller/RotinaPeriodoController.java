@@ -13,7 +13,7 @@ public class RotinaPeriodoController {
     public RotinaPeriodoController(RotinaPeriodoDao dao) { this.dao = dao; }
 
     public void criar(RotinaPeriodo e) {
-        if (e == null || e.getIdRotinaPeriodo() == null) throw new RotinaPeriodoException("Id obrigatorio");
+        if (e == null) throw new RotinaPeriodoException("RotinaPeriodo não pode ser nulo");
         if (e.getIdRotina() == null) throw new RotinaPeriodoException("idRotina obrigatorio");
         if (e.getIdPeriodo() == null) throw new RotinaPeriodoException("idPeriodo obrigatorio");
         Logger.info("RotinaPeriodoController.criar");

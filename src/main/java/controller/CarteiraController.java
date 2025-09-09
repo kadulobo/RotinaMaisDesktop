@@ -14,7 +14,7 @@ public class CarteiraController {
     public CarteiraController(CarteiraDao dao) { this.dao = dao; }
 
     public void criar(Carteira e) {
-        if (e == null || e.getIdCarteira() == null) throw new CarteiraException("Id obrigatorio");
+        if (e == null) throw new CarteiraException("Carteira não pode ser nula");
         if (e.getNome() == null || e.getNome().isEmpty()) throw new CarteiraException("nome obrigatorio");
         if (e.getTipo() == null || e.getTipo().isEmpty()) throw new CarteiraException("tipo obrigatorio");
         if (e.getDataInicio() == null) throw new CarteiraException("dataInicio obrigatorio");

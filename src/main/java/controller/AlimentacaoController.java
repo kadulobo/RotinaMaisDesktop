@@ -21,9 +21,6 @@ public class AlimentacaoController {
         if (alimentacao == null) {
             throw new AlimentacaoException("Alimentacao não pode ser nula");
         }
-        if (alimentacao.getIdAlimentacao() == null) {
-            throw new AlimentacaoException("Id da Alimentacao é obrigatório");
-        }
         if (alimentacao.getNome() == null || alimentacao.getNome().isEmpty()) {
             throw new AlimentacaoException("Nome da Alimentacao é obrigatório");
         }

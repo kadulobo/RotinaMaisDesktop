@@ -21,9 +21,6 @@ public class PeriodoController {
         if (periodo == null) {
             throw new PeriodoException("Periodo não pode ser nulo");
         }
-        if (periodo.getIdPeriodo() == null) {
-            throw new PeriodoException("Id do Periodo é obrigatório");
-        }
         if (periodo.getAno() == null) {
             throw new PeriodoException("Ano do Periodo é obrigatório");
         }

@@ -21,9 +21,6 @@ public class FornecedorController {
         if (fornecedor == null) {
             throw new FornecedorException("Fornecedor não pode ser nulo");
         }
-        if (fornecedor.getIdFornecedor() == null) {
-            throw new FornecedorException("Id do Fornecedor é obrigatório");
-        }
         if (fornecedor.getNome() == null || fornecedor.getNome().isEmpty()) {
             throw new FornecedorException("Nome do Fornecedor é obrigatório");
         }

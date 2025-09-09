@@ -13,7 +13,7 @@ public class SiteObjetoController {
     public SiteObjetoController(SiteObjetoDao dao) { this.dao = dao; }
 
     public void criar(SiteObjeto e) {
-        if (e == null || e.getIdSiteObjeto() == null) throw new SiteObjetoException("Id obrigatorio");
+        if (e == null) throw new SiteObjetoException("SiteObjeto não pode ser nulo");
         if (e.getIdSite() == null) throw new SiteObjetoException("idSite obrigatorio");
         if (e.getIdObjeto() == null) throw new SiteObjetoException("idObjeto obrigatorio");
         Logger.info("SiteObjetoController.criar");
