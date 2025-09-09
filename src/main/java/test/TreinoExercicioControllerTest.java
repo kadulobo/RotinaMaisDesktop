@@ -3,6 +3,10 @@ package test;
 import controller.TreinoExercicioController;
 import dao.impl.TreinoExercicioDaoNativeImpl;
 import model.TreinoExercicio;
+import controller.ExercicioController;
+import controller.TreinoController;
+import dao.impl.ExercicioDaoNativeImpl;
+import dao.impl.TreinoDaoNativeImpl;
 
 import java.util.List;
 
@@ -16,8 +20,10 @@ public class TreinoExercicioControllerTest {
         te.setTempoDescanso("1m");
         te.setOrdem(1);
         te.setFeito(Boolean.FALSE);
-        te.setIdExercicio(1);
-        te.setIdTreino(1);
+        ExercicioController exercicioController = new ExercicioController(new ExercicioDaoNativeImpl());
+        TreinoController treinoController = new TreinoController(new TreinoDaoNativeImpl());
+        te.setIdExercicio(TestUtils.getRandom(exercicioController.listar()).getIdExercicio());
+        te.setIdTreino(TestUtils.getRandom(treinoController.listar()).getIdTreino());
         controller.criar(te);
 
         List<TreinoExercicio> list = controller.listar();

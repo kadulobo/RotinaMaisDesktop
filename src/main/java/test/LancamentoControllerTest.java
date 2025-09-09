@@ -3,7 +3,8 @@ package test;
 import controller.LancamentoController;
 import dao.impl.LancamentoDaoNativeImpl;
 import model.Lancamento;
-import model.Evento;
+import controller.EventoController;
+import dao.impl.EventoDaoNativeImpl;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -16,9 +17,8 @@ public class LancamentoControllerTest {
 
         Lancamento lancamento = new Lancamento();
         lancamento.setValor(BigDecimal.ONE);
-        Evento evento = new Evento();
-        evento.setIdEvento(1);
-        lancamento.setEvento(evento);
+        EventoController eventoController = new EventoController(new EventoDaoNativeImpl());
+        lancamento.setEvento(TestUtils.getRandom(eventoController.listar()));
         lancamento.setFixo(Boolean.FALSE);
         lancamento.setDataPagamento(LocalDate.now());
         controller.criar(lancamento);

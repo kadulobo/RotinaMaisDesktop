@@ -3,6 +3,8 @@ package test;
 import controller.CarteiraController;
 import dao.impl.CarteiraDaoNativeImpl;
 import model.Carteira;
+import controller.UsuarioController;
+import dao.impl.UsuarioDaoNativeImpl;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -16,7 +18,8 @@ public class CarteiraControllerTest {
         carteira.setNome("Carteira Exemplo");
         carteira.setTipo("T");
         carteira.setDataInicio(LocalDate.now());
-        carteira.setIdUsuario(1);
+        UsuarioController usuarioController = new UsuarioController(new UsuarioDaoNativeImpl());
+        carteira.setIdUsuario(TestUtils.getRandom(usuarioController.listar()).getIdUsuario());
         controller.criar(carteira);
 
         List<Carteira> list = controller.listar();
