@@ -23,7 +23,7 @@ public class RotinaDaoNativeImpl implements RotinaDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Rotina (nome, inicio, fim, descricao, status, ponto, id_usuario) " +
-                    "VALUES (:nome, :inicio, :fim, :descricao, :status, :ponto, :idUsuario)";
+                    "VALUES (:nome, :inicio, :fim, :descricao, :status, :ponto, CAST(:idUsuario AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("nome", rotina.getNome());
             query.setParameter("inicio", rotina.getInicio());
@@ -50,7 +50,7 @@ public class RotinaDaoNativeImpl implements RotinaDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "UPDATE Rotina SET nome=:nome, inicio=:inicio, fim=:fim, descricao=:descricao, status=:status, ponto=:ponto, id_usuario=:idUsuario WHERE id_rotina=:id";
+            String sql = "UPDATE Rotina SET nome=:nome, inicio=:inicio, fim=:fim, descricao=:descricao, status=:status, ponto=:ponto, id_usuario=CAST(:idUsuario AS INTEGER) WHERE id_rotina=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("nome", rotina.getNome());
             query.setParameter("inicio", rotina.getInicio());

@@ -22,7 +22,7 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Lancamento (valor, fixo, data_pagamento, status, id_movimentacao, id_evento) " +
-                    "VALUES (:valor, :fixo, :dataPagamento, :status, :idMovimentacao, :idEvento)";
+                    "VALUES (:valor, :fixo, :dataPagamento, :status, CAST(:idMovimentacao AS INTEGER), CAST(:idEvento AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("valor", lancamento.getValor());
             query.setParameter("fixo", lancamento.getFixo());
@@ -49,7 +49,7 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Lancamento SET valor=:valor, fixo=:fixo, data_pagamento=:dataPagamento, status=:status, " +
-                    "id_movimentacao=:idMovimentacao, id_evento=:idEvento WHERE id_lancamento=:id";
+                    "id_movimentacao=CAST(:idMovimentacao AS INTEGER), id_evento=CAST(:idEvento AS INTEGER) WHERE id_lancamento=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("valor", lancamento.getValor());
             query.setParameter("fixo", lancamento.getFixo());

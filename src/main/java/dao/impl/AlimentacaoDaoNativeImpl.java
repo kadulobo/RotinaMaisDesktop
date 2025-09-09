@@ -22,7 +22,7 @@ public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Alimentacao (status, nome, link, video, preparo, id_rotina) " +
-                    "VALUES (:status, :nome, :link, :video, :preparo, :idRotina)";
+                    "VALUES (:status, :nome, :link, :video, :preparo, CAST(:idRotina AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("status", alimentacao.getStatus());
             query.setParameter("nome", alimentacao.getNome());
@@ -48,7 +48,7 @@ public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "UPDATE Alimentacao SET status=:status, nome=:nome, link=:link, video=:video, preparo=:preparo, id_rotina=:idRotina WHERE id_alimentacao=:id";
+            String sql = "UPDATE Alimentacao SET status=:status, nome=:nome, link=:link, video=:video, preparo=:preparo, id_rotina=CAST(:idRotina AS INTEGER) WHERE id_alimentacao=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("status", alimentacao.getStatus());
             query.setParameter("nome", alimentacao.getNome());
