@@ -19,6 +19,7 @@ public class IngredienteFornecedorDaoNativeImpl implements IngredienteFornecedor
     public void create(IngredienteFornecedor e) {
         Logger.info("IngredienteFornecedorDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdFornecedorIngrediente(null);
         em.persist(e);
         em.getTransaction().commit();
     }

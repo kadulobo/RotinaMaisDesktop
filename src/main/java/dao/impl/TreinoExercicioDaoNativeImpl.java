@@ -17,6 +17,7 @@ public class TreinoExercicioDaoNativeImpl implements TreinoExercicioDao {
     public void create(TreinoExercicio e) {
         Logger.info("TreinoExercicioDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdTreinoExercicio(null);
         em.persist(e);
         em.getTransaction().commit();
     }

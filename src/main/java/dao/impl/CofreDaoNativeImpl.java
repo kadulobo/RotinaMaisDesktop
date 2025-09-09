@@ -17,6 +17,7 @@ public class CofreDaoNativeImpl implements CofreDao {
     public void create(Cofre c) {
         Logger.info("CofreDao.create");
         em.getTransaction().begin();
+        c.setIdCofre(null);
         em.persist(c);
         em.getTransaction().commit();
     }

@@ -17,6 +17,7 @@ public class RotinaPeriodoDaoNativeImpl implements RotinaPeriodoDao {
     public void create(RotinaPeriodo e) {
         Logger.info("RotinaPeriodoDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdRotinaPeriodo(null);
         em.persist(e);
         em.getTransaction().commit();
     }
