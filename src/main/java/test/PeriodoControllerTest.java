@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.PeriodoController;
 import dao.impl.PeriodoDaoNativeImpl;

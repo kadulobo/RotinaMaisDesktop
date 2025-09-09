@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.ExercicioController;
 import dao.impl.ExercicioDaoNativeImpl;

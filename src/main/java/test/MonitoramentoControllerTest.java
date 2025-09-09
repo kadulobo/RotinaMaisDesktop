@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.MonitoramentoController;
 import dao.impl.MonitoramentoDaoNativeImpl;

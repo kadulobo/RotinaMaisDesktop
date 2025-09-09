@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.CaixaController;
 import dao.impl.CaixaDaoNativeImpl;

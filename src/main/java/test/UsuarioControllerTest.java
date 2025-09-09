@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.UsuarioController;
 import dao.impl.UsuarioDaoNativeImpl;

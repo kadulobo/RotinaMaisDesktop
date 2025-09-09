@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.OperacaoController;
 import dao.impl.OperacaoDaoNativeImpl;

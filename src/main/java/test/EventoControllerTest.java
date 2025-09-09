@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.EventoController;
 import dao.impl.EventoDaoNativeImpl;

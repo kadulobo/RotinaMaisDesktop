@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.MetaController;
 import dao.impl.MetaDaoNativeImpl;

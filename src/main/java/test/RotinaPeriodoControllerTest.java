@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.RotinaPeriodoController;
 import dao.impl.RotinaPeriodoDaoNativeImpl;

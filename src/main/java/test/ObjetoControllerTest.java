@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.ObjetoController;
 import dao.impl.ObjetoDaoNativeImpl;

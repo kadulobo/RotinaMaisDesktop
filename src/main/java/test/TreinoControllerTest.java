@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.TreinoController;
 import dao.impl.TreinoDaoNativeImpl;

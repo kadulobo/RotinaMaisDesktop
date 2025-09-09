@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.SiteController;
 import dao.impl.SiteDaoNativeImpl;
