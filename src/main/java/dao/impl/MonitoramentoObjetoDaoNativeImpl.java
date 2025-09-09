@@ -42,26 +42,28 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
     @Override
     public void create(MonitoramentoObjeto e) {
         Logger.info("MonitoramentoObjetoDaoNativeImpl.create");
-        String sql = "INSERT INTO Monitoramento_Objeto (data, id_monitoramento, id_objeto) VALUES (?,?,?)";
+        String sql = "INSERT INTO Monitoramento_Objeto (id_monitoramento_objeto, data, id_monitoramento, id_objeto) VALUES (?,?,?,?)";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                LocalDate id = e.getIdMonitoramentoObjeto() != null ? e.getIdMonitoramentoObjeto() : LocalDate.now();
+                ps.setDate(1, Date.valueOf(id));
                 if (e.getData() != null) {
-                    ps.setDate(1, Date.valueOf(e.getData()));
+                    ps.setDate(2, Date.valueOf(e.getData()));
                 } else {
-                    ps.setNull(1, Types.DATE);
+                    ps.setNull(2, Types.DATE);
                 }
                 if (e.getIdMonitoramento() != null) {
-                    ps.setInt(2, e.getIdMonitoramento());
-                } else {
-                    ps.setNull(2, Types.INTEGER);
-                }
-                if (e.getIdObjeto() != null) {
-                    ps.setInt(3, e.getIdObjeto());
+                    ps.setInt(3, e.getIdMonitoramento());
                 } else {
                     ps.setNull(3, Types.INTEGER);
+                }
+                if (e.getIdObjeto() != null) {
+                    ps.setInt(4, e.getIdObjeto());
+                } else {
+                    ps.setNull(4, Types.INTEGER);
                 }
                 ps.executeUpdate();
             }
