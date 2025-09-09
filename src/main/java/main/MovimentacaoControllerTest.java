@@ -19,7 +19,6 @@ public class MovimentacaoControllerTest {
 
         // Criar movimentação fictícia
         Movimentacao mov = new Movimentacao();
-        mov.setIdMovimentacao(1);
         mov.setTipo(1);
         mov.setDesconto(BigDecimal.ZERO);
         mov.setVantagem(new BigDecimal("5.0"));
@@ -28,13 +27,14 @@ public class MovimentacaoControllerTest {
         mov.setPonto(10);
         controller.criar(mov);
 
-        // Atualizar movimentação
-        mov.setStatus(2);
-        controller.atualizar(mov);
+        // Recuperar movimentação persistida e atualizar
+        List<Movimentacao> movs = controller.listar();
+        Movimentacao buscado = controller.buscarPorId(movs.get(0).getIdMovimentacao());
+        buscado.setStatus(2);
+        controller.atualizar(buscado);
 
         // Buscar e listar
-        Movimentacao buscado = controller.buscarPorId(1);
-        List<Movimentacao> movs = controller.listar();
+        movs = controller.listar();
         controller.listar(0, 10);
         controller.buscarPorDesconto(BigDecimal.ZERO);
         controller.buscarPorVantagem(new BigDecimal("5.0"));

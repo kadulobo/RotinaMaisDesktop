@@ -19,19 +19,19 @@ public class UsuarioControllerTest {
 
         // Criar usuário fictício
         Usuario usuario = new Usuario();
-        usuario.setIdUsuario(1);
         usuario.setNome("Usuário Exemplo");
         usuario.setSenha("senha123");
         usuario.setEmail("usuario@example.com");
         controller.criar(usuario);
 
-        // Atualizar usuário
-        usuario.setNome("Usuário Atualizado");
-        controller.atualizar(usuario);
-
-        // Buscar e listar usuários
-        Usuario buscado = controller.buscarPorId(1);
+        // Recuperar usuário persistido e atualizar
         List<Usuario> usuarios = controller.listar();
+        Usuario buscado = controller.buscarPorId(usuarios.get(0).getIdUsuario());
+        buscado.setNome("Usuário Atualizado");
+        controller.atualizar(buscado);
+
+        // Listar usuários
+        usuarios = controller.listar();
         System.out.println("Encontrado: " + buscado);
         System.out.println("Total usuarios: " + usuarios.size());
 
