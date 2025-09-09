@@ -22,7 +22,7 @@ public class MonitoramentoDaoNativeImpl implements MonitoramentoDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Monitoramento (status, nome, descricao, foto, id_periodo) " +
-                    "VALUES (:status, :nome, :descricao, :foto, :idPeriodo)";
+                    "VALUES (:status, :nome, :descricao, :foto, CAST(:idPeriodo AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("status", monitoramento.getStatus());
             query.setParameter("nome", monitoramento.getNome());
@@ -47,7 +47,7 @@ public class MonitoramentoDaoNativeImpl implements MonitoramentoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "UPDATE Monitoramento SET status=:status, nome=:nome, descricao=:descricao, foto=:foto, id_periodo=:idPeriodo WHERE id_monitoramento=:id";
+            String sql = "UPDATE Monitoramento SET status=:status, nome=:nome, descricao=:descricao, foto=:foto, id_periodo=CAST(:idPeriodo AS INTEGER) WHERE id_monitoramento=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("status", monitoramento.getStatus());
             query.setParameter("nome", monitoramento.getNome());

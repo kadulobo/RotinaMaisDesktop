@@ -22,7 +22,7 @@ public class DocumentoDaoNativeImpl implements DocumentoDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Documento (nome, arquivo, foto, video, data, id_usuario) " +
-                    "VALUES (:nome, :arquivo, :foto, :video, :data, :idUsuario)";
+                    "VALUES (:nome, :arquivo, :foto, :video, :data, CAST(:idUsuario AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("nome", documento.getNome());
             query.setParameter("arquivo", documento.getArquivo());
@@ -48,7 +48,7 @@ public class DocumentoDaoNativeImpl implements DocumentoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "UPDATE Documento SET nome=:nome, arquivo=:arquivo, foto=:foto, video=:video, data=:data, id_usuario=:idUsuario WHERE id_documento=:id";
+            String sql = "UPDATE Documento SET nome=:nome, arquivo=:arquivo, foto=:foto, video=:video, data=:data, id_usuario=CAST(:idUsuario AS INTEGER) WHERE id_documento=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("nome", documento.getNome());
             query.setParameter("arquivo", documento.getArquivo());

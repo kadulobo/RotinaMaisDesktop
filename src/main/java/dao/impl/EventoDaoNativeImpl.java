@@ -22,7 +22,7 @@ public class EventoDaoNativeImpl implements EventoDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Evento (vantagem, foto, nome, descricao, data_criacao, id_categoria) " +
-                    "VALUES (:vantagem, :foto, :nome, :descricao, :dataCriacao, :idCategoria)";
+                    "VALUES (:vantagem, :foto, :nome, :descricao, :dataCriacao, CAST(:idCategoria AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("vantagem", evento.getVantagem());
             query.setParameter("foto", evento.getFoto());
@@ -49,7 +49,7 @@ public class EventoDaoNativeImpl implements EventoDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Evento SET vantagem=:vantagem, foto=:foto, nome=:nome, descricao=:descricao, " +
-                    "data_criacao=:dataCriacao, id_categoria=:idCategoria WHERE id_evento=:id";
+                    "data_criacao=:dataCriacao, id_categoria=CAST(:idCategoria AS INTEGER) WHERE id_evento=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("vantagem", evento.getVantagem());
             query.setParameter("foto", evento.getFoto());

@@ -23,7 +23,7 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Movimentacao (desconto, vantagem, liquido, tipo, status, ponto, id_usuario, id_caixa, id_periodo) " +
-                    "VALUES (:desconto, :vantagem, :liquido, :tipo, :status, :ponto, :idUsuario, :idCaixa, :idPeriodo)";
+                    "VALUES (:desconto, :vantagem, :liquido, :tipo, :status, :ponto, CAST(:idUsuario AS INTEGER), CAST(:idCaixa AS INTEGER), CAST(:idPeriodo AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("desconto", movimentacao.getDesconto());
             query.setParameter("vantagem", movimentacao.getVantagem());
@@ -52,7 +52,7 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "UPDATE Movimentacao SET desconto=:desconto, vantagem=:vantagem, liquido=:liquido, tipo=:tipo, status=:status, ponto=:ponto, id_usuario=:idUsuario, id_caixa=:idCaixa, id_periodo=:idPeriodo WHERE id_movimentacao=:id";
+            String sql = "UPDATE Movimentacao SET desconto=:desconto, vantagem=:vantagem, liquido=:liquido, tipo=:tipo, status=:status, ponto=:ponto, id_usuario=CAST(:idUsuario AS INTEGER), id_caixa=CAST(:idCaixa AS INTEGER), id_periodo=CAST(:idPeriodo AS INTEGER) WHERE id_movimentacao=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("desconto", movimentacao.getDesconto());
             query.setParameter("vantagem", movimentacao.getVantagem());

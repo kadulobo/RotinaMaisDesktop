@@ -22,7 +22,10 @@ public class CaixaDaoNativeImpl implements CaixaDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Caixa (nome, reserva_emergencia, salario_medio, valor_total, id_usuario) VALUES (:nome, :reserva, :salario, :valor, :idUsuario)";
+            // Postgres não consegue inferir o tipo de um parâmetro nulo automaticamente.
+            // Ao efetuar o CAST para INTEGER garantimos que o JDBC defina o tipo correto
+            // mesmo quando o id do usuário for nulo, evitando o erro "column is of type integer but expression is of type bytea".
+            String sql = "INSERT INTO Caixa (nome, reserva_emergencia, salario_medio, valor_total, id_usuario) VALUES (:nome, :reserva, :salario, :valor, CAST(:idUsuario AS INTEGER))";
             Query query = em.createNativeQuery(sql);
             query.setParameter("nome", caixa.getNome());
             query.setParameter("reserva", caixa.getReservaEmergencia());
@@ -47,7 +50,8 @@ public class CaixaDaoNativeImpl implements CaixaDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "UPDATE Caixa SET nome=:nome, reserva_emergencia=:reserva, salario_medio=:salario, valor_total=:valor, id_usuario=:idUsuario WHERE id_caixa=:id";
+            // Aplicar o mesmo CAST na atualização para evitar problemas de tipagem quando o usuário for nulo
+            String sql = "UPDATE Caixa SET nome=:nome, reserva_emergencia=:reserva, salario_medio=:salario, valor_total=:valor, id_usuario=CAST(:idUsuario AS INTEGER) WHERE id_caixa=:id";
             Query query = em.createNativeQuery(sql);
             query.setParameter("nome", caixa.getNome());
             query.setParameter("reserva", caixa.getReservaEmergencia());
