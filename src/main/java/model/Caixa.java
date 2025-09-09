@@ -2,11 +2,17 @@
 package model;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 
 @Entity
@@ -29,8 +35,12 @@ public class Caixa {
     @Column(name = "valor_total")
     private BigDecimal valorTotal;
 
-    @Column(name = "id_usuario")
-    private Integer idUsuario;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_usuario")
+    private Usuario usuario;
+
+    @OneToMany(mappedBy = "caixa")
+    private List<Movimentacao> movimentacoes = new ArrayList<>();
 
     public Integer getIdCaixa() {
         return idCaixa;
@@ -72,12 +82,20 @@ public class Caixa {
         this.valorTotal = valorTotal;
     }
 
-    public Integer getIdUsuario() {
-        return idUsuario;
+    public Usuario getUsuario() {
+        return usuario;
     }
 
-    public void setIdUsuario(Integer idUsuario) {
-        this.idUsuario = idUsuario;
+    public void setUsuario(Usuario usuario) {
+        this.usuario = usuario;
+    }
+
+    public List<Movimentacao> getMovimentacoes() {
+        return movimentacoes;
+    }
+
+    public void setMovimentacoes(List<Movimentacao> movimentacoes) {
+        this.movimentacoes = movimentacoes;
     }
 
     @Override
@@ -101,7 +119,7 @@ public class Caixa {
                 ", reservaEmergencia=" + reservaEmergencia +
                 ", salarioMedio=" + salarioMedio +
                 ", valorTotal=" + valorTotal +
-                ", idUsuario=" + idUsuario +
+                ", usuario=" + usuario +
                 '}';
     }
 }

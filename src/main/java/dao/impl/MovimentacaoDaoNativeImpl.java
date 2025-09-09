@@ -32,9 +32,9 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
             query.setParameter("tipo", movimentacao.getTipo());
             query.setParameter("status", movimentacao.getStatus());
             query.setParameter("ponto", movimentacao.getPonto());
-            query.setParameter("idUsuario", movimentacao.getIdUsuario());
-            query.setParameter("idCaixa", movimentacao.getIdCaixa());
-            query.setParameter("idPeriodo", movimentacao.getIdPeriodo());
+            query.setParameter("idUsuario", movimentacao.getUsuario() != null ? movimentacao.getUsuario().getIdUsuario() : null);
+            query.setParameter("idCaixa", movimentacao.getCaixa() != null ? movimentacao.getCaixa().getIdCaixa() : null);
+            query.setParameter("idPeriodo", movimentacao.getPeriodo() != null ? movimentacao.getPeriodo().getIdPeriodo() : null);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("MovimentacaoDaoNativeImpl.create - sucesso");
@@ -61,9 +61,9 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
             query.setParameter("tipo", movimentacao.getTipo());
             query.setParameter("status", movimentacao.getStatus());
             query.setParameter("ponto", movimentacao.getPonto());
-            query.setParameter("idUsuario", movimentacao.getIdUsuario());
-            query.setParameter("idCaixa", movimentacao.getIdCaixa());
-            query.setParameter("idPeriodo", movimentacao.getIdPeriodo());
+            query.setParameter("idUsuario", movimentacao.getUsuario() != null ? movimentacao.getUsuario().getIdUsuario() : null);
+            query.setParameter("idCaixa", movimentacao.getCaixa() != null ? movimentacao.getCaixa().getIdCaixa() : null);
+            query.setParameter("idPeriodo", movimentacao.getPeriodo() != null ? movimentacao.getPeriodo().getIdPeriodo() : null);
             query.setParameter("id", movimentacao.getIdMovimentacao());
             int updated = query.executeUpdate();
             if (updated == 0) {
@@ -344,17 +344,17 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
                 sb.append(" AND ponto=:ponto");
                 params.put("ponto", filtro.getPonto());
             }
-            if (filtro.getIdUsuario() != null) {
+            if (filtro.getUsuario() != null && filtro.getUsuario().getIdUsuario() != null) {
                 sb.append(" AND id_usuario=:idUsuario");
-                params.put("idUsuario", filtro.getIdUsuario());
+                params.put("idUsuario", filtro.getUsuario().getIdUsuario());
             }
-            if (filtro.getIdCaixa() != null) {
+            if (filtro.getCaixa() != null && filtro.getCaixa().getIdCaixa() != null) {
                 sb.append(" AND id_caixa=:idCaixa");
-                params.put("idCaixa", filtro.getIdCaixa());
+                params.put("idCaixa", filtro.getCaixa().getIdCaixa());
             }
-            if (filtro.getIdPeriodo() != null) {
+            if (filtro.getPeriodo() != null && filtro.getPeriodo().getIdPeriodo() != null) {
                 sb.append(" AND id_periodo=:idPeriodo");
-                params.put("idPeriodo", filtro.getIdPeriodo());
+                params.put("idPeriodo", filtro.getPeriodo().getIdPeriodo());
             }
             if (page >= 0 && size > 0) {
                 sb.append(" LIMIT :limit OFFSET :offset");

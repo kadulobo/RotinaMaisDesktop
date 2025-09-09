@@ -7,7 +7,10 @@ import java.util.Objects;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
@@ -30,11 +33,13 @@ public class Lancamento {
     @Column(name = "status")
     private Integer status;
 
-    @Column(name = "id_movimentacao")
-    private Integer idMovimentacao;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_movimentacao")
+    private Movimentacao movimentacao;
 
-    @Column(name = "id_evento")
-    private Integer idEvento;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_evento")
+    private Evento evento;
 
     public Integer getIdLancamento() {
         return idLancamento;
@@ -76,20 +81,20 @@ public class Lancamento {
         this.status = status;
     }
 
-    public Integer getIdMovimentacao() {
-        return idMovimentacao;
+    public Movimentacao getMovimentacao() {
+        return movimentacao;
     }
 
-    public void setIdMovimentacao(Integer idMovimentacao) {
-        this.idMovimentacao = idMovimentacao;
+    public void setMovimentacao(Movimentacao movimentacao) {
+        this.movimentacao = movimentacao;
     }
 
-    public Integer getIdEvento() {
-        return idEvento;
+    public Evento getEvento() {
+        return evento;
     }
 
-    public void setIdEvento(Integer idEvento) {
-        this.idEvento = idEvento;
+    public void setEvento(Evento evento) {
+        this.evento = evento;
     }
 
     @Override
@@ -113,8 +118,8 @@ public class Lancamento {
                 ", fixo=" + fixo +
                 ", dataPagamento=" + dataPagamento +
                 ", status=" + status +
-                ", idMovimentacao=" + idMovimentacao +
-                ", idEvento=" + idEvento +
+                ", movimentacao=" + movimentacao +
+                ", evento=" + evento +
                 '}';
     }
 }

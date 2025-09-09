@@ -29,7 +29,7 @@ public class LancamentoController {
         if (lancamento.getValor() == null) {
             throw new LancamentoException("Valor do Lancamento é obrigatório");
         }
-        if (lancamento.getIdEvento() == null) {
+        if (lancamento.getEvento() == null || lancamento.getEvento().getIdEvento() == null) {
             throw new LancamentoException("Id do Evento do Lancamento é obrigatório");
         }
         dao.create(lancamento);
