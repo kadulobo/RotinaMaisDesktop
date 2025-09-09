@@ -17,6 +17,7 @@ public class SiteObjetoDaoNativeImpl implements SiteObjetoDao {
     public void create(SiteObjeto e) {
         Logger.info("SiteObjetoDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdSiteObjeto(null);
         em.persist(e);
         em.getTransaction().commit();
     }

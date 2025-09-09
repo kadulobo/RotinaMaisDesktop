@@ -17,6 +17,7 @@ public class MetaDaoNativeImpl implements MetaDao {
     public void create(Meta meta) {
         Logger.info("MetaDao.create");
         em.getTransaction().begin();
+        meta.setIdMeta(null);
         em.persist(meta);
         em.getTransaction().commit();
     }

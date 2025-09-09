@@ -19,6 +19,7 @@ public class OperacaoDaoNativeImpl implements OperacaoDao {
     public void create(Operacao e) {
         Logger.info("OperacaoDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdOperacao(null);
         em.persist(e);
         em.getTransaction().commit();
     }

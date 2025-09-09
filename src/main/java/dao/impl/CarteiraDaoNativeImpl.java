@@ -18,6 +18,7 @@ public class CarteiraDaoNativeImpl implements CarteiraDao {
     public void create(Carteira e) {
         Logger.info("CarteiraDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdCarteira(null);
         em.persist(e);
         em.getTransaction().commit();
     }

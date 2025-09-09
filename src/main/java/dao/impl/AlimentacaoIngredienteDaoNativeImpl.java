@@ -17,6 +17,7 @@ public class AlimentacaoIngredienteDaoNativeImpl implements AlimentacaoIngredien
     public void create(AlimentacaoIngrediente e) {
         Logger.info("AlimentacaoIngredienteDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdAlimentacaoIngrediente(null);
         em.persist(e);
         em.getTransaction().commit();
     }

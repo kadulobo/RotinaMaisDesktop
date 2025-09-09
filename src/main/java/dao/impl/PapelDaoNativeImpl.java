@@ -18,6 +18,7 @@ public class PapelDaoNativeImpl implements PapelDao {
     public void create(Papel e) {
         Logger.info("PapelDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdPapel(null);
         em.persist(e);
         em.getTransaction().commit();
     }

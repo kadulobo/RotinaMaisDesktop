@@ -18,6 +18,7 @@ public class MonitoramentoObjetoDaoNativeImpl implements MonitoramentoObjetoDao 
     public void create(MonitoramentoObjeto e) {
         Logger.info("MonitoramentoObjetoDaoNativeImpl.create");
         em.getTransaction().begin();
+        e.setIdMonitoramentoObjeto(null);
         em.persist(e);
         em.getTransaction().commit();
     }
