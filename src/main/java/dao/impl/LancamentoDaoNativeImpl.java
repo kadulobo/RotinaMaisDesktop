@@ -12,6 +12,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Lancamento;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class LancamentoDaoNativeImpl implements LancamentoDao {
 
@@ -23,13 +25,15 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
             em.getTransaction().begin();
             String sql = "INSERT INTO Lancamento (valor, fixo, data_pagamento, status, id_movimentacao, id_evento) " +
                     "VALUES (:valor, :fixo, :dataPagamento, :status, CAST(:idMovimentacao AS INTEGER), CAST(:idEvento AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("valor", lancamento.getValor());
             query.setParameter("fixo", lancamento.getFixo());
             query.setParameter("dataPagamento", lancamento.getDataPagamento());
             query.setParameter("status", lancamento.getStatus());
-            query.setParameter("idMovimentacao", lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null);
-            query.setParameter("idEvento", lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null);
+            Integer idMovimentacao = lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null;
+            Integer idEvento = lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null;
+            query.setParameter("idMovimentacao", idMovimentacao, StandardBasicTypes.INTEGER);
+            query.setParameter("idEvento", idEvento, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("LancamentoDaoNativeImpl.create - sucesso");
@@ -50,13 +54,15 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
             em.getTransaction().begin();
             String sql = "UPDATE Lancamento SET valor=:valor, fixo=:fixo, data_pagamento=:dataPagamento, status=:status, " +
                     "id_movimentacao=CAST(:idMovimentacao AS INTEGER), id_evento=CAST(:idEvento AS INTEGER) WHERE id_lancamento=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("valor", lancamento.getValor());
             query.setParameter("fixo", lancamento.getFixo());
             query.setParameter("dataPagamento", lancamento.getDataPagamento());
             query.setParameter("status", lancamento.getStatus());
-            query.setParameter("idMovimentacao", lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null);
-            query.setParameter("idEvento", lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null);
+            Integer idMovimentacao = lancamento.getMovimentacao() != null ? lancamento.getMovimentacao().getIdMovimentacao() : null;
+            Integer idEvento = lancamento.getEvento() != null ? lancamento.getEvento().getIdEvento() : null;
+            query.setParameter("idMovimentacao", idMovimentacao, StandardBasicTypes.INTEGER);
+            query.setParameter("idEvento", idEvento, StandardBasicTypes.INTEGER);
             query.setParameter("id", lancamento.getIdLancamento());
             int updated = query.executeUpdate();
             if (updated == 0) {

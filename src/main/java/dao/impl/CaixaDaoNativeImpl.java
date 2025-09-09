@@ -13,6 +13,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Caixa;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class CaixaDaoNativeImpl implements CaixaDao {
 
@@ -26,12 +28,13 @@ public class CaixaDaoNativeImpl implements CaixaDao {
             // Ao efetuar o CAST para INTEGER garantimos que o JDBC defina o tipo correto
             // mesmo quando o id do usuário for nulo, evitando o erro "column is of type integer but expression is of type bytea".
             String sql = "INSERT INTO Caixa (nome, reserva_emergencia, salario_medio, valor_total, id_usuario) VALUES (:nome, :reserva, :salario, :valor, CAST(:idUsuario AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", caixa.getNome());
             query.setParameter("reserva", caixa.getReservaEmergencia());
             query.setParameter("salario", caixa.getSalarioMedio());
             query.setParameter("valor", caixa.getValorTotal());
-            query.setParameter("idUsuario", caixa.getUsuario() != null ? caixa.getUsuario().getIdUsuario() : null);
+            Integer idUsuario = caixa.getUsuario() != null ? caixa.getUsuario().getIdUsuario() : null;
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("CaixaDaoNativeImpl.create - sucesso");
@@ -52,12 +55,13 @@ public class CaixaDaoNativeImpl implements CaixaDao {
             em.getTransaction().begin();
             // Aplicar o mesmo CAST na atualização para evitar problemas de tipagem quando o usuário for nulo
             String sql = "UPDATE Caixa SET nome=:nome, reserva_emergencia=:reserva, salario_medio=:salario, valor_total=:valor, id_usuario=CAST(:idUsuario AS INTEGER) WHERE id_caixa=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", caixa.getNome());
             query.setParameter("reserva", caixa.getReservaEmergencia());
             query.setParameter("salario", caixa.getSalarioMedio());
             query.setParameter("valor", caixa.getValorTotal());
-            query.setParameter("idUsuario", caixa.getUsuario() != null ? caixa.getUsuario().getIdUsuario() : null);
+            Integer idUsuario = caixa.getUsuario() != null ? caixa.getUsuario().getIdUsuario() : null;
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
             query.setParameter("id", caixa.getIdCaixa());
             int updated = query.executeUpdate();
             if (updated == 0) {

@@ -13,6 +13,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Rotina;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class RotinaDaoNativeImpl implements RotinaDao {
 
@@ -24,14 +26,15 @@ public class RotinaDaoNativeImpl implements RotinaDao {
             em.getTransaction().begin();
             String sql = "INSERT INTO Rotina (nome, inicio, fim, descricao, status, ponto, id_usuario) " +
                     "VALUES (:nome, :inicio, :fim, :descricao, :status, :ponto, CAST(:idUsuario AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", rotina.getNome());
             query.setParameter("inicio", rotina.getInicio());
             query.setParameter("fim", rotina.getFim());
             query.setParameter("descricao", rotina.getDescricao());
             query.setParameter("status", rotina.getStatus());
             query.setParameter("ponto", rotina.getPonto());
-            query.setParameter("idUsuario", rotina.getIdUsuario());
+            Integer idUsuario = rotina.getIdUsuario();
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("RotinaDaoNativeImpl.create - sucesso");
@@ -51,14 +54,15 @@ public class RotinaDaoNativeImpl implements RotinaDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Rotina SET nome=:nome, inicio=:inicio, fim=:fim, descricao=:descricao, status=:status, ponto=:ponto, id_usuario=CAST(:idUsuario AS INTEGER) WHERE id_rotina=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", rotina.getNome());
             query.setParameter("inicio", rotina.getInicio());
             query.setParameter("fim", rotina.getFim());
             query.setParameter("descricao", rotina.getDescricao());
             query.setParameter("status", rotina.getStatus());
             query.setParameter("ponto", rotina.getPonto());
-            query.setParameter("idUsuario", rotina.getIdUsuario());
+            Integer idUsuario = rotina.getIdUsuario();
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
             query.setParameter("id", rotina.getIdRotina());
             int updated = query.executeUpdate();
             if (updated == 0) {

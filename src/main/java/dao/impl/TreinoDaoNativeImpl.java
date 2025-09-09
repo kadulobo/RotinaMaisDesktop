@@ -12,6 +12,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Treino;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class TreinoDaoNativeImpl implements TreinoDao {
 
@@ -22,10 +24,11 @@ public class TreinoDaoNativeImpl implements TreinoDao {
         try {
             em.getTransaction().begin();
             String sql = "INSERT INTO Treino (nome, classe, id_rotina) VALUES (:nome, :classe, CAST(:idRotina AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", treino.getNome());
             query.setParameter("classe", treino.getClasse());
-            query.setParameter("idRotina", treino.getIdRotina());
+            Integer idRotina = treino.getIdRotina();
+            query.setParameter("idRotina", idRotina, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("TreinoDaoNativeImpl.create - sucesso");
@@ -45,10 +48,11 @@ public class TreinoDaoNativeImpl implements TreinoDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Treino SET nome=:nome, classe=:classe, id_rotina=CAST(:idRotina AS INTEGER) WHERE id_treino=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", treino.getNome());
             query.setParameter("classe", treino.getClasse());
-            query.setParameter("idRotina", treino.getIdRotina());
+            Integer idRotina = treino.getIdRotina();
+            query.setParameter("idRotina", idRotina, StandardBasicTypes.INTEGER);
             query.setParameter("id", treino.getIdTreino());
             int updated = query.executeUpdate();
             if (updated == 0) {

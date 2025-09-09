@@ -12,6 +12,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Alimentacao;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
 
@@ -23,13 +25,14 @@ public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
             em.getTransaction().begin();
             String sql = "INSERT INTO Alimentacao (status, nome, link, video, preparo, id_rotina) " +
                     "VALUES (:status, :nome, :link, :video, :preparo, CAST(:idRotina AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("status", alimentacao.getStatus());
             query.setParameter("nome", alimentacao.getNome());
             query.setParameter("link", alimentacao.getLink());
             query.setParameter("video", alimentacao.getVideo());
             query.setParameter("preparo", alimentacao.getPreparo());
-            query.setParameter("idRotina", alimentacao.getIdRotina());
+            Integer idRotina = alimentacao.getIdRotina();
+            query.setParameter("idRotina", idRotina, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("AlimentacaoDaoNativeImpl.create - sucesso");
@@ -49,13 +52,14 @@ public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Alimentacao SET status=:status, nome=:nome, link=:link, video=:video, preparo=:preparo, id_rotina=CAST(:idRotina AS INTEGER) WHERE id_alimentacao=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("status", alimentacao.getStatus());
             query.setParameter("nome", alimentacao.getNome());
             query.setParameter("link", alimentacao.getLink());
             query.setParameter("video", alimentacao.getVideo());
             query.setParameter("preparo", alimentacao.getPreparo());
-            query.setParameter("idRotina", alimentacao.getIdRotina());
+            Integer idRotina = alimentacao.getIdRotina();
+            query.setParameter("idRotina", idRotina, StandardBasicTypes.INTEGER);
             query.setParameter("id", alimentacao.getIdAlimentacao());
             int updated = query.executeUpdate();
             if (updated == 0) {

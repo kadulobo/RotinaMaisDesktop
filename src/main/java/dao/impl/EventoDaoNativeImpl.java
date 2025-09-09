@@ -12,6 +12,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Evento;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class EventoDaoNativeImpl implements EventoDao {
 
@@ -23,13 +25,14 @@ public class EventoDaoNativeImpl implements EventoDao {
             em.getTransaction().begin();
             String sql = "INSERT INTO Evento (vantagem, foto, nome, descricao, data_criacao, id_categoria) " +
                     "VALUES (:vantagem, :foto, :nome, :descricao, :dataCriacao, CAST(:idCategoria AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("vantagem", evento.getVantagem());
             query.setParameter("foto", evento.getFoto());
             query.setParameter("nome", evento.getNome());
             query.setParameter("descricao", evento.getDescricao());
             query.setParameter("dataCriacao", evento.getDataCriacao());
-            query.setParameter("idCategoria", evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null);
+            Integer idCategoria = evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null;
+            query.setParameter("idCategoria", idCategoria, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("EventoDaoNativeImpl.create - sucesso");
@@ -50,13 +53,14 @@ public class EventoDaoNativeImpl implements EventoDao {
             em.getTransaction().begin();
             String sql = "UPDATE Evento SET vantagem=:vantagem, foto=:foto, nome=:nome, descricao=:descricao, " +
                     "data_criacao=:dataCriacao, id_categoria=CAST(:idCategoria AS INTEGER) WHERE id_evento=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("vantagem", evento.getVantagem());
             query.setParameter("foto", evento.getFoto());
             query.setParameter("nome", evento.getNome());
             query.setParameter("descricao", evento.getDescricao());
             query.setParameter("dataCriacao", evento.getDataCriacao());
-            query.setParameter("idCategoria", evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null);
+            Integer idCategoria = evento.getCategoria() != null ? evento.getCategoria().getIdCategoria() : null;
+            query.setParameter("idCategoria", idCategoria, StandardBasicTypes.INTEGER);
             query.setParameter("id", evento.getIdEvento());
             int updated = query.executeUpdate();
             if (updated == 0) {
