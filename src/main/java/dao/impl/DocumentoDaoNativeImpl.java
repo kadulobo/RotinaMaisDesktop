@@ -12,6 +12,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Documento;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class DocumentoDaoNativeImpl implements DocumentoDao {
 
@@ -23,13 +25,14 @@ public class DocumentoDaoNativeImpl implements DocumentoDao {
             em.getTransaction().begin();
             String sql = "INSERT INTO Documento (nome, arquivo, foto, video, data, id_usuario) " +
                     "VALUES (:nome, :arquivo, :foto, :video, :data, CAST(:idUsuario AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", documento.getNome());
             query.setParameter("arquivo", documento.getArquivo());
             query.setParameter("foto", documento.getFoto());
             query.setParameter("video", documento.getVideo());
             query.setParameter("data", documento.getData());
-            query.setParameter("idUsuario", documento.getIdUsuario());
+            Integer idUsuario = documento.getIdUsuario();
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("DocumentoDaoNativeImpl.create - sucesso");
@@ -49,13 +52,14 @@ public class DocumentoDaoNativeImpl implements DocumentoDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Documento SET nome=:nome, arquivo=:arquivo, foto=:foto, video=:video, data=:data, id_usuario=CAST(:idUsuario AS INTEGER) WHERE id_documento=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("nome", documento.getNome());
             query.setParameter("arquivo", documento.getArquivo());
             query.setParameter("foto", documento.getFoto());
             query.setParameter("video", documento.getVideo());
             query.setParameter("data", documento.getData());
-            query.setParameter("idUsuario", documento.getIdUsuario());
+            Integer idUsuario = documento.getIdUsuario();
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
             query.setParameter("id", documento.getIdDocumento());
             int updated = query.executeUpdate();
             if (updated == 0) {

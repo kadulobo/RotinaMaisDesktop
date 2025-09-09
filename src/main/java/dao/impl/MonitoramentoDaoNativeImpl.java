@@ -12,6 +12,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Monitoramento;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class MonitoramentoDaoNativeImpl implements MonitoramentoDao {
 
@@ -23,12 +25,13 @@ public class MonitoramentoDaoNativeImpl implements MonitoramentoDao {
             em.getTransaction().begin();
             String sql = "INSERT INTO Monitoramento (status, nome, descricao, foto, id_periodo) " +
                     "VALUES (:status, :nome, :descricao, :foto, CAST(:idPeriodo AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("status", monitoramento.getStatus());
             query.setParameter("nome", monitoramento.getNome());
             query.setParameter("descricao", monitoramento.getDescricao());
             query.setParameter("foto", monitoramento.getFoto());
-            query.setParameter("idPeriodo", monitoramento.getIdPeriodo());
+            Integer idPeriodo = monitoramento.getIdPeriodo();
+            query.setParameter("idPeriodo", idPeriodo, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("MonitoramentoDaoNativeImpl.create - sucesso");
@@ -48,12 +51,13 @@ public class MonitoramentoDaoNativeImpl implements MonitoramentoDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Monitoramento SET status=:status, nome=:nome, descricao=:descricao, foto=:foto, id_periodo=CAST(:idPeriodo AS INTEGER) WHERE id_monitoramento=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("status", monitoramento.getStatus());
             query.setParameter("nome", monitoramento.getNome());
             query.setParameter("descricao", monitoramento.getDescricao());
             query.setParameter("foto", monitoramento.getFoto());
-            query.setParameter("idPeriodo", monitoramento.getIdPeriodo());
+            Integer idPeriodo = monitoramento.getIdPeriodo();
+            query.setParameter("idPeriodo", idPeriodo, StandardBasicTypes.INTEGER);
             query.setParameter("id", monitoramento.getIdMonitoramento());
             int updated = query.executeUpdate();
             if (updated == 0) {

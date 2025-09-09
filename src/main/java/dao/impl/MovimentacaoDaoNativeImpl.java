@@ -13,6 +13,8 @@ import infra.Logger;
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
 import model.Movimentacao;
+import org.hibernate.query.NativeQuery;
+import org.hibernate.type.StandardBasicTypes;
 
 public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
 
@@ -24,16 +26,19 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
             em.getTransaction().begin();
             String sql = "INSERT INTO Movimentacao (desconto, vantagem, liquido, tipo, status, ponto, id_usuario, id_caixa, id_periodo) " +
                     "VALUES (:desconto, :vantagem, :liquido, :tipo, :status, :ponto, CAST(:idUsuario AS INTEGER), CAST(:idCaixa AS INTEGER), CAST(:idPeriodo AS INTEGER))";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("desconto", movimentacao.getDesconto());
             query.setParameter("vantagem", movimentacao.getVantagem());
             query.setParameter("liquido", movimentacao.getLiquido());
             query.setParameter("tipo", movimentacao.getTipo());
             query.setParameter("status", movimentacao.getStatus());
             query.setParameter("ponto", movimentacao.getPonto());
-            query.setParameter("idUsuario", movimentacao.getUsuario() != null ? movimentacao.getUsuario().getIdUsuario() : null);
-            query.setParameter("idCaixa", movimentacao.getCaixa() != null ? movimentacao.getCaixa().getIdCaixa() : null);
-            query.setParameter("idPeriodo", movimentacao.getPeriodo() != null ? movimentacao.getPeriodo().getIdPeriodo() : null);
+            Integer idUsuario = movimentacao.getUsuario() != null ? movimentacao.getUsuario().getIdUsuario() : null;
+            Integer idCaixa = movimentacao.getCaixa() != null ? movimentacao.getCaixa().getIdCaixa() : null;
+            Integer idPeriodo = movimentacao.getPeriodo() != null ? movimentacao.getPeriodo().getIdPeriodo() : null;
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
+            query.setParameter("idCaixa", idCaixa, StandardBasicTypes.INTEGER);
+            query.setParameter("idPeriodo", idPeriodo, StandardBasicTypes.INTEGER);
             query.executeUpdate();
             em.getTransaction().commit();
             Logger.info("MovimentacaoDaoNativeImpl.create - sucesso");
@@ -53,16 +58,19 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
         try {
             em.getTransaction().begin();
             String sql = "UPDATE Movimentacao SET desconto=:desconto, vantagem=:vantagem, liquido=:liquido, tipo=:tipo, status=:status, ponto=:ponto, id_usuario=CAST(:idUsuario AS INTEGER), id_caixa=CAST(:idCaixa AS INTEGER), id_periodo=CAST(:idPeriodo AS INTEGER) WHERE id_movimentacao=:id";
-            Query query = em.createNativeQuery(sql);
+            NativeQuery<?> query = (NativeQuery<?>) em.createNativeQuery(sql);
             query.setParameter("desconto", movimentacao.getDesconto());
             query.setParameter("vantagem", movimentacao.getVantagem());
             query.setParameter("liquido", movimentacao.getLiquido());
             query.setParameter("tipo", movimentacao.getTipo());
             query.setParameter("status", movimentacao.getStatus());
             query.setParameter("ponto", movimentacao.getPonto());
-            query.setParameter("idUsuario", movimentacao.getUsuario() != null ? movimentacao.getUsuario().getIdUsuario() : null);
-            query.setParameter("idCaixa", movimentacao.getCaixa() != null ? movimentacao.getCaixa().getIdCaixa() : null);
-            query.setParameter("idPeriodo", movimentacao.getPeriodo() != null ? movimentacao.getPeriodo().getIdPeriodo() : null);
+            Integer idUsuario = movimentacao.getUsuario() != null ? movimentacao.getUsuario().getIdUsuario() : null;
+            Integer idCaixa = movimentacao.getCaixa() != null ? movimentacao.getCaixa().getIdCaixa() : null;
+            Integer idPeriodo = movimentacao.getPeriodo() != null ? movimentacao.getPeriodo().getIdPeriodo() : null;
+            query.setParameter("idUsuario", idUsuario, StandardBasicTypes.INTEGER);
+            query.setParameter("idCaixa", idCaixa, StandardBasicTypes.INTEGER);
+            query.setParameter("idPeriodo", idPeriodo, StandardBasicTypes.INTEGER);
             query.setParameter("id", movimentacao.getIdMovimentacao());
             int updated = query.executeUpdate();
             if (updated == 0) {
