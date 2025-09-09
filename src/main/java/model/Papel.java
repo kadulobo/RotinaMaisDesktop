@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 @Entity
-@Table(name = "Papel")
+@Table(name = "Papel", schema = "rotinamais")
 public class Papel {
     @Id
     @Column(name = "id_papel")

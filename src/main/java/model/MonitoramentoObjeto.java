@@ -5,7 +5,7 @@ import java.time.LocalDate;
 import java.util.Objects;
 
 @Entity
-@Table(name = "Monitoramento_Objeto")
+@Table(name = "Monitoramento_Objeto", schema = "rotinamais")
 public class MonitoramentoObjeto {
     @Id
     @Column(name = "id_monitoramento_objeto")

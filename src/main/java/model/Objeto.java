@@ -11,7 +11,7 @@ import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "Objeto")
+@Table(name = "Objeto", schema = "rotinamais")
 public class Objeto {
 
     @Id
