@@ -3,6 +3,12 @@ package test;
 import controller.MovimentacaoController;
 import dao.impl.MovimentacaoDaoNativeImpl;
 import model.Movimentacao;
+import controller.UsuarioController;
+import controller.CaixaController;
+import controller.PeriodoController;
+import dao.impl.UsuarioDaoNativeImpl;
+import dao.impl.CaixaDaoNativeImpl;
+import dao.impl.PeriodoDaoNativeImpl;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -25,6 +31,12 @@ public class MovimentacaoControllerTest {
         mov.setLiquido(new BigDecimal("100.0"));
         mov.setStatus(1);
         mov.setPonto(10);
+        UsuarioController usuarioController = new UsuarioController(new UsuarioDaoNativeImpl());
+        CaixaController caixaController = new CaixaController(new CaixaDaoNativeImpl());
+        PeriodoController periodoController = new PeriodoController(new PeriodoDaoNativeImpl());
+        mov.setUsuario(TestUtils.getRandom(usuarioController.listar()));
+        mov.setCaixa(TestUtils.getRandom(caixaController.listar()));
+        mov.setPeriodo(TestUtils.getRandom(periodoController.listar()));
         controller.criar(mov);
 
         // Recuperar movimentação persistida e atualizar
@@ -42,9 +54,9 @@ public class MovimentacaoControllerTest {
         controller.buscarPorTipo(1);
         controller.buscarPorStatus(1);
         controller.buscarPorPonto(10);
-        controller.buscarPorIdUsuario(1);
-        controller.buscarPorIdCaixa(1);
-        controller.buscarPorIdPeriodo(1);
+        controller.buscarPorIdUsuario(mov.getUsuario().getIdUsuario());
+        controller.buscarPorIdCaixa(mov.getCaixa().getIdCaixa());
+        controller.buscarPorIdPeriodo(mov.getPeriodo().getIdPeriodo());
         controller.pesquisar(mov);
         controller.pesquisar(mov, 0, 10);
 

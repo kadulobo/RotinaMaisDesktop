@@ -3,6 +3,10 @@ package test;
 import controller.RotinaPeriodoController;
 import dao.impl.RotinaPeriodoDaoNativeImpl;
 import model.RotinaPeriodo;
+import controller.RotinaController;
+import controller.PeriodoController;
+import dao.impl.RotinaDaoNativeImpl;
+import dao.impl.PeriodoDaoNativeImpl;
 
 import java.util.List;
 
@@ -12,8 +16,10 @@ public class RotinaPeriodoControllerTest {
         RotinaPeriodoController controller = new RotinaPeriodoController(dao);
 
         RotinaPeriodo rp = new RotinaPeriodo();
-        rp.setIdRotina(1);
-        rp.setIdPeriodo(1);
+        RotinaController rotinaController = new RotinaController(new RotinaDaoNativeImpl());
+        PeriodoController periodoController = new PeriodoController(new PeriodoDaoNativeImpl());
+        rp.setIdRotina(TestUtils.getRandom(rotinaController.listar()).getIdRotina());
+        rp.setIdPeriodo(TestUtils.getRandom(periodoController.listar()).getIdPeriodo());
         controller.criar(rp);
 
         List<RotinaPeriodo> list = controller.listar();

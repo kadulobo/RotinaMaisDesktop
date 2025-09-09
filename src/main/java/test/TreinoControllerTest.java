@@ -3,6 +3,8 @@ package test;
 import controller.TreinoController;
 import dao.impl.TreinoDaoNativeImpl;
 import model.Treino;
+import controller.RotinaController;
+import dao.impl.RotinaDaoNativeImpl;
 
 import java.util.List;
 
@@ -20,7 +22,8 @@ public class TreinoControllerTest {
         Treino treino = new Treino();
         treino.setNome("Treino A");
         treino.setClasse("Força");
-        treino.setIdRotina(1);
+        RotinaController rotinaController = new RotinaController(new RotinaDaoNativeImpl());
+        treino.setIdRotina(TestUtils.getRandom(rotinaController.listar()).getIdRotina());
         controller.criar(treino);
 
         // Recuperar treino persistido e atualizar
@@ -34,7 +37,7 @@ public class TreinoControllerTest {
         controller.listar(0, 10);
         controller.buscarPorNome("Treino");
         controller.buscarPorClasse("Força");
-        controller.buscarPorIdRotina(1);
+        controller.buscarPorIdRotina(treino.getIdRotina());
         controller.pesquisar(treino);
         controller.pesquisar(treino, 0, 10);
 
