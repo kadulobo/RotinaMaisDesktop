@@ -1,33 +1,37 @@
 package swing.table;
 
-import model.ModelStudent;
+/**
+ * Wrapper model used by the table to keep the row data and the callbacks that
+ * should be invoked when the action buttons are pressed.
+ *
+ * @param <T> Type of the row data
+ */
+public class ModelAction<T> {
 
-public class ModelAction {
+    private T data;
+    private EventAction<T> event;
 
-    public ModelStudent getStudent() {
-        return student;
-    }
-
-    public void setStudent(ModelStudent student) {
-        this.student = student;
-    }
-
-    public EventAction getEvent() {
-        return event;
-    }
-
-    public void setEvent(EventAction event) {
-        this.event = event;
-    }
-
-    public ModelAction(ModelStudent student, EventAction event) {
-        this.student = student;
+    public ModelAction(T data, EventAction<T> event) {
+        this.data = data;
         this.event = event;
     }
 
     public ModelAction() {
     }
 
-    private ModelStudent student;
-    private EventAction event;
+    public T getData() {
+        return data;
+    }
+
+    public void setData(T data) {
+        this.data = data;
+    }
+
+    public EventAction<T> getEvent() {
+        return event;
+    }
+
+    public void setEvent(EventAction<T> event) {
+        this.event = event;
+    }
 }
