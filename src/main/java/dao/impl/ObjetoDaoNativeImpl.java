@@ -1,256 +1,320 @@
-// path: src/main/java/dao/impl/ObjetoDaoNativeImpl.java
 package dao.impl;
 
-import java.math.BigDecimal;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
+import conexao.ConnectionFactory;
 import dao.api.ObjetoDao;
 import exception.ObjetoException;
-import infra.EntityManagerUtil;
 import infra.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
 import model.Objeto;
 
+import java.math.BigDecimal;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.List;
+
 public class ObjetoDaoNativeImpl implements ObjetoDao {
+
+    private Objeto mapObjeto(ResultSet rs, boolean withFoto) throws SQLException {
+        Objeto o = new Objeto();
+        o.setIdObjeto(rs.getInt("id_objeto"));
+        o.setNome(rs.getString("nome"));
+        int tipo = rs.getInt("tipo");
+        if (!rs.wasNull()) {
+            o.setTipo(tipo);
+        }
+        o.setValor(rs.getBigDecimal("valor"));
+        o.setDescricao(rs.getString("descricao"));
+        if (withFoto) {
+            o.setFoto(rs.getBytes("foto"));
+        }
+        return o;
+    }
 
     @Override
     public void create(Objeto objeto) throws ObjetoException {
         Logger.info("ObjetoDaoNativeImpl.create - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "INSERT INTO Objeto (nome, tipo, valor, descricao, foto) VALUES (?,?,?,?,?)";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "INSERT INTO Objeto (nome, tipo, valor, descricao, foto) VALUES (:nome, :tipo, :valor, :descricao, :foto)";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("nome", objeto.getNome());
-            query.setParameter("tipo", objeto.getTipo());
-            query.setParameter("valor", objeto.getValor());
-            query.setParameter("descricao", objeto.getDescricao());
-            query.setParameter("foto", objeto.getFoto());
-            query.executeUpdate();
-            em.getTransaction().commit();
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, objeto.getNome());
+                if (objeto.getTipo() != null) {
+                    ps.setInt(2, objeto.getTipo());
+                } else {
+                    ps.setNull(2, Types.INTEGER);
+                }
+                ps.setBigDecimal(3, objeto.getValor());
+                ps.setString(4, objeto.getDescricao());
+                ps.setBytes(5, objeto.getFoto());
+                ps.executeUpdate();
+            }
+            conn.commit();
             Logger.info("ObjetoDaoNativeImpl.create - sucesso");
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback create", ex); }
+            }
             Logger.error("ObjetoDaoNativeImpl.create - erro", e);
             throw new ObjetoException("Erro ao criar Objeto", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Objeto update(Objeto objeto) throws ObjetoException {
         Logger.info("ObjetoDaoNativeImpl.update - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "UPDATE Objeto SET nome=?, tipo=?, valor=?, descricao=?, foto=? WHERE id_objeto=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "UPDATE Objeto SET nome=:nome, tipo=:tipo, valor=:valor, descricao=:descricao, foto=:foto WHERE id_objeto=:id";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("nome", objeto.getNome());
-            query.setParameter("tipo", objeto.getTipo());
-            query.setParameter("valor", objeto.getValor());
-            query.setParameter("descricao", objeto.getDescricao());
-            query.setParameter("foto", objeto.getFoto());
-            query.setParameter("id", objeto.getIdObjeto());
-            int updated = query.executeUpdate();
-            if (updated == 0) {
-                throw new ObjetoException("Objeto não encontrado: id=" + objeto.getIdObjeto());
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setString(1, objeto.getNome());
+                if (objeto.getTipo() != null) {
+                    ps.setInt(2, objeto.getTipo());
+                } else {
+                    ps.setNull(2, Types.INTEGER);
+                }
+                ps.setBigDecimal(3, objeto.getValor());
+                ps.setString(4, objeto.getDescricao());
+                ps.setBytes(5, objeto.getFoto());
+                ps.setInt(6, objeto.getIdObjeto());
+                int updated = ps.executeUpdate();
+                if (updated == 0) {
+                    throw new ObjetoException("Objeto não encontrado: id=" + objeto.getIdObjeto());
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("ObjetoDaoNativeImpl.update - sucesso");
             return findById(objeto.getIdObjeto());
-        } catch (ObjetoException e) {
-            em.getTransaction().rollback();
-            Logger.error("ObjetoDaoNativeImpl.update - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback update", ex); }
+            }
             Logger.error("ObjetoDaoNativeImpl.update - erro", e);
             throw new ObjetoException("Erro ao atualizar Objeto", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public void deleteById(Integer id) throws ObjetoException {
         Logger.info("ObjetoDaoNativeImpl.deleteById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
+        String sql = "DELETE FROM Objeto WHERE id_objeto=?";
+        Connection conn = null;
         try {
-            em.getTransaction().begin();
-            String sql = "DELETE FROM Objeto WHERE id_objeto=:id";
-            Query query = em.createNativeQuery(sql);
-            query.setParameter("id", id);
-            int deleted = query.executeUpdate();
-            if (deleted == 0) {
-                throw new ObjetoException("Objeto não encontrado: id=" + id);
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                int deleted = ps.executeUpdate();
+                if (deleted == 0) {
+                    throw new ObjetoException("Objeto não encontrado: id=" + id);
+                }
             }
-            em.getTransaction().commit();
+            conn.commit();
             Logger.info("ObjetoDaoNativeImpl.deleteById - sucesso");
-        } catch (ObjetoException e) {
-            em.getTransaction().rollback();
-            Logger.error("ObjetoDaoNativeImpl.deleteById - erro", e);
-            throw e;
-        } catch (Exception e) {
-            em.getTransaction().rollback();
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) { Logger.error("Rollback delete", ex); }
+            }
             Logger.error("ObjetoDaoNativeImpl.deleteById - erro", e);
             throw new ObjetoException("Erro ao deletar Objeto", e);
         } finally {
-            em.close();
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
         }
     }
 
     @Override
     public Objeto findById(Integer id) throws ObjetoException {
         Logger.info("ObjetoDaoNativeImpl.findById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE id_objeto=:id";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("id", id);
-            Objeto o = (Objeto) query.getSingleResult();
-            Logger.info("ObjetoDaoNativeImpl.findById - sucesso");
-            return o;
-        } catch (Exception e) {
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE id_objeto=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("ObjetoDaoNativeImpl.findById - sucesso");
+                    return mapObjeto(rs, false);
+                }
+            }
+            throw new ObjetoException("Objeto não encontrado: id=" + id);
+        } catch (SQLException e) {
             Logger.error("ObjetoDaoNativeImpl.findById - erro", e);
             throw new ObjetoException("Objeto não encontrado: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public Objeto findWithFotoById(Integer id) throws ObjetoException {
         Logger.info("ObjetoDaoNativeImpl.findWithFotoById - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao, foto FROM Objeto WHERE id_objeto=:id";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("id", id);
-            Objeto o = (Objeto) query.getSingleResult();
-            Logger.info("ObjetoDaoNativeImpl.findWithFotoById - sucesso");
-            return o;
-        } catch (Exception e) {
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao, foto FROM Objeto WHERE id_objeto=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Logger.info("ObjetoDaoNativeImpl.findWithFotoById - sucesso");
+                    return mapObjeto(rs, true);
+                }
+            }
+            throw new ObjetoException("Objeto não encontrado: id=" + id);
+        } catch (SQLException e) {
             Logger.error("ObjetoDaoNativeImpl.findWithFotoById - erro", e);
             throw new ObjetoException("Objeto não encontrado: id=" + id, e);
-        } finally {
-            em.close();
         }
     }
 
     @Override
     public List<Objeto> findAll() {
         Logger.info("ObjetoDaoNativeImpl.findAll - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            List<Objeto> list = query.getResultList();
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto";
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             ResultSet rs = ps.executeQuery()) {
+            while (rs.next()) {
+                list.add(mapObjeto(rs, false));
+            }
             Logger.info("ObjetoDaoNativeImpl.findAll - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.findAll - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Objeto> findAll(int page, int size) {
         Logger.info("ObjetoDaoNativeImpl.findAll(page) - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto LIMIT :limit OFFSET :offset";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("limit", size);
-            query.setParameter("offset", page * size);
-            List<Objeto> list = query.getResultList();
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto LIMIT ? OFFSET ?";
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, size);
+            ps.setInt(2, page * size);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapObjeto(rs, false));
+                }
+            }
             Logger.info("ObjetoDaoNativeImpl.findAll(page) - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.findAll(page) - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Objeto> findByNome(String nome) {
         Logger.info("ObjetoDaoNativeImpl.findByNome - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE nome=:nome";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("nome", nome);
-            List<Objeto> list = query.getResultList();
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE nome=?";
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nome);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapObjeto(rs, false));
+                }
+            }
             Logger.info("ObjetoDaoNativeImpl.findByNome - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.findByNome - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Objeto> findByTipo(Integer tipo) {
         Logger.info("ObjetoDaoNativeImpl.findByTipo - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE tipo=:tipo";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("tipo", tipo);
-            List<Objeto> list = query.getResultList();
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE tipo=?";
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, tipo);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapObjeto(rs, false));
+                }
+            }
             Logger.info("ObjetoDaoNativeImpl.findByTipo - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.findByTipo - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Objeto> findByValor(BigDecimal valor) {
         Logger.info("ObjetoDaoNativeImpl.findByValor - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE valor=:valor";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("valor", valor);
-            List<Objeto> list = query.getResultList();
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE valor=?";
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBigDecimal(1, valor);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapObjeto(rs, false));
+                }
+            }
             Logger.info("ObjetoDaoNativeImpl.findByValor - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.findByValor - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Objeto> findByDescricao(String descricao) {
         Logger.info("ObjetoDaoNativeImpl.findByDescricao - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE descricao=:descricao";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("descricao", descricao);
-            List<Objeto> list = query.getResultList();
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE descricao=?";
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, descricao);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapObjeto(rs, false));
+                }
+            }
             Logger.info("ObjetoDaoNativeImpl.findByDescricao - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.findByDescricao - erro", e);
         }
+        return list;
     }
 
     @Override
     public List<Objeto> findByFoto(byte[] foto) {
         Logger.info("ObjetoDaoNativeImpl.findByFoto - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            String sql = "SELECT id_objeto, nome, tipo, valor, descricao, foto FROM Objeto WHERE foto=:foto";
-            Query query = em.createNativeQuery(sql, Objeto.class);
-            query.setParameter("foto", foto);
-            List<Objeto> list = query.getResultList();
+        String sql = "SELECT id_objeto, nome, tipo, valor, descricao, foto FROM Objeto WHERE foto=?";
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setBytes(1, foto);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapObjeto(rs, true));
+                }
+            }
             Logger.info("ObjetoDaoNativeImpl.findByFoto - sucesso");
-            return list;
-        } finally {
-            em.close();
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.findByFoto - erro", e);
         }
+        return list;
     }
 
     @Override
@@ -261,46 +325,48 @@ public class ObjetoDaoNativeImpl implements ObjetoDao {
     @Override
     public List<Objeto> search(Objeto filtro, int page, int size) {
         Logger.info("ObjetoDaoNativeImpl.search - inicio");
-        EntityManager em = EntityManagerUtil.getEntityManager();
-        try {
-            StringBuilder sb = new StringBuilder("SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE 1=1");
-            Map<String, Object> params = new HashMap<>();
-            if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
-                sb.append(" AND nome=:nome");
-                params.put("nome", filtro.getNome());
-            }
-            if (filtro.getTipo() != null) {
-                sb.append(" AND tipo=:tipo");
-                params.put("tipo", filtro.getTipo());
-            }
-            if (filtro.getValor() != null) {
-                sb.append(" AND valor=:valor");
-                params.put("valor", filtro.getValor());
-            }
-            if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
-                sb.append(" AND descricao=:descricao");
-                params.put("descricao", filtro.getDescricao());
-            }
-            if (filtro.getFoto() != null) {
-                sb.append(" AND foto=:foto");
-                params.put("foto", filtro.getFoto());
-            }
-            if (page >= 0 && size > 0) {
-                sb.append(" LIMIT :limit OFFSET :offset");
-            }
-            Query query = em.createNativeQuery(sb.toString(), Objeto.class);
-            for (Map.Entry<String, Object> e : params.entrySet()) {
-                query.setParameter(e.getKey(), e.getValue());
-            }
-            if (page >= 0 && size > 0) {
-                query.setParameter("limit", size);
-                query.setParameter("offset", page * size);
-            }
-            List<Objeto> list = query.getResultList();
-            Logger.info("ObjetoDaoNativeImpl.search - sucesso");
-            return list;
-        } finally {
-            em.close();
+        StringBuilder sb = new StringBuilder("SELECT id_objeto, nome, tipo, valor, descricao FROM Objeto WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
+            sb.append(" AND nome=?");
+            params.add(filtro.getNome());
         }
+        if (filtro.getTipo() != null) {
+            sb.append(" AND tipo=?");
+            params.add(filtro.getTipo());
+        }
+        if (filtro.getValor() != null) {
+            sb.append(" AND valor=?");
+            params.add(filtro.getValor());
+        }
+        if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
+            sb.append(" AND descricao=?");
+            params.add(filtro.getDescricao());
+        }
+        if (filtro.getFoto() != null) {
+            sb.append(" AND foto=?");
+            params.add(filtro.getFoto());
+        }
+        if (page >= 0 && size > 0) {
+            sb.append(" LIMIT ? OFFSET ?");
+            params.add(size);
+            params.add(page * size);
+        }
+        List<Objeto> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sb.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(mapObjeto(rs, false));
+                }
+            }
+            Logger.info("ObjetoDaoNativeImpl.search - sucesso");
+        } catch (SQLException e) {
+            Logger.error("ObjetoDaoNativeImpl.search - erro", e);
+        }
+        return list;
     }
 }
