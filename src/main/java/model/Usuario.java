@@ -1,0 +1,94 @@
+// path: src/main/java/model/Usuario.java
+package model;
+
+import java.util.Objects;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "Usuario")
+public class Usuario {
+
+    @Id
+    @Column(name = "id_usuario")
+    private Integer idUsuario;
+
+    @Column(name = "nome")
+    private String nome;
+
+    @Column(name = "senha")
+    private String senha;
+
+    @Lob
+    @Column(name = "foto")
+    private byte[] foto;
+
+    @Column(name = "email")
+    private String email;
+
+    public Integer getIdUsuario() {
+        return idUsuario;
+    }
+
+    public void setIdUsuario(Integer idUsuario) {
+        this.idUsuario = idUsuario;
+    }
+
+    public String getNome() {
+        return nome;
+    }
+
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    public String getSenha() {
+        return senha;
+    }
+
+    public void setSenha(String senha) {
+        this.senha = senha;
+    }
+
+    public byte[] getFoto() {
+        return foto;
+    }
+
+    public void setFoto(byte[] foto) {
+        this.foto = foto;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Usuario)) return false;
+        Usuario that = (Usuario) o;
+        return Objects.equals(idUsuario, that.idUsuario);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(idUsuario);
+    }
+
+    @Override
+    public String toString() {
+        return "Usuario{" +
+                "idUsuario=" + idUsuario +
+                ", nome='" + nome + '\'' +
+                ", email='" + email + '\'' +
+                '}';
+    }
+}
