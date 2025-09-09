@@ -1,4 +1,4 @@
-package main;
+package test;
 
 import controller.IngredienteFornecedorController;
 import dao.impl.IngredienteFornecedorDaoNativeImpl;
