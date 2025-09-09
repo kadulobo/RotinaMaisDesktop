@@ -10,7 +10,7 @@ import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
-@Table(name = "Ingrediente")
+@Table(name = "Ingrediente", schema = "rotinamais")
 public class Ingrediente {
 
     @Lob
