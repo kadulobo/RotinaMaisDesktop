@@ -8,14 +8,12 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
 @Table(name = "Ingrediente", schema = "rotinamais")
 public class Ingrediente {
 
-    @Lob
     @Column(name = "foto")
     private byte[] foto;
 

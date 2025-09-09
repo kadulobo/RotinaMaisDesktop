@@ -8,7 +8,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
@@ -29,7 +28,6 @@ public class Monitoramento {
     @Column(name = "descricao")
     private String descricao;
 
-    @Lob
     @Column(name = "foto")
     private byte[] foto;
 

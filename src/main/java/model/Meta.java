@@ -24,7 +24,6 @@ public class Meta {
     @Column(name = "status")
     private Integer status;
 
-    @Lob
     @Column(name = "foto")
     private byte[] foto;
 
