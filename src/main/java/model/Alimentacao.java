@@ -8,7 +8,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
@@ -29,7 +28,6 @@ public class Alimentacao {
     @Column(name = "link")
     private String link;
 
-    @Lob
     @Column(name = "video")
     private byte[] video;
 

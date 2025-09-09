@@ -10,7 +10,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
-import javax.persistence.Lob;
 import javax.persistence.OneToMany;
 import javax.persistence.Table;
 
@@ -29,7 +28,6 @@ public class Usuario {
     @Column(name = "senha")
     private String senha;
 
-    @Lob
     @Column(name = "foto")
     private byte[] foto;
 

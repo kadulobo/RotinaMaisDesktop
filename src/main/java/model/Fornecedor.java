@@ -8,7 +8,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
@@ -23,7 +22,6 @@ public class Fornecedor {
     @Column(name = "nome")
     private String nome;
 
-    @Lob
     @Column(name = "foto")
     private byte[] foto;
 

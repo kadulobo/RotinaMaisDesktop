@@ -9,7 +9,6 @@ import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
-import javax.persistence.Lob;
 import javax.persistence.Table;
 
 @Entity
@@ -24,15 +23,12 @@ public class Documento {
     @Column(name = "nome")
     private String nome;
 
-    @Lob
     @Column(name = "arquivo")
     private byte[] arquivo;
 
-    @Lob
     @Column(name = "foto")
     private byte[] foto;
 
-    @Lob
     @Column(name = "video")
     private byte[] video;
 
