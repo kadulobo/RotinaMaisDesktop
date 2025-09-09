@@ -10,7 +10,7 @@ public class MonitoramentoObjeto {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_monitoramento_objeto")
-    private LocalDate idMonitoramentoObjeto;
+    private Integer idMonitoramentoObjeto;
 
     
     @Column(name = "data")
@@ -24,8 +24,8 @@ public class MonitoramentoObjeto {
     @Column(name = "id_objeto")
     private Integer idObjeto;
 
-    public LocalDate getIdMonitoramentoObjeto() { return idMonitoramentoObjeto; }
-    public void setIdMonitoramentoObjeto(LocalDate idMonitoramentoObjeto) { this.idMonitoramentoObjeto = idMonitoramentoObjeto; }
+    public Integer getIdMonitoramentoObjeto() { return idMonitoramentoObjeto; }
+    public void setIdMonitoramentoObjeto(Integer idMonitoramentoObjeto) { this.idMonitoramentoObjeto = idMonitoramentoObjeto; }
 
     public LocalDate getData() { return data; }
     public void setData(LocalDate data) { this.data = data; }

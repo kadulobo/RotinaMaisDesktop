@@ -28,13 +28,13 @@ public class MonitoramentoObjetoController {
         dao.update(e);
     }
 
-    public void remover(LocalDate id) {
+    public void remover(Integer id) {
         if (id == null) throw new MonitoramentoObjetoException("Id obrigatorio");
         Logger.info("MonitoramentoObjetoController.remover");
         dao.deleteById(id);
     }
 
-    public MonitoramentoObjeto buscarPorId(LocalDate id) {
+    public MonitoramentoObjeto buscarPorId(Integer id) {
         if (id == null) throw new MonitoramentoObjetoException("Id obrigatorio");
         Logger.info("MonitoramentoObjetoController.buscarPorId");
         return dao.findById(id);
