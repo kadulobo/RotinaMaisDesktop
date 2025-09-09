@@ -1,181 +1,349 @@
 package dao.impl;
 
+import conexao.ConnectionFactory;
 import dao.api.OperacaoDao;
 import exception.OperacaoException;
-import infra.EntityManagerUtil;
 import infra.Logger;
-import javax.persistence.EntityManager;
-import javax.persistence.Query;
 import model.Operacao;
 
 import java.math.BigDecimal;
+import java.sql.*;
 import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.List;
 
 public class OperacaoDaoNativeImpl implements OperacaoDao {
-    private final EntityManager em = EntityManagerUtil.getEntityManager();
+
+    private Operacao map(ResultSet rs) throws SQLException {
+        Operacao o = new Operacao();
+        o.setIdOperacao(rs.getInt("id_operacao"));
+        o.setFechamento(rs.getBigDecimal("fechamento"));
+        Time t = rs.getTime("tempo_operacao");
+        if (t != null) o.setTempoOperacao(t.toLocalTime());
+        o.setQtdCompra((Integer) rs.getObject("qtd_compra"));
+        o.setAbertura(rs.getBigDecimal("abertura"));
+        o.setQtdVenda((Integer) rs.getObject("qtd_venda"));
+        o.setLado(rs.getString("lado"));
+        o.setPrecoCompra(rs.getBigDecimal("preco_compra"));
+        o.setPrecoVenda(rs.getBigDecimal("preco_venda"));
+        o.setPrecoMedio(rs.getBigDecimal("preco_medio"));
+        o.setResIntervalo(rs.getString("res_intervalo"));
+        o.setNumeroOperacao(rs.getBigDecimal("numero_operacao"));
+        o.setResOperacao(rs.getString("res_operacao"));
+        o.setDrawdon(rs.getBigDecimal("drawdon"));
+        o.setGanhoMax(rs.getBigDecimal("ganhoMax"));
+        o.setPerdaMax(rs.getBigDecimal("perdaMax"));
+        o.setTet(rs.getString("tet"));
+        o.setTotal(rs.getBigDecimal("total"));
+        o.setIdCarteira((Integer) rs.getObject("id_carteira"));
+        o.setIdPapel((Integer) rs.getObject("id_papel"));
+        return o;
+    }
+
+    private List<Operacao> listBySql(String sql, Object... params) {
+        List<Operacao> list = new ArrayList<>();
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            for (int i = 0; i < params.length; i++) {
+                ps.setObject(i + 1, params[i]);
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    list.add(map(rs));
+                }
+            }
+        } catch (SQLException e) {
+            Logger.error("OperacaoDaoNativeImpl.listBySql - erro", e);
+        }
+        return list;
+    }
 
     @Override
     public void create(Operacao e) {
         Logger.info("OperacaoDaoNativeImpl.create");
-        em.getTransaction().begin();
-        e.setIdOperacao(null);
-        em.persist(e);
-        em.getTransaction().commit();
+        String sql = "INSERT INTO Operacao (fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        Connection conn = null;
+        try {
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                int i = 1;
+                ps.setBigDecimal(i++, e.getFechamento());
+                if (e.getTempoOperacao() != null) {
+                    ps.setTime(i++, Time.valueOf(e.getTempoOperacao()));
+                } else {
+                    ps.setNull(i++, Types.TIME);
+                }
+                if (e.getQtdCompra() != null) {
+                    ps.setInt(i++, e.getQtdCompra());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                ps.setBigDecimal(i++, e.getAbertura());
+                if (e.getQtdVenda() != null) {
+                    ps.setInt(i++, e.getQtdVenda());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                ps.setString(i++, e.getLado());
+                ps.setBigDecimal(i++, e.getPrecoCompra());
+                ps.setBigDecimal(i++, e.getPrecoVenda());
+                ps.setBigDecimal(i++, e.getPrecoMedio());
+                ps.setString(i++, e.getResIntervalo());
+                ps.setBigDecimal(i++, e.getNumeroOperacao());
+                ps.setString(i++, e.getResOperacao());
+                ps.setBigDecimal(i++, e.getDrawdon());
+                ps.setBigDecimal(i++, e.getGanhoMax());
+                ps.setBigDecimal(i++, e.getPerdaMax());
+                ps.setString(i++, e.getTet());
+                ps.setBigDecimal(i++, e.getTotal());
+                if (e.getIdCarteira() != null) {
+                    ps.setInt(i++, e.getIdCarteira());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                if (e.getIdPapel() != null) {
+                    ps.setInt(i++, e.getIdPapel());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                ps.executeUpdate();
+            }
+            conn.commit();
+        } catch (SQLException ex) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException e1) { Logger.error("Rollback create", e1); }
+            }
+            Logger.error("OperacaoDaoNativeImpl.create - erro", ex);
+            throw new OperacaoException("Erro ao criar Operacao", ex);
+        } finally {
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
+        }
     }
 
     @Override
     public void update(Operacao e) {
         Logger.info("OperacaoDaoNativeImpl.update");
-        em.getTransaction().begin();
-        em.merge(e);
-        em.getTransaction().commit();
+        String sql = "UPDATE Operacao SET fechamento=?, tempo_operacao=?, qtd_compra=?, abertura=?, qtd_venda=?, lado=?, preco_compra=?, preco_venda=?, preco_medio=?, res_intervalo=?, numero_operacao=?, res_operacao=?, drawdon=?, ganhoMax=?, perdaMax=?, tet=?, total=?, id_carteira=?, id_papel=? WHERE id_operacao=?";
+        Connection conn = null;
+        try {
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                int i = 1;
+                ps.setBigDecimal(i++, e.getFechamento());
+                if (e.getTempoOperacao() != null) {
+                    ps.setTime(i++, Time.valueOf(e.getTempoOperacao()));
+                } else {
+                    ps.setNull(i++, Types.TIME);
+                }
+                if (e.getQtdCompra() != null) {
+                    ps.setInt(i++, e.getQtdCompra());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                ps.setBigDecimal(i++, e.getAbertura());
+                if (e.getQtdVenda() != null) {
+                    ps.setInt(i++, e.getQtdVenda());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                ps.setString(i++, e.getLado());
+                ps.setBigDecimal(i++, e.getPrecoCompra());
+                ps.setBigDecimal(i++, e.getPrecoVenda());
+                ps.setBigDecimal(i++, e.getPrecoMedio());
+                ps.setString(i++, e.getResIntervalo());
+                ps.setBigDecimal(i++, e.getNumeroOperacao());
+                ps.setString(i++, e.getResOperacao());
+                ps.setBigDecimal(i++, e.getDrawdon());
+                ps.setBigDecimal(i++, e.getGanhoMax());
+                ps.setBigDecimal(i++, e.getPerdaMax());
+                ps.setString(i++, e.getTet());
+                ps.setBigDecimal(i++, e.getTotal());
+                if (e.getIdCarteira() != null) {
+                    ps.setInt(i++, e.getIdCarteira());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                if (e.getIdPapel() != null) {
+                    ps.setInt(i++, e.getIdPapel());
+                } else {
+                    ps.setNull(i++, Types.INTEGER);
+                }
+                ps.setInt(i, e.getIdOperacao());
+                int updated = ps.executeUpdate();
+                if (updated == 0) {
+                    throw new OperacaoException("Operacao nao encontrado: id=" + e.getIdOperacao());
+                }
+            }
+            conn.commit();
+        } catch (SQLException ex) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException e1) { Logger.error("Rollback update", e1); }
+            }
+            Logger.error("OperacaoDaoNativeImpl.update - erro", ex);
+            throw new OperacaoException("Erro ao atualizar Operacao", ex);
+        } finally {
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
+        }
     }
 
     @Override
     public void deleteById(Integer id) {
         Logger.info("OperacaoDaoNativeImpl.deleteById");
-        Operacao e = em.find(Operacao.class, id);
-        if (e == null) throw new OperacaoException("Operacao nao encontrado: id=" + id);
-        em.getTransaction().begin();
-        em.remove(e);
-        em.getTransaction().commit();
+        String sql = "DELETE FROM Operacao WHERE id_operacao=?";
+        Connection conn = null;
+        try {
+            conn = ConnectionFactory.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, id);
+                int deleted = ps.executeUpdate();
+                if (deleted == 0) {
+                    throw new OperacaoException("Operacao nao encontrado: id=" + id);
+                }
+            }
+            conn.commit();
+        } catch (SQLException ex) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException e1) { Logger.error("Rollback delete", e1); }
+            }
+            Logger.error("OperacaoDaoNativeImpl.deleteById - erro", ex);
+            throw new OperacaoException("Erro ao deletar Operacao", ex);
+        } finally {
+            if (conn != null) {
+                try { conn.close(); } catch (SQLException ignore) { }
+            }
+        }
     }
 
     @Override
     public Operacao findById(Integer id) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE id_operacao = :id";
-        Query q = em.createNativeQuery(sql, Operacao.class).setParameter("id", id);
-        return (Operacao) q.getSingleResult();
+        String sql = BASE_SELECT + " WHERE id_operacao=?";
+        try (Connection conn = ConnectionFactory.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return map(rs);
+                }
+            }
+            throw new OperacaoException("Operacao não encontrado: id=" + id);
+        } catch (SQLException e) {
+            Logger.error("OperacaoDaoNativeImpl.findById - erro", e);
+            throw new OperacaoException("Operacao não encontrado: id=" + id, e);
+        }
     }
+
+    private static final String BASE_SELECT = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao";
 
     @Override
     public List<Operacao> findAll() {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao";
-        return em.createNativeQuery(sql, Operacao.class).getResultList();
+        return listBySql(BASE_SELECT);
     }
 
     @Override
     public List<Operacao> findAll(int page, int size) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao LIMIT :size OFFSET :off";
-        return em.createNativeQuery(sql, Operacao.class)
-                .setParameter("size", size)
-                .setParameter("off", page * size)
-                .getResultList();
+        return listBySql(BASE_SELECT + " LIMIT ? OFFSET ?", size, page * size);
     }
 
     @Override
     public List<Operacao> findByFechamento(BigDecimal fechamento) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE fechamento = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", fechamento).getResultList();
+        return listBySql(BASE_SELECT + " WHERE fechamento = ?", fechamento);
     }
 
     @Override
     public List<Operacao> findByTempoOperacao(LocalTime tempoOperacao) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE tempo_operacao = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", tempoOperacao).getResultList();
+        return listBySql(BASE_SELECT + " WHERE tempo_operacao = ?", Time.valueOf(tempoOperacao));
     }
 
     @Override
     public List<Operacao> findByQtdCompra(Integer qtdCompra) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE qtd_compra = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", qtdCompra).getResultList();
+        return listBySql(BASE_SELECT + " WHERE qtd_compra = ?", qtdCompra);
     }
 
     @Override
     public List<Operacao> findByAbertura(BigDecimal abertura) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE abertura = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", abertura).getResultList();
+        return listBySql(BASE_SELECT + " WHERE abertura = ?", abertura);
     }
 
     @Override
     public List<Operacao> findByQtdVenda(Integer qtdVenda) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE qtd_venda = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", qtdVenda).getResultList();
+        return listBySql(BASE_SELECT + " WHERE qtd_venda = ?", qtdVenda);
     }
 
     @Override
     public List<Operacao> findByLado(String lado) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE lado = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", lado).getResultList();
+        return listBySql(BASE_SELECT + " WHERE lado = ?", lado);
     }
 
     @Override
     public List<Operacao> findByPrecoCompra(BigDecimal precoCompra) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE preco_compra = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", precoCompra).getResultList();
+        return listBySql(BASE_SELECT + " WHERE preco_compra = ?", precoCompra);
     }
 
     @Override
     public List<Operacao> findByPrecoVenda(BigDecimal precoVenda) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE preco_venda = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", precoVenda).getResultList();
+        return listBySql(BASE_SELECT + " WHERE preco_venda = ?", precoVenda);
     }
 
     @Override
     public List<Operacao> findByPrecoMedio(BigDecimal precoMedio) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE preco_medio = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", precoMedio).getResultList();
+        return listBySql(BASE_SELECT + " WHERE preco_medio = ?", precoMedio);
     }
 
     @Override
     public List<Operacao> findByResIntervalo(String resIntervalo) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE res_intervalo = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", resIntervalo).getResultList();
+        return listBySql(BASE_SELECT + " WHERE res_intervalo = ?", resIntervalo);
     }
 
     @Override
     public List<Operacao> findByNumeroOperacao(BigDecimal numeroOperacao) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE numero_operacao = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", numeroOperacao).getResultList();
+        return listBySql(BASE_SELECT + " WHERE numero_operacao = ?", numeroOperacao);
     }
 
     @Override
     public List<Operacao> findByResOperacao(String resOperacao) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE res_operacao = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", resOperacao).getResultList();
+        return listBySql(BASE_SELECT + " WHERE res_operacao = ?", resOperacao);
     }
 
     @Override
     public List<Operacao> findByDrawdon(BigDecimal drawdon) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE drawdon = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", drawdon).getResultList();
+        return listBySql(BASE_SELECT + " WHERE drawdon = ?", drawdon);
     }
 
     @Override
     public List<Operacao> findByGanhoMax(BigDecimal ganhoMax) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE ganhoMax = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", ganhoMax).getResultList();
+        return listBySql(BASE_SELECT + " WHERE ganhoMax = ?", ganhoMax);
     }
 
     @Override
     public List<Operacao> findByPerdaMax(BigDecimal perdaMax) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE perdaMax = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", perdaMax).getResultList();
+        return listBySql(BASE_SELECT + " WHERE perdaMax = ?", perdaMax);
     }
 
     @Override
     public List<Operacao> findByTet(String tet) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE tet = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", tet).getResultList();
+        return listBySql(BASE_SELECT + " WHERE tet = ?", tet);
     }
 
     @Override
     public List<Operacao> findByTotal(BigDecimal total) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE total = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", total).getResultList();
+        return listBySql(BASE_SELECT + " WHERE total = ?", total);
     }
 
     @Override
     public List<Operacao> findByIdCarteira(Integer idCarteira) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE id_carteira = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", idCarteira).getResultList();
+        return listBySql(BASE_SELECT + " WHERE id_carteira = ?", idCarteira);
     }
 
     @Override
     public List<Operacao> findByIdPapel(Integer idPapel) {
-        String sql = "SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE id_papel = :v";
-        return em.createNativeQuery(sql, Operacao.class).setParameter("v", idPapel).getResultList();
+        return listBySql(BASE_SELECT + " WHERE id_papel = ?", idPapel);
     }
 
     @Override
@@ -185,48 +353,31 @@ public class OperacaoDaoNativeImpl implements OperacaoDao {
 
     @Override
     public List<Operacao> search(Operacao f, int page, int size) {
-        StringBuilder sb = new StringBuilder("SELECT id_operacao, fechamento, tempo_operacao, qtd_compra, abertura, qtd_venda, lado, preco_compra, preco_venda, preco_medio, res_intervalo, numero_operacao, res_operacao, drawdon, ganhoMax, perdaMax, tet, total, id_carteira, id_papel FROM Operacao WHERE 1=1");
-        if (f.getFechamento() != null) sb.append(" AND fechamento = :fechamento");
-        if (f.getTempoOperacao() != null) sb.append(" AND tempo_operacao = :tempoOperacao");
-        if (f.getQtdCompra() != null) sb.append(" AND qtd_compra = :qtdCompra");
-        if (f.getAbertura() != null) sb.append(" AND abertura = :abertura");
-        if (f.getQtdVenda() != null) sb.append(" AND qtd_venda = :qtdVenda");
-        if (f.getLado() != null && !f.getLado().isEmpty()) sb.append(" AND lado = :lado");
-        if (f.getPrecoCompra() != null) sb.append(" AND preco_compra = :precoCompra");
-        if (f.getPrecoVenda() != null) sb.append(" AND preco_venda = :precoVenda");
-        if (f.getPrecoMedio() != null) sb.append(" AND preco_medio = :precoMedio");
-        if (f.getResIntervalo() != null && !f.getResIntervalo().isEmpty()) sb.append(" AND res_intervalo = :resIntervalo");
-        if (f.getNumeroOperacao() != null) sb.append(" AND numero_operacao = :numeroOperacao");
-        if (f.getResOperacao() != null && !f.getResOperacao().isEmpty()) sb.append(" AND res_operacao = :resOperacao");
-        if (f.getDrawdon() != null) sb.append(" AND drawdon = :drawdon");
-        if (f.getGanhoMax() != null) sb.append(" AND ganhoMax = :ganhoMax");
-        if (f.getPerdaMax() != null) sb.append(" AND perdaMax = :perdaMax");
-        if (f.getTet() != null && !f.getTet().isEmpty()) sb.append(" AND tet = :tet");
-        if (f.getTotal() != null) sb.append(" AND total = :total");
-        if (f.getIdCarteira() != null) sb.append(" AND id_carteira = :idCarteira");
-        if (f.getIdPapel() != null) sb.append(" AND id_papel = :idPapel");
-        Query q = em.createNativeQuery(sb.toString(), Operacao.class);
-        if (f.getFechamento() != null) q.setParameter("fechamento", f.getFechamento());
-        if (f.getTempoOperacao() != null) q.setParameter("tempoOperacao", f.getTempoOperacao());
-        if (f.getQtdCompra() != null) q.setParameter("qtdCompra", f.getQtdCompra());
-        if (f.getAbertura() != null) q.setParameter("abertura", f.getAbertura());
-        if (f.getQtdVenda() != null) q.setParameter("qtdVenda", f.getQtdVenda());
-        if (f.getLado() != null && !f.getLado().isEmpty()) q.setParameter("lado", f.getLado());
-        if (f.getPrecoCompra() != null) q.setParameter("precoCompra", f.getPrecoCompra());
-        if (f.getPrecoVenda() != null) q.setParameter("precoVenda", f.getPrecoVenda());
-        if (f.getPrecoMedio() != null) q.setParameter("precoMedio", f.getPrecoMedio());
-        if (f.getResIntervalo() != null && !f.getResIntervalo().isEmpty()) q.setParameter("resIntervalo", f.getResIntervalo());
-        if (f.getNumeroOperacao() != null) q.setParameter("numeroOperacao", f.getNumeroOperacao());
-        if (f.getResOperacao() != null && !f.getResOperacao().isEmpty()) q.setParameter("resOperacao", f.getResOperacao());
-        if (f.getDrawdon() != null) q.setParameter("drawdon", f.getDrawdon());
-        if (f.getGanhoMax() != null) q.setParameter("ganhoMax", f.getGanhoMax());
-        if (f.getPerdaMax() != null) q.setParameter("perdaMax", f.getPerdaMax());
-        if (f.getTet() != null && !f.getTet().isEmpty()) q.setParameter("tet", f.getTet());
-        if (f.getTotal() != null) q.setParameter("total", f.getTotal());
-        if (f.getIdCarteira() != null) q.setParameter("idCarteira", f.getIdCarteira());
-        if (f.getIdPapel() != null) q.setParameter("idPapel", f.getIdPapel());
-        q.setFirstResult(page * size);
-        q.setMaxResults(size);
-        return q.getResultList();
+        StringBuilder sb = new StringBuilder(BASE_SELECT + " WHERE 1=1");
+        List<Object> params = new ArrayList<>();
+        if (f.getFechamento() != null) { sb.append(" AND fechamento = ?"); params.add(f.getFechamento()); }
+        if (f.getTempoOperacao() != null) { sb.append(" AND tempo_operacao = ?"); params.add(Time.valueOf(f.getTempoOperacao())); }
+        if (f.getQtdCompra() != null) { sb.append(" AND qtd_compra = ?"); params.add(f.getQtdCompra()); }
+        if (f.getAbertura() != null) { sb.append(" AND abertura = ?"); params.add(f.getAbertura()); }
+        if (f.getQtdVenda() != null) { sb.append(" AND qtd_venda = ?"); params.add(f.getQtdVenda()); }
+        if (f.getLado() != null && !f.getLado().isEmpty()) { sb.append(" AND lado = ?"); params.add(f.getLado()); }
+        if (f.getPrecoCompra() != null) { sb.append(" AND preco_compra = ?"); params.add(f.getPrecoCompra()); }
+        if (f.getPrecoVenda() != null) { sb.append(" AND preco_venda = ?"); params.add(f.getPrecoVenda()); }
+        if (f.getPrecoMedio() != null) { sb.append(" AND preco_medio = ?"); params.add(f.getPrecoMedio()); }
+        if (f.getResIntervalo() != null && !f.getResIntervalo().isEmpty()) { sb.append(" AND res_intervalo = ?"); params.add(f.getResIntervalo()); }
+        if (f.getNumeroOperacao() != null) { sb.append(" AND numero_operacao = ?"); params.add(f.getNumeroOperacao()); }
+        if (f.getResOperacao() != null && !f.getResOperacao().isEmpty()) { sb.append(" AND res_operacao = ?"); params.add(f.getResOperacao()); }
+        if (f.getDrawdon() != null) { sb.append(" AND drawdon = ?"); params.add(f.getDrawdon()); }
+        if (f.getGanhoMax() != null) { sb.append(" AND ganhoMax = ?"); params.add(f.getGanhoMax()); }
+        if (f.getPerdaMax() != null) { sb.append(" AND perdaMax = ?"); params.add(f.getPerdaMax()); }
+        if (f.getTet() != null && !f.getTet().isEmpty()) { sb.append(" AND tet = ?"); params.add(f.getTet()); }
+        if (f.getTotal() != null) { sb.append(" AND total = ?"); params.add(f.getTotal()); }
+        if (f.getIdCarteira() != null) { sb.append(" AND id_carteira = ?"); params.add(f.getIdCarteira()); }
+        if (f.getIdPapel() != null) { sb.append(" AND id_papel = ?"); params.add(f.getIdPapel()); }
+        sb.append(" LIMIT ? OFFSET ?");
+        params.add(size);
+        params.add(page * size);
+        return listBySql(sb.toString(), params.toArray());
     }
 }
+
