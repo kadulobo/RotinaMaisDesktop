@@ -4,8 +4,8 @@ import dao.api.SiteObjetoDao;
 import exception.SiteObjetoException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.SiteObjeto;
 
 import java.util.List;

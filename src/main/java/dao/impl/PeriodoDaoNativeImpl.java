@@ -9,8 +9,8 @@ import dao.api.PeriodoDao;
 import exception.PeriodoException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Periodo;
 
 public class PeriodoDaoNativeImpl implements PeriodoDao {

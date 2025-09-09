@@ -9,8 +9,8 @@ import dao.api.TreinoDao;
 import exception.TreinoException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Treino;
 
 public class TreinoDaoNativeImpl implements TreinoDao {

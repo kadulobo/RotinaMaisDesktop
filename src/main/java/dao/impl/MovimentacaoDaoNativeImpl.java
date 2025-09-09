@@ -10,8 +10,8 @@ import dao.api.MovimentacaoDao;
 import exception.MovimentacaoException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Movimentacao;
 
 public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {

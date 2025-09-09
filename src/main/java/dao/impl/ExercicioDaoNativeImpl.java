@@ -9,8 +9,8 @@ import dao.api.ExercicioDao;
 import exception.ExercicioException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Exercicio;
 
 public class ExercicioDaoNativeImpl implements ExercicioDao {

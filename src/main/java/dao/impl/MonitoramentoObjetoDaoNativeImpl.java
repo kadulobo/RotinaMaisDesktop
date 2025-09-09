@@ -4,8 +4,8 @@ import dao.api.MonitoramentoObjetoDao;
 import exception.MonitoramentoObjetoException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.MonitoramentoObjeto;
 
 import java.time.LocalDate;

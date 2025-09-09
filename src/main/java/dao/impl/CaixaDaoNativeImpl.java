@@ -10,8 +10,8 @@ import dao.api.CaixaDao;
 import exception.CaixaException;
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.Query;
+import javax.persistence.EntityManager;
+import javax.persistence.Query;
 import model.Caixa;
 
 public class CaixaDaoNativeImpl implements CaixaDao {

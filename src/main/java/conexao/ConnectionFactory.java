@@ -2,7 +2,7 @@ package conexao;
 
 import infra.EntityManagerUtil;
 import infra.Logger;
-import jakarta.persistence.EntityManager;
+import javax.persistence.EntityManager;
 
 import java.io.InputStream;
 import java.sql.Connection;
@@ -38,14 +38,14 @@ public final class ConnectionFactory {
         } finally {
             em.close();
         }
-        URL = (String) props.get("jakarta.persistence.jdbc.url");
-        USER = (String) props.get("jakarta.persistence.jdbc.user");
-        String pwd = (String) props.get("jakarta.persistence.jdbc.password");
+        URL = (String) props.get("javax.persistence.jdbc.url");
+        USER = (String) props.get("javax.persistence.jdbc.user");
+        String pwd = (String) props.get("javax.persistence.jdbc.password");
         if ("****".equals(pwd)) {
             pwd = loadPasswordFromPersistenceXml();
         }
         PASSWORD = pwd;
-        DRIVER = (String) props.get("jakarta.persistence.jdbc.driver");
+        DRIVER = (String) props.get("javax.persistence.jdbc.driver");
         try {
             Class.forName(DRIVER);
         } catch (ClassNotFoundException e) {
@@ -70,7 +70,7 @@ public final class ConnectionFactory {
             NodeList props = doc.getElementsByTagName("property");
             for (int i = 0; i < props.getLength(); i++) {
                 Element el = (Element) props.item(i);
-                if ("jakarta.persistence.jdbc.password".equals(el.getAttribute("name"))) {
+                if ("javax.persistence.jdbc.password".equals(el.getAttribute("name"))) {
                     return el.getAttribute("value");
                 }
             }
