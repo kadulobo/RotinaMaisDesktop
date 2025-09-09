@@ -95,6 +95,16 @@ public class CategoriaController {
         return list;
     }
 
+    public List<Categoria> buscarPorFoto(byte[] foto) {
+        Logger.info("CategoriaController.buscarPorFoto - inicio");
+        if (foto == null) {
+            throw new CategoriaException("Foto não pode ser nula");
+        }
+        List<Categoria> list = dao.findByFoto(foto);
+        Logger.info("CategoriaController.buscarPorFoto - sucesso");
+        return list;
+    }
+
     public List<Categoria> buscarPorDataCriacao(LocalDate data) {
         Logger.info("CategoriaController.buscarPorDataCriacao - inicio");
         if (data == null) {
