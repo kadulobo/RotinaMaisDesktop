@@ -45,5 +45,8 @@ public class CategoriaControllerTest {
 
         // Remover categoria
         controller.remover(buscado.getIdCategoria());
+
+        // Recriar categoria para manter dados na tabela
+        controller.criar(categoria);
     }
 }
