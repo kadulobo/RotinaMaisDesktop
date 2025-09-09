@@ -21,10 +21,9 @@ public class IngredienteDaoNativeImpl implements IngredienteDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Ingrediente (id_ingrediente, nome, descricao, foto) " +
-                    "VALUES (:id, :nome, :descricao, :foto)";
+            String sql = "INSERT INTO Ingrediente (nome, descricao, foto) " +
+                    "VALUES (:nome, :descricao, :foto)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", ingrediente.getIdIngrediente());
             query.setParameter("nome", ingrediente.getNome());
             query.setParameter("descricao", ingrediente.getDescricao());
             query.setParameter("foto", ingrediente.getFoto());

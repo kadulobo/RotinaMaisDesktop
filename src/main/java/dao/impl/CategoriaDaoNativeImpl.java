@@ -22,10 +22,9 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Categoria (id_categoria, nome, descricao, foto, data_criacao) " +
-                    "VALUES (:id, :nome, :descricao, :foto, :dataCriacao)";
+            String sql = "INSERT INTO Categoria (nome, descricao, foto, data_criacao) " +
+                    "VALUES (:nome, :descricao, :foto, :dataCriacao)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", categoria.getIdCategoria());
             query.setParameter("nome", categoria.getNome());
             query.setParameter("descricao", categoria.getDescricao());
             query.setParameter("foto", categoria.getFoto());

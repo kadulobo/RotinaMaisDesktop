@@ -21,10 +21,9 @@ public class MonitoramentoDaoNativeImpl implements MonitoramentoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Monitoramento (id_monitoramento, status, nome, descricao, foto, id_periodo) " +
-                    "VALUES (:id, :status, :nome, :descricao, :foto, :idPeriodo)";
+            String sql = "INSERT INTO Monitoramento (status, nome, descricao, foto, id_periodo) " +
+                    "VALUES (:status, :nome, :descricao, :foto, :idPeriodo)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", monitoramento.getIdMonitoramento());
             query.setParameter("status", monitoramento.getStatus());
             query.setParameter("nome", monitoramento.getNome());
             query.setParameter("descricao", monitoramento.getDescricao());

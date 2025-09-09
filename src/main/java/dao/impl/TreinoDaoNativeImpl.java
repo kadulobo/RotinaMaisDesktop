@@ -21,9 +21,8 @@ public class TreinoDaoNativeImpl implements TreinoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Treino (id_treino, nome, classe, id_rotina) VALUES (:id, :nome, :classe, :idRotina)";
+            String sql = "INSERT INTO Treino (nome, classe, id_rotina) VALUES (:nome, :classe, :idRotina)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", treino.getIdTreino());
             query.setParameter("nome", treino.getNome());
             query.setParameter("classe", treino.getClasse());
             query.setParameter("idRotina", treino.getIdRotina());

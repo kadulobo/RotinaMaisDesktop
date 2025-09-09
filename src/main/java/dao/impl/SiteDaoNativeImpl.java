@@ -21,9 +21,8 @@ public class SiteDaoNativeImpl implements SiteDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Site (id_site, url, ativo, logo) VALUES (:id, :url, :ativo, :logo)";
+            String sql = "INSERT INTO Site (url, ativo, logo) VALUES (:url, :ativo, :logo)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", site.getIdSite());
             query.setParameter("url", site.getUrl());
             query.setParameter("ativo", site.getAtivo());
             query.setParameter("logo", site.getLogo());

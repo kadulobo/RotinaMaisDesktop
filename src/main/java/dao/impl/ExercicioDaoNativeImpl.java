@@ -21,10 +21,9 @@ public class ExercicioDaoNativeImpl implements ExercicioDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Exercicio (id_exercicio, nome, carga_leve, carga_media, carga_maxima) " +
-                    "VALUES (:id, :nome, :cargaLeve, :cargaMedia, :cargaMaxima)";
+            String sql = "INSERT INTO Exercicio (nome, carga_leve, carga_media, carga_maxima) " +
+                    "VALUES (:nome, :cargaLeve, :cargaMedia, :cargaMaxima)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", exercicio.getIdExercicio());
             query.setParameter("nome", exercicio.getNome());
             query.setParameter("cargaLeve", exercicio.getCargaLeve());
             query.setParameter("cargaMedia", exercicio.getCargaMedia());

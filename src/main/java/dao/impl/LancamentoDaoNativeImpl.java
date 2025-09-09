@@ -21,10 +21,9 @@ public class LancamentoDaoNativeImpl implements LancamentoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Lancamento (id_lancamento, valor, fixo, data_pagamento, status, id_movimentacao, id_evento) " +
-                    "VALUES (:id, :valor, :fixo, :dataPagamento, :status, :idMovimentacao, :idEvento)";
+            String sql = "INSERT INTO Lancamento (valor, fixo, data_pagamento, status, id_movimentacao, id_evento) " +
+                    "VALUES (:valor, :fixo, :dataPagamento, :status, :idMovimentacao, :idEvento)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", lancamento.getIdLancamento());
             query.setParameter("valor", lancamento.getValor());
             query.setParameter("fixo", lancamento.getFixo());
             query.setParameter("dataPagamento", lancamento.getDataPagamento());

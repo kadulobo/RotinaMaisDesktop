@@ -22,9 +22,8 @@ public class CaixaDaoNativeImpl implements CaixaDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Caixa (id_caixa, nome, reserva_emergencia, salario_medio, valor_total, id_usuario) VALUES (:id, :nome, :reserva, :salario, :valor, :idUsuario)";
+            String sql = "INSERT INTO Caixa (nome, reserva_emergencia, salario_medio, valor_total, id_usuario) VALUES (:nome, :reserva, :salario, :valor, :idUsuario)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", caixa.getIdCaixa());
             query.setParameter("nome", caixa.getNome());
             query.setParameter("reserva", caixa.getReservaEmergencia());
             query.setParameter("salario", caixa.getSalarioMedio());

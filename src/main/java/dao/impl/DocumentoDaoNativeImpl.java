@@ -21,10 +21,9 @@ public class DocumentoDaoNativeImpl implements DocumentoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Documento (id_documento, nome, arquivo, foto, video, data, id_usuario) " +
-                    "VALUES (:id, :nome, :arquivo, :foto, :video, :data, :idUsuario)";
+            String sql = "INSERT INTO Documento (nome, arquivo, foto, video, data, id_usuario) " +
+                    "VALUES (:nome, :arquivo, :foto, :video, :data, :idUsuario)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", documento.getIdDocumento());
             query.setParameter("nome", documento.getNome());
             query.setParameter("arquivo", documento.getArquivo());
             query.setParameter("foto", documento.getFoto());
