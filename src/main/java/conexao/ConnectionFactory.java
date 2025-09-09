@@ -39,11 +39,11 @@ public final class ConnectionFactory {
             em.close();
         }
         URL = (String) props.get("javax.persistence.jdbc.url");
-        USER = (String) props.get("javax.persistence.jdbc.user");
+        String user  = loadPasswordFromPersistenceXml("javax.persistence.jdbc.user");
+        USER = user;
         String pwd = (String) props.get("javax.persistence.jdbc.password");
-        if ("****".equals(pwd)) {
-            pwd = loadPasswordFromPersistenceXml();
-        }
+         pwd = loadPasswordFromPersistenceXml("javax.persistence.jdbc.password");
+        
         PASSWORD = pwd;
         DRIVER = (String) props.get("javax.persistence.jdbc.driver");
         try {
@@ -57,7 +57,7 @@ public final class ConnectionFactory {
     private ConnectionFactory() {
     }
 
-    private static String loadPasswordFromPersistenceXml() {
+    private static String loadPasswordFromPersistenceXml(String caminho) {
         try (InputStream in = ConnectionFactory.class.getClassLoader()
                 .getResourceAsStream("META-INF/persistence.xml")) {
             if (in == null) {
@@ -70,7 +70,7 @@ public final class ConnectionFactory {
             NodeList props = doc.getElementsByTagName("property");
             for (int i = 0; i < props.getLength(); i++) {
                 Element el = (Element) props.item(i);
-                if ("javax.persistence.jdbc.password".equals(el.getAttribute("name"))) {
+                if (caminho.equals(el.getAttribute("name"))) {
                     return el.getAttribute("value");
                 }
             }
