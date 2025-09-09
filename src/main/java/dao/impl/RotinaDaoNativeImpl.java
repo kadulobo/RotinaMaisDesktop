@@ -22,10 +22,9 @@ public class RotinaDaoNativeImpl implements RotinaDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Rotina (id_rotina, nome, inicio, fim, descricao, status, ponto, id_usuario) " +
-                    "VALUES (:id, :nome, :inicio, :fim, :descricao, :status, :ponto, :idUsuario)";
+            String sql = "INSERT INTO Rotina (nome, inicio, fim, descricao, status, ponto, id_usuario) " +
+                    "VALUES (:nome, :inicio, :fim, :descricao, :status, :ponto, :idUsuario)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", rotina.getIdRotina());
             query.setParameter("nome", rotina.getNome());
             query.setParameter("inicio", rotina.getInicio());
             query.setParameter("fim", rotina.getFim());

@@ -21,9 +21,8 @@ public class PeriodoDaoNativeImpl implements PeriodoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Periodo (id_periodo, ano, mes) VALUES (:id, :ano, :mes)";
+            String sql = "INSERT INTO Periodo (ano, mes) VALUES (:ano, :mes)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", periodo.getIdPeriodo());
             query.setParameter("ano", periodo.getAno());
             query.setParameter("mes", periodo.getMes());
             query.executeUpdate();

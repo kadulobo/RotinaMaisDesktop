@@ -22,10 +22,9 @@ public class MovimentacaoDaoNativeImpl implements MovimentacaoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Movimentacao (id_movimentacao, desconto, vantagem, liquido, tipo, status, ponto, id_usuario, id_caixa, id_periodo) " +
-                    "VALUES (:id, :desconto, :vantagem, :liquido, :tipo, :status, :ponto, :idUsuario, :idCaixa, :idPeriodo)";
+            String sql = "INSERT INTO Movimentacao (desconto, vantagem, liquido, tipo, status, ponto, id_usuario, id_caixa, id_periodo) " +
+                    "VALUES (:desconto, :vantagem, :liquido, :tipo, :status, :ponto, :idUsuario, :idCaixa, :idPeriodo)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", movimentacao.getIdMovimentacao());
             query.setParameter("desconto", movimentacao.getDesconto());
             query.setParameter("vantagem", movimentacao.getVantagem());
             query.setParameter("liquido", movimentacao.getLiquido());

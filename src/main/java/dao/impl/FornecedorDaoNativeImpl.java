@@ -21,10 +21,9 @@ public class FornecedorDaoNativeImpl implements FornecedorDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Fornecedor (id_fornecedor, nome, foto, endereco, online) " +
-                    "VALUES (:id, :nome, :foto, :endereco, :online)";
+            String sql = "INSERT INTO Fornecedor (nome, foto, endereco, online) " +
+                    "VALUES (:nome, :foto, :endereco, :online)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", fornecedor.getIdFornecedor());
             query.setParameter("nome", fornecedor.getNome());
             query.setParameter("foto", fornecedor.getFoto());
             query.setParameter("endereco", fornecedor.getEndereco());

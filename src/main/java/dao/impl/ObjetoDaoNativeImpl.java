@@ -22,9 +22,8 @@ public class ObjetoDaoNativeImpl implements ObjetoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Objeto (id_objeto, nome, tipo, valor, descricao, foto) VALUES (:id, :nome, :tipo, :valor, :descricao, :foto)";
+            String sql = "INSERT INTO Objeto (nome, tipo, valor, descricao, foto) VALUES (:nome, :tipo, :valor, :descricao, :foto)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", objeto.getIdObjeto());
             query.setParameter("nome", objeto.getNome());
             query.setParameter("tipo", objeto.getTipo());
             query.setParameter("valor", objeto.getValor());

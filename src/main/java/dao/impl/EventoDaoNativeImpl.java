@@ -21,10 +21,9 @@ public class EventoDaoNativeImpl implements EventoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Evento (id_evento, vantagem, foto, nome, descricao, data_criacao, id_categoria) " +
-                    "VALUES (:id, :vantagem, :foto, :nome, :descricao, :dataCriacao, :idCategoria)";
+            String sql = "INSERT INTO Evento (vantagem, foto, nome, descricao, data_criacao, id_categoria) " +
+                    "VALUES (:vantagem, :foto, :nome, :descricao, :dataCriacao, :idCategoria)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", evento.getIdEvento());
             query.setParameter("vantagem", evento.getVantagem());
             query.setParameter("foto", evento.getFoto());
             query.setParameter("nome", evento.getNome());

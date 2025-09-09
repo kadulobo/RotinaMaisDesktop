@@ -21,10 +21,9 @@ public class AlimentacaoDaoNativeImpl implements AlimentacaoDao {
         EntityManager em = EntityManagerUtil.getEntityManager();
         try {
             em.getTransaction().begin();
-            String sql = "INSERT INTO Alimentacao (id_alimentacao, status, nome, link, video, preparo, id_rotina) " +
-                    "VALUES (:id, :status, :nome, :link, :video, :preparo, :idRotina)";
+            String sql = "INSERT INTO Alimentacao (status, nome, link, video, preparo, id_rotina) " +
+                    "VALUES (:status, :nome, :link, :video, :preparo, :idRotina)";
             Query query = em.createNativeQuery(sql);
-            query.setParameter("id", alimentacao.getIdAlimentacao());
             query.setParameter("status", alimentacao.getStatus());
             query.setParameter("nome", alimentacao.getNome());
             query.setParameter("link", alimentacao.getLink());

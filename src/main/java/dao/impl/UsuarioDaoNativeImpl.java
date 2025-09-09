@@ -30,17 +30,16 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public void create(Usuario usuario) throws UsuarioException {
         Logger.info("UsuarioDaoNativeImpl.create - inicio");
-        String sql = "INSERT INTO Usuario (id_usuario, nome, senha, foto, email) VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO Usuario (nome, senha, foto, email) VALUES (?,?,?,?)";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, usuario.getIdUsuario());
-                ps.setString(2, usuario.getNome());
-                ps.setString(3, usuario.getSenha());
-                ps.setBytes(4, usuario.getFoto());
-                ps.setString(5, usuario.getEmail());
+                ps.setString(1, usuario.getNome());
+                ps.setString(2, usuario.getSenha());
+                ps.setBytes(3, usuario.getFoto());
+                ps.setString(4, usuario.getEmail());
                 ps.executeUpdate();
             }
             conn.commit();
