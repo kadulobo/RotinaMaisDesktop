@@ -7,6 +7,8 @@ import controller.MonitoramentoController;
 import controller.ObjetoController;
 import dao.impl.MonitoramentoDaoNativeImpl;
 import dao.impl.ObjetoDaoNativeImpl;
+import model.Monitoramento;
+import model.Objeto;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -20,8 +22,12 @@ public class MonitoramentoObjetoControllerTest {
         mo.setData(LocalDate.now());
         MonitoramentoController monitoramentoController = new MonitoramentoController(new MonitoramentoDaoNativeImpl());
         ObjetoController objetoController = new ObjetoController(new ObjetoDaoNativeImpl());
-        mo.setIdMonitoramento(TestUtils.getRandom(monitoramentoController.listar()).getIdMonitoramento());
-        mo.setIdObjeto(TestUtils.getRandom(objetoController.listar()).getIdObjeto());
+
+        Monitoramento monitoramento = TestUtils.getRandom(monitoramentoController.listar());
+        Objeto objeto = TestUtils.getRandom(objetoController.listar());
+        mo.setIdMonitoramento(monitoramento.getIdMonitoramento());
+        mo.setIdObjeto(objeto.getIdObjeto());
+
         controller.criar(mo);
 
         List<MonitoramentoObjeto> list = controller.listar();
