@@ -27,6 +27,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -61,10 +62,14 @@ public class UsuarioForm extends JPanel {
     private JPanel cardsPanel;
     private Table table;
     private JPanel emptyPanel;
+    private JButton btnPrevPage;
+    private JButton btnNextPage;
 
     private List<Usuario> allUsuarios = new ArrayList<>();
     private List<Usuario> filteredUsuarios = new ArrayList<>();
     private boolean showingCards = true;
+    private int currentPage = 0;
+    private static final int PAGE_SIZE = 10;
 
     public UsuarioForm() {
         controller = new UsuarioController(new UsuarioDaoNativeImpl());
@@ -132,11 +137,14 @@ public class UsuarioForm extends JPanel {
         viewLayout = new java.awt.CardLayout();
         viewContainer = new JPanel(viewLayout);
 
-        // Cards view
-        cardsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        // Cards view arranged horizontally with horizontal scroll
+        cardsPanel = new JPanel();
+        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.X_AXIS));
         cardsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        JScrollPane cardScroll = new JScrollPane(cardsPanel);
-        cardScroll.getVerticalScrollBar().setUnitIncrement(16);
+        JScrollPane cardScroll = new JScrollPane(cardsPanel,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        cardScroll.getHorizontalScrollBar().setUnitIncrement(16);
         viewContainer.add(cardScroll, "cards");
 
         // List view
@@ -169,6 +177,26 @@ public class UsuarioForm extends JPanel {
         viewContainer.add(emptyPanel, "empty");
 
         add(viewContainer, BorderLayout.CENTER);
+
+        // Pagination controls
+        btnPrevPage = new JButton("Anterior");
+        btnNextPage = new JButton("Próximo");
+        btnPrevPage.addActionListener(e -> {
+            if (currentPage > 0) {
+                currentPage--;
+                updatePage();
+            }
+        });
+        btnNextPage.addActionListener(e -> {
+            if ((currentPage + 1) * PAGE_SIZE < filteredUsuarios.size()) {
+                currentPage++;
+                updatePage();
+            }
+        });
+        JPanel pagination = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pagination.add(btnPrevPage);
+        pagination.add(btnNextPage);
+        add(pagination, BorderLayout.SOUTH);
     }
 
     private void loadUsuarios() {
@@ -186,10 +214,11 @@ public class UsuarioForm extends JPanel {
 
         if (filteredUsuarios.isEmpty()) {
             viewLayout.show(viewContainer, "empty");
+            btnPrevPage.setEnabled(false);
+            btnNextPage.setEnabled(false);
         } else {
-            populateCards();
-            populateTable();
-            updateView();
+            currentPage = 0;
+            updatePage();
         }
     }
 
@@ -201,6 +230,19 @@ public class UsuarioForm extends JPanel {
             viewLayout.show(viewContainer, "list");
             btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_MODULE, 18, Color.BLACK));
         }
+    }
+
+    private void updatePage() {
+        populateCards();
+        populateTable();
+        updatePaginationButtons();
+        updateView();
+    }
+
+    private List<Usuario> getCurrentPageUsuarios() {
+        int start = currentPage * PAGE_SIZE;
+        int end = Math.min(start + PAGE_SIZE, filteredUsuarios.size());
+        return filteredUsuarios.subList(start, end);
     }
 
     private void populateTable() {
@@ -217,18 +259,23 @@ public class UsuarioForm extends JPanel {
                 editarUsuario(u);
             }
         };
-        for (Usuario u : filteredUsuarios) {
+        for (Usuario u : getCurrentPageUsuarios()) {
             model.addRow(new Object[]{u.getIdUsuario(), u.getNome(), u.getEmail(), u.getCpf(), new ModelAction<>(u, eventAction)});
         }
     }
 
     private void populateCards() {
         cardsPanel.removeAll();
-        for (Usuario u : filteredUsuarios) {
+        for (Usuario u : getCurrentPageUsuarios()) {
             cardsPanel.add(createCard(u));
         }
         cardsPanel.revalidate();
         cardsPanel.repaint();
+    }
+
+    private void updatePaginationButtons() {
+        btnPrevPage.setEnabled(currentPage > 0);
+        btnNextPage.setEnabled((currentPage + 1) * PAGE_SIZE < filteredUsuarios.size());
     }
 
     private JComponent createCard(Usuario u) {
