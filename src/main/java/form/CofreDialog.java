@@ -7,6 +7,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.ByteArrayOutputStream;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -60,7 +61,14 @@ public class CofreDialog extends JDialog {
                 return null;
         }
         try (InputStream is = getClass().getResourceAsStream(path)) {
-            return is != null ? is.readAllBytes() : null;
+            if (is == null) return null;
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] buffer = new byte[1024];
+            int read;
+            while ((read = is.read(buffer)) != -1) {
+                baos.write(buffer, 0, read);
+            }
+            return baos.toByteArray();
         } catch (IOException ex) {
             return null;
         }
