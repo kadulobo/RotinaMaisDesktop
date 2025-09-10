@@ -17,7 +17,10 @@ public class Table extends JTable {
     public Table() {
         setShowHorizontalLines(true);
         setGridColor(new Color(230, 230, 230));
-        setRowHeight(40);
+        // Increase row height to better fit avatar images
+        setRowHeight(60);
+        // Disable auto resize so a horizontal scrollbar can appear when needed
+        setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
         getTableHeader().setReorderingAllowed(false);
         getTableHeader().setDefaultRenderer(new DefaultTableCellRenderer() {
             @Override
@@ -82,6 +85,9 @@ public class Table extends JTable {
 
     public void fixTable(JScrollPane scroll) {
         scroll.getViewport().setBackground(Color.WHITE);
+        // Always show a vertical scrollbar and allow horizontal scrolling when required
+        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scroll.setVerticalScrollBar(new ScrollBarCustom());
         JPanel p = new JPanel();
         p.setBackground(Color.WHITE);

@@ -37,6 +37,7 @@ import javax.swing.event.DocumentListener;
 import model.Usuario;
 import swing.Button;
 import swing.ImageAvatar;
+import swing.scrollbar.ScrollBarCustom;
 import swing.icon.GoogleMaterialDesignIcons;
 import swing.icon.IconFontSwing;
 import util.ImageUtils;
@@ -137,6 +138,8 @@ public class UsuarioForm extends JPanel {
         cardsPanel = new JPanel(new GridLayout(0, 3, 10, 10));
         cardsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         JScrollPane cardScroll = new JScrollPane(cardsPanel);
+        cardScroll.setVerticalScrollBar(new ScrollBarCustom());
+        cardScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         cardScroll.getVerticalScrollBar().setUnitIncrement(16);
         viewContainer.add(cardScroll, "cards");
 
@@ -145,6 +148,8 @@ public class UsuarioForm extends JPanel {
         listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
         listPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         JScrollPane listScroll = new JScrollPane(listPanel);
+        listScroll.setVerticalScrollBar(new ScrollBarCustom());
+        listScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         listScroll.getVerticalScrollBar().setUnitIncrement(16);
         viewContainer.add(listScroll, "list");
 
