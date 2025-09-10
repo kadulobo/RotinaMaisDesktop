@@ -60,6 +60,8 @@ public class UsuarioForm extends JPanel {
     private JPanel viewContainer;
     private java.awt.CardLayout viewLayout;
     private JPanel cardsPanel;
+    private JPanel cardsTopPanel;
+    private JPanel cardsBottomPanel;
     private Table table;
     private JPanel emptyPanel;
     private JButton btnPrevPage;
@@ -69,7 +71,7 @@ public class UsuarioForm extends JPanel {
     private List<Usuario> filteredUsuarios = new ArrayList<>();
     private boolean showingCards = true;
     private int currentPage = 0;
-    private static final int PAGE_SIZE = 10;
+    private static final int PAGE_SIZE = 6;
 
     public UsuarioForm() {
         controller = new UsuarioController(new UsuarioDaoNativeImpl());
@@ -137,14 +139,19 @@ public class UsuarioForm extends JPanel {
         viewLayout = new java.awt.CardLayout();
         viewContainer = new JPanel(viewLayout);
 
-        // Cards view arranged horizontally with horizontal scroll
+        // Cards view split into two rows of three cards
         cardsPanel = new JPanel();
-        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.X_AXIS));
+        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
         cardsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+
+        cardsTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        cardsBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        cardsPanel.add(cardsTopPanel);
+        cardsPanel.add(cardsBottomPanel);
+
         JScrollPane cardScroll = new JScrollPane(cardsPanel,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        cardScroll.getHorizontalScrollBar().setUnitIncrement(16);
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         viewContainer.add(cardScroll, "cards");
 
         // List view
@@ -265,10 +272,21 @@ public class UsuarioForm extends JPanel {
     }
 
     private void populateCards() {
-        cardsPanel.removeAll();
-        for (Usuario u : getCurrentPageUsuarios()) {
-            cardsPanel.add(createCard(u));
+        cardsTopPanel.removeAll();
+        cardsBottomPanel.removeAll();
+        List<Usuario> usuarios = getCurrentPageUsuarios();
+        for (int i = 0; i < usuarios.size(); i++) {
+            JComponent card = createCard(usuarios.get(i));
+            if (i < 3) {
+                cardsTopPanel.add(card);
+            } else {
+                cardsBottomPanel.add(card);
+            }
         }
+        cardsTopPanel.revalidate();
+        cardsTopPanel.repaint();
+        cardsBottomPanel.revalidate();
+        cardsBottomPanel.repaint();
         cardsPanel.revalidate();
         cardsPanel.repaint();
     }
