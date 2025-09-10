@@ -43,6 +43,7 @@ import swing.icon.GoogleMaterialDesignIcons;
 import swing.icon.IconFontSwing;
 import swing.table.EventAction;
 import swing.table.ModelAction;
+import swing.table.ModelProfile;
 import swing.table.Table;
 import util.ImageUtils;
 
@@ -147,12 +148,15 @@ public class UsuarioForm extends JPanel {
 
         // List view
         table = new Table();
-        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"ID", "Nome", "Email", "CPF", ""}) {
+        table.setModel(new DefaultTableModel(
+                new Object[][]{},
+                new String[]{"Usuário", "Email", "CPF", ""}) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4;
+                return column == 3;
             }
         });
+        table.setRowHeight(60);
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -244,7 +248,12 @@ public class UsuarioForm extends JPanel {
             }
         };
         for (Usuario u : getPageUsuarios()) {
-            model.addRow(new Object[]{u.getIdUsuario(), u.getNome(), u.getEmail(), u.getCpf(), new ModelAction<>(u, eventAction)});
+            ImageIcon icon = ImageUtils.bytesToImageIcon(u.getFoto());
+            if (icon == null) {
+                icon = new ImageIcon(getClass().getResource("/icon/profile.jpg"));
+            }
+            ModelProfile profile = new ModelProfile(icon, u.getNome());
+            model.addRow(new Object[]{profile, u.getEmail(), u.getCpf(), new ModelAction<>(u, eventAction)});
         }
     }
 
@@ -295,6 +304,7 @@ public class UsuarioForm extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(Color.WHITE);
         card.setBorder(new javax.swing.border.LineBorder(new Color(230, 230, 230), 1, true));
+        card.setPreferredSize(new Dimension(200, 200));
 
         // Header
         JPanel header = new JPanel(new BorderLayout());
