@@ -47,7 +47,7 @@ import util.ImageUtils;
 public class UsuarioForm extends JPanel {
 
     private final UsuarioController controller;
-    private final String PLACEHOLDER = "Search users...";
+    private final String PLACEHOLDER = "Pesquisar usuários...";
 
     private JTextField txtSearch;
     private JButton btnToggleView;
@@ -162,14 +162,14 @@ public class UsuarioForm extends JPanel {
 
         // Pagination panel
         paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        btnPrev = new JButton("Previous");
+        btnPrev = new JButton("Anterior");
         btnPrev.addActionListener(e -> {
             if (currentPage > 0) {
                 currentPage--;
                 refreshPage();
             }
         });
-        btnNext = new JButton("Next");
+        btnNext = new JButton("Próximo");
         btnNext.addActionListener(e -> {
             if ((currentPage + 1) * PAGE_SIZE < filteredUsuarios.size()) {
                 currentPage++;
