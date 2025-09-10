@@ -208,14 +208,14 @@ public class MovimentacaoDialog extends JDialog {
     }
 
     private Integer parseInteger(String text) {
-        if (text == null || text.isBlank()) {
+        if (text == null || text.isEmpty()) {
             return null;
         }
         return Integer.valueOf(text);
     }
 
     private BigDecimal parseBigDecimal(String text) {
-        if (text == null || text.isBlank()) {
+        if (text == null || text.isEmpty()) {
             return null;
         }
         return new BigDecimal(text);
