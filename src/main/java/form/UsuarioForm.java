@@ -143,9 +143,10 @@ public class UsuarioForm extends JPanel {
         viewContainer.setBackground(Color.WHITE);
 
         // Cards view split into two rows of three cards
+        int buttonHeight = btnAdd.getPreferredSize().height;
         cardsPanel = new JPanel();
         cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
-        cardsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        cardsPanel.setBorder(new EmptyBorder(buttonHeight, 10, 10, 10));
         cardsPanel.setBackground(Color.WHITE);
 
         cardsTopPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
@@ -155,6 +156,7 @@ public class UsuarioForm extends JPanel {
         cardsTopPanel.setBackground(Color.WHITE);
         cardsBottomPanel.setBackground(Color.WHITE);
         cardsPanel.add(cardsTopPanel);
+        cardsPanel.add(Box.createVerticalStrut(buttonHeight));
         cardsPanel.add(cardsBottomPanel);
 
         JScrollPane cardScroll = new JScrollPane(cardsPanel,
