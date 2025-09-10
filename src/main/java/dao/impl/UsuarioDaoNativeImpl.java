@@ -168,13 +168,13 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> findAll() {
         Logger.info("UsuarioDaoNativeImpl.findAll - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario";
+        String sql = "SELECT id_usuario, nome, senha, foto, email, cpf FROM Usuario";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
-                list.add(mapUsuario(rs, false));
+                list.add(mapUsuario(rs, true));
             }
             Logger.info("UsuarioDaoNativeImpl.findAll - sucesso");
         } catch (SQLException e) {
@@ -186,7 +186,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
     @Override
     public List<Usuario> findAll(int page, int size) {
         Logger.info("UsuarioDaoNativeImpl.findAll(page) - inicio");
-        String sql = "SELECT id_usuario, nome, senha, email, cpf FROM Usuario LIMIT ? OFFSET ?";
+        String sql = "SELECT id_usuario, nome, senha, foto, email, cpf FROM Usuario LIMIT ? OFFSET ?";
         List<Usuario> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -194,7 +194,7 @@ public class UsuarioDaoNativeImpl implements UsuarioDao {
             ps.setInt(2, page * size);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    list.add(mapUsuario(rs, false));
+                    list.add(mapUsuario(rs, true));
                 }
             }
             Logger.info("UsuarioDaoNativeImpl.findAll(page) - sucesso");
