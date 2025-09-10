@@ -67,7 +67,9 @@ public class UsuarioForm extends JPanel {
     private JPanel viewContainer;
     private java.awt.CardLayout viewLayout;
     private JPanel cardsPanel;
+    private JScrollPane cardScroll;
     private javax.swing.JTable table;
+    private JScrollPane listScroll;
     private JPanel emptyPanel;
     private JPanel paginationPanel;
     private JButton btnPrev;
@@ -112,13 +114,13 @@ public class UsuarioForm extends JPanel {
         });
         txtSearch.getDocument().addDocumentListener(new DocumentListener() {
             @Override
-            public void insertUpdate(DocumentEvent e) { applyFilter(); }
+            public void insertUpdate(DocumentEvent e) { applyFilter(true); }
 
             @Override
-            public void removeUpdate(DocumentEvent e) { applyFilter(); }
+            public void removeUpdate(DocumentEvent e) { applyFilter(true); }
 
             @Override
-            public void changedUpdate(DocumentEvent e) { applyFilter(); }
+            public void changedUpdate(DocumentEvent e) { applyFilter(true); }
         });
 
         btnCardView = new JButton();
@@ -156,7 +158,7 @@ public class UsuarioForm extends JPanel {
         // Cards view
         cardsPanel = new JPanel(new GridLayout(0, 3, 10, 10));
         cardsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        JScrollPane cardScroll = new JScrollPane(cardsPanel);
+        cardScroll = new JScrollPane(cardsPanel);
         cardScroll.setVerticalScrollBar(new ScrollBarCustom());
         cardScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         cardScroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -164,12 +166,12 @@ public class UsuarioForm extends JPanel {
 
         // List view (table)
         table = new javax.swing.JTable();
-        table.setRowHeight(60);
+        table.setRowHeight(56);
         table.setAutoCreateRowSorter(true);
         table.setShowHorizontalLines(true);
         table.setShowVerticalLines(true);
         table.setGridColor(new Color(0xE0, 0xE0, 0xE0));
-        table.setIntercellSpacing(new Dimension(4, 8));
+        table.setIntercellSpacing(new Dimension(6, 10));
         table.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
 
         table.addMouseListener(new MouseAdapter() {
@@ -199,7 +201,7 @@ public class UsuarioForm extends JPanel {
             }
         });
 
-        JScrollPane listScroll = new JScrollPane(table);
+        listScroll = new JScrollPane(table);
         listScroll.setVerticalScrollBar(new ScrollBarCustom());
         listScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         listScroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -237,11 +239,27 @@ public class UsuarioForm extends JPanel {
     }
 
     private void loadUsuarios() {
-        allUsuarios = controller.listar();
-        applyFilter();
+        loadUsuarios(false);
     }
 
-    private void applyFilter() {
+    private void loadUsuarios(boolean preserveState) {
+        int prevPage = currentPage;
+        int cardPos = cardScroll.getVerticalScrollBar().getValue();
+        int listPos = listScroll.getVerticalScrollBar().getValue();
+        allUsuarios = controller.listar();
+        applyFilter(!preserveState);
+        if (preserveState) {
+            int totalPages = (int) Math.ceil(filteredUsuarios.size() / (double) PAGE_SIZE);
+            currentPage = Math.min(prevPage, Math.max(totalPages - 1, 0));
+            refreshPage();
+            SwingUtilities.invokeLater(() -> {
+                cardScroll.getVerticalScrollBar().setValue(cardPos);
+                listScroll.getVerticalScrollBar().setValue(listPos);
+            });
+        }
+    }
+
+    private void applyFilter(boolean resetPage) {
         String text = getFilterText().toLowerCase();
         filteredUsuarios = allUsuarios.stream()
                 .filter(u -> u.getNome().toLowerCase().contains(text)
@@ -253,7 +271,9 @@ public class UsuarioForm extends JPanel {
             viewLayout.show(viewContainer, "empty");
             paginationPanel.setVisible(false);
         } else {
-            currentPage = 0;
+            if (resetPage) {
+                currentPage = 0;
+            }
             refreshPage();
             paginationPanel.setVisible(true);
         }
@@ -324,7 +344,9 @@ public class UsuarioForm extends JPanel {
         btnPrev.setEnabled(currentPage > 0);
         btnNext.setEnabled(currentPage < totalPages - 1);
         paginationPanel.add(btnPrev);
-        for (int i = 0; i < totalPages; i++) {
+        int startPage = (currentPage / 10) * 10;
+        int endPage = Math.min(startPage + 10, totalPages);
+        for (int i = startPage; i < endPage; i++) {
             JButton btn = new JButton(String.valueOf(i + 1));
             final int page = i;
             btn.setEnabled(page != currentPage);
@@ -364,7 +386,7 @@ public class UsuarioForm extends JPanel {
         lblMenu.addMouseListener(new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                popup.show(lblMenu, e.getX(), e.getY());
+                popup.show(lblMenu, 0, lblMenu.getHeight());
             }
         });
 
@@ -411,7 +433,7 @@ public class UsuarioForm extends JPanel {
         if (dialog.isConfirmed()) {
             try {
                 controller.criar(dialog.getUsuario());
-                loadUsuarios();
+                loadUsuarios(true);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -427,7 +449,7 @@ public class UsuarioForm extends JPanel {
             if (dialog.isConfirmed()) {
                 try {
                     controller.atualizar(dialog.getUsuario());
-                    loadUsuarios();
+                    loadUsuarios(true);
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
@@ -442,7 +464,7 @@ public class UsuarioForm extends JPanel {
         if (opt == JOptionPane.YES_OPTION) {
             try {
                 controller.remover(u.getIdUsuario());
-                loadUsuarios();
+                loadUsuarios(true);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
