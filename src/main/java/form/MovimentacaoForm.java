@@ -10,6 +10,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
+import java.awt.Dimension;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.util.ArrayList;
@@ -20,14 +21,10 @@ import java.util.stream.Collectors;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.JComboBox;
-import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.JTextField;
-import javax.swing.event.DocumentEvent;
-import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import model.Caixa;
@@ -53,13 +50,14 @@ public class MovimentacaoForm extends JPanel {
     private Card cardVantagem;
     private Card cardLiquido;
     private Card cardCaixa;
+    private Card cardPontos;
     private Table table;
     private JComboBox<Integer> cbAno;
     private JComboBox<String> cbMes;
     private Button btnConcluido;
     private Button btnPendente;
     private Button btnTodas;
-    private JTextField txtBuscarPonto;
+    private Button btnNova;
     private Integer filtroStatus;
     private List<Movimentacao> movsAno;
 
@@ -67,6 +65,7 @@ public class MovimentacaoForm extends JPanel {
     private Icon iconVant;
     private Icon iconLiq;
     private Icon iconCaixa;
+    private Icon iconPonto;
 
     public MovimentacaoForm() {
         movController = new MovimentacaoController(new MovimentacaoDaoNativeImpl());
@@ -82,7 +81,7 @@ public class MovimentacaoForm extends JPanel {
         setBackground(Color.WHITE);
 
         // Painel de cards
-        JPanel cards = new JPanel(new java.awt.GridLayout(1, 4, 18, 0));
+        JPanel cards = new JPanel(new java.awt.GridLayout(1, 5, 18, 0));
         cards.setBackground(Color.WHITE);
 
         iconDesc = IconFontSwing.buildIcon(
@@ -121,6 +120,15 @@ public class MovimentacaoForm extends JPanel {
         cardCaixa.setData(new ModelCard("Saldo Caixa", 0, 0, iconCaixa));
         cards.add(cardCaixa);
 
+        iconPonto = IconFontSwing.buildIcon(
+                GoogleMaterialDesignIcons.PIN_DROP, 60, Color.WHITE,
+                new Color(255, 255, 255, 15));
+        cardPontos = new Card();
+        cardPontos.setBackground(new Color(156, 39, 176));
+        cardPontos.setColorGradient(new Color(206, 147, 216));
+        cardPontos.setData(new ModelCard("Total Pontos", 0, 0, iconPonto));
+        cards.add(cardPontos);
+
         add(cards, BorderLayout.NORTH);
 
         // Painel de filtros e novo registro
@@ -158,23 +166,15 @@ public class MovimentacaoForm extends JPanel {
         btnPendente.addActionListener(e -> {filtroStatus = 2; aplicarFiltros();});
         filtro.add(btnPendente);
 
-        filtro.add(new JLabel("Buscar ponto:"));
-        txtBuscarPonto = new JTextField(10);
-        txtBuscarPonto.getDocument().addDocumentListener(new DocumentListener(){
-            @Override public void insertUpdate(DocumentEvent e){aplicarFiltros();}
-            @Override public void removeUpdate(DocumentEvent e){aplicarFiltros();}
-            @Override public void changedUpdate(DocumentEvent e){aplicarFiltros();}
-        });
-        filtro.add(txtBuscarPonto);
-
-        filtroWrapper.add(filtro, BorderLayout.CENTER);
-
-        Button btnNova = new Button();
-        btnNova.setText("Nova movimentação");
+        btnNova = new Button();
         btnNova.setBackground(new Color(33,150,243));
         btnNova.setForeground(Color.WHITE);
+        btnNova.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ADD, 20, Color.WHITE));
+        btnNova.setPreferredSize(new Dimension(30,30));
         btnNova.addActionListener(e -> new MovimentacaoDialog(null).setVisible(true));
-        filtroWrapper.add(btnNova, BorderLayout.EAST);
+        filtro.add(btnNova);
+
+        filtroWrapper.add(filtro, BorderLayout.CENTER);
 
         add(filtroWrapper, BorderLayout.CENTER);
 
@@ -190,6 +190,7 @@ public class MovimentacaoForm extends JPanel {
         });
         JScrollPane scroll = new JScrollPane(table);
         table.fixTable(scroll);
+        table.setRowSelectionAllowed(false);
         add(scroll, BorderLayout.SOUTH);
     }
 
@@ -256,14 +257,11 @@ public class MovimentacaoForm extends JPanel {
         final Integer mes = (mesSel != null && !"Todos".equals(mesSel))
                 ? Integer.valueOf(mesSel)
                 : null;
-        String busca = txtBuscarPonto.getText();
         List<Movimentacao> filtrados = movsAno.stream()
                 .filter(m -> mes == null
                         || (m.getPeriodo() != null && mes.equals(m.getPeriodo().getMes())))
                 .filter(m -> filtroStatus == null
                         || (m.getStatus() != null && filtroStatus.equals(m.getStatus())))
-                .filter(m -> busca == null || busca.isEmpty()
-                        || (m.getPonto() != null && String.valueOf(m.getPonto()).contains(busca)))
                 .collect(Collectors.toList());
         atualizarTabela(filtrados);
         atualizarCards(filtrados);
@@ -274,6 +272,7 @@ public class MovimentacaoForm extends JPanel {
         BigDecimal totalVant = BigDecimal.ZERO;
         BigDecimal totalLiq = BigDecimal.ZERO;
         BigDecimal totalCx = BigDecimal.ZERO;
+        int totalPontos = 0;
         Set<Integer> caixasProcessadas = new HashSet<>();
 
         for (Movimentacao m : movs) {
@@ -295,12 +294,16 @@ public class MovimentacaoForm extends JPanel {
                     }
                 }
             }
+            if (m.getPonto() != null) {
+                totalPontos += m.getPonto();
+            }
         }
 
         cardDesconto.setData(new ModelCard("Total Desconto", totalDesc.doubleValue(), 0, iconDesc));
         cardVantagem.setData(new ModelCard("Total Vantagem", totalVant.doubleValue(), 0, iconVant));
         cardLiquido.setData(new ModelCard("Total Líquido", totalLiq.doubleValue(), 0, iconLiq));
         cardCaixa.setData(new ModelCard("Saldo Caixa", totalCx.doubleValue(), 0, iconCaixa));
+        cardPontos.setData(new ModelCard("Total Pontos", totalPontos, 0, iconPonto));
     }
 
     private void atualizarTabela(List<Movimentacao> movs) {
@@ -322,12 +325,17 @@ public class MovimentacaoForm extends JPanel {
         table.getColumnModel().getColumn(statusCol).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel lbl = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                JLabel lbl = (JLabel) super.getTableCellRendererComponent(table, value, false, false, row, column);
+                lbl.setHorizontalAlignment(JLabel.CENTER);
+                lbl.setOpaque(true);
                 if ("Concluído".equals(value)) {
-                    lbl.setForeground(new Color(0, 128, 0));
+                    lbl.setBackground(new Color(76,175,80));
+                    lbl.setForeground(Color.WHITE);
                 } else if ("Pendente".equals(value)) {
-                    lbl.setForeground(new Color(255, 165, 0));
+                    lbl.setBackground(new Color(255,193,7));
+                    lbl.setForeground(Color.BLACK);
                 } else {
+                    lbl.setBackground(Color.WHITE);
                     lbl.setForeground(Color.BLACK);
                 }
                 return lbl;
