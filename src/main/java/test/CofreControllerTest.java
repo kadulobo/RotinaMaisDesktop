@@ -13,6 +13,7 @@ public class CofreControllerTest {
 
         Cofre cofre = new Cofre();
         cofre.setLogin("login");
+        cofre.setFoto(new byte[]{1});
         controller.criar(cofre);
 
         List<Cofre> list = controller.listar();
