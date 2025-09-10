@@ -43,6 +43,7 @@ import swing.icon.IconFontSwing;
 import swing.table.EventAction;
 import swing.table.ModelAction;
 import swing.table.Table;
+import util.ImageUtils;
 
 /**
  * Form that lists usuarios fetched from the database with card and list views.
@@ -272,8 +273,9 @@ public class UsuarioForm extends JPanel {
 
         ImageAvatar avatar = new ImageAvatar();
         avatar.setPreferredSize(new Dimension(64, 64));
-        if (u.getFoto() != null) {
-            avatar.setIcon(new ImageIcon(u.getFoto()));
+        ImageIcon icon = ImageUtils.bytesToImageIcon(u.getFoto());
+        if (icon != null) {
+            avatar.setIcon(icon);
         } else {
             avatar.setIcon(new ImageIcon(getClass().getResource("/icon/profile.jpg")));
         }
@@ -310,16 +312,21 @@ public class UsuarioForm extends JPanel {
     }
 
     private void editarUsuario(Usuario u) {
-        Frame frame = (Frame) SwingUtilities.getWindowAncestor(this);
-        UsuarioDialog dialog = new UsuarioDialog(frame, u);
-        dialog.setVisible(true);
-        if (dialog.isConfirmed()) {
-            try {
-                controller.atualizar(dialog.getUsuario());
-                loadUsuarios();
-            } catch (Exception ex) {
-                JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        try {
+            Usuario completo = controller.buscarComFotoPorId(u.getIdUsuario());
+            Frame frame = (Frame) SwingUtilities.getWindowAncestor(this);
+            UsuarioDialog dialog = new UsuarioDialog(frame, completo);
+            dialog.setVisible(true);
+            if (dialog.isConfirmed()) {
+                try {
+                    controller.atualizar(dialog.getUsuario());
+                    loadUsuarios();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
             }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
         }
     }
 

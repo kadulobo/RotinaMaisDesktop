@@ -22,6 +22,7 @@ import javax.swing.JTextField;
 import model.Usuario;
 import swing.Button;
 import swing.ImageAvatar;
+import util.ImageUtils;
 
 /**
  * Dialog used for creating or editing an {@link Usuario}.
@@ -51,7 +52,7 @@ public class UsuarioDialog extends JDialog {
             txtEmail.setText(usuario.getEmail());
             txtCpf.setText(usuario.getCpf());
             if (usuario.getFoto() != null) {
-                avatarPreview.setIcon(new ImageIcon(usuario.getFoto()));
+                avatarPreview.setIcon(ImageUtils.bytesToImageIcon(usuario.getFoto()));
             }
         }
     }
