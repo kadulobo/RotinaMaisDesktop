@@ -253,10 +253,9 @@ public class MovimentacaoForm extends JPanel {
             return;
         }
         String mesSel = (String) cbMes.getSelectedItem();
-        Integer mes = null;
-        if (mesSel != null && !"Todos".equals(mesSel)) {
-            mes = Integer.valueOf(mesSel);
-        }
+        final Integer mes = (mesSel != null && !"Todos".equals(mesSel))
+                ? Integer.valueOf(mesSel)
+                : null;
         String busca = txtBuscarPonto.getText();
         List<Movimentacao> filtrados = movsAno.stream()
                 .filter(m -> mes == null
