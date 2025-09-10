@@ -81,9 +81,11 @@ public class UsuarioForm extends JPanel {
 
     private void initComponents() {
         setLayout(new BorderLayout());
+        setBackground(Color.WHITE);
 
         // Top bar
         JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        topBar.setBackground(Color.WHITE);
         txtSearch = new JTextField(20);
         txtSearch.setText(PLACEHOLDER);
         txtSearch.setForeground(Color.GRAY);
@@ -138,20 +140,27 @@ public class UsuarioForm extends JPanel {
         // View container with CardLayout
         viewLayout = new java.awt.CardLayout();
         viewContainer = new JPanel(viewLayout);
+        viewContainer.setBackground(Color.WHITE);
 
         // Cards view split into two rows of three cards
         cardsPanel = new JPanel();
         cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
         cardsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        cardsPanel.setBackground(Color.WHITE);
 
-        cardsTopPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
-        cardsBottomPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        cardsTopPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        cardsBottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
+        cardsTopPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cardsBottomPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        cardsTopPanel.setBackground(Color.WHITE);
+        cardsBottomPanel.setBackground(Color.WHITE);
         cardsPanel.add(cardsTopPanel);
         cardsPanel.add(cardsBottomPanel);
 
         JScrollPane cardScroll = new JScrollPane(cardsPanel,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        cardScroll.getViewport().setBackground(Color.WHITE);
         viewContainer.add(cardScroll, "cards");
 
         // List view
@@ -175,10 +184,12 @@ public class UsuarioForm extends JPanel {
         });
         JScrollPane listScroll = new JScrollPane(table);
         table.fixTable(listScroll);
+        listScroll.getViewport().setBackground(Color.WHITE);
         viewContainer.add(listScroll, "list");
 
         // Empty view
         emptyPanel = new JPanel(new BorderLayout());
+        emptyPanel.setBackground(Color.WHITE);
         JLabel lblEmpty = new JLabel("No users found", JLabel.CENTER);
         emptyPanel.add(lblEmpty, BorderLayout.CENTER);
         viewContainer.add(emptyPanel, "empty");
@@ -298,7 +309,7 @@ public class UsuarioForm extends JPanel {
 
     private JComponent createCard(Usuario u) {
         JPanel card = new JPanel(new BorderLayout());
-        card.setPreferredSize(new Dimension(220, 150));
+        card.setPreferredSize(new Dimension(260, 180));
         card.setBackground(Color.WHITE);
         card.setBorder(new javax.swing.border.LineBorder(new Color(230, 230, 230), 1, true));
 
@@ -336,7 +347,7 @@ public class UsuarioForm extends JPanel {
         body.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         ImageAvatar avatar = new ImageAvatar();
-        avatar.setPreferredSize(new Dimension(80, 80));
+        avatar.setPreferredSize(new Dimension(90, 90));
         ImageIcon icon = ImageUtils.bytesToImageIcon(u.getFoto());
         if (icon != null) {
             avatar.setIcon(icon);
