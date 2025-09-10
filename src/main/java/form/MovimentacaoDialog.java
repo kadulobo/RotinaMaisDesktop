@@ -6,6 +6,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.math.BigDecimal;
+import java.util.List;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -13,6 +14,11 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
 
+import controller.CaixaController;
+import controller.PeriodoController;
+import dao.impl.CaixaDaoNativeImpl;
+import dao.impl.PeriodoDaoNativeImpl;
+import model.Caixa;
 import model.Movimentacao;
 import model.Periodo;
 import swing.Button;
@@ -32,6 +38,12 @@ public class MovimentacaoDialog extends JDialog {
     private JTextField txtVantagem;
     private JTextField txtLiquido;
     private JComboBox<String> cbStatus;
+    private JComboBox<String> cbPeriodo;
+    private JComboBox<String> cbCaixa;
+    private List<Periodo> periodos;
+    private List<Caixa> caixas;
+    private final PeriodoController periodoController = new PeriodoController(new PeriodoDaoNativeImpl());
+    private final CaixaController caixaController = new CaixaController(new CaixaDaoNativeImpl());
 
     public MovimentacaoDialog(Frame parent, Movimentacao mov, Periodo periodo) {
         super(parent, true);
@@ -40,6 +52,7 @@ public class MovimentacaoDialog extends JDialog {
             this.movimentacao.setPeriodo(periodo);
         }
         initComponents();
+        loadLists();
         setLocationRelativeTo(parent);
         loadData();
     }
@@ -62,6 +75,16 @@ public class MovimentacaoDialog extends JDialog {
         cbTipo = new JComboBox<>(new String[]{"Entrada", "Saída"});
         gbc.gridx = 0; gbc.gridy = y; panel.add(lblTipo, gbc);
         gbc.gridx = 1; panel.add(cbTipo, gbc); y++;
+
+        JLabel lblPeriodo = new JLabel("Período");
+        cbPeriodo = new JComboBox<>();
+        gbc.gridx = 0; gbc.gridy = y; panel.add(lblPeriodo, gbc);
+        gbc.gridx = 1; panel.add(cbPeriodo, gbc); y++;
+
+        JLabel lblCaixa = new JLabel("Caixa");
+        cbCaixa = new JComboBox<>();
+        gbc.gridx = 0; gbc.gridy = y; panel.add(lblCaixa, gbc);
+        gbc.gridx = 1; panel.add(cbCaixa, gbc); y++;
 
         JLabel lblPonto = new JLabel("Ponto");
         txtPonto = new JTextField(10);
@@ -128,6 +151,35 @@ public class MovimentacaoDialog extends JDialog {
         if (movimentacao.getStatus() != null) {
             cbStatus.setSelectedIndex(movimentacao.getStatus() == 1 ? 0 : 1);
         }
+        if (movimentacao.getPeriodo() != null && periodos != null) {
+            for (int i = 0; i < periodos.size(); i++) {
+                if (periodos.get(i).getIdPeriodo().equals(movimentacao.getPeriodo().getIdPeriodo())) {
+                    cbPeriodo.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+        if (movimentacao.getCaixa() != null && caixas != null) {
+            for (int i = 0; i < caixas.size(); i++) {
+                if (caixas.get(i).getIdCaixa().equals(movimentacao.getCaixa().getIdCaixa())) {
+                    cbCaixa.setSelectedIndex(i);
+                    break;
+                }
+            }
+        }
+    }
+
+    private void loadLists() {
+        periodos = periodoController.listar();
+        cbPeriodo.removeAllItems();
+        for (Periodo p : periodos) {
+            cbPeriodo.addItem(p.getAno() + "/" + String.format("%02d", p.getMes()));
+        }
+        caixas = caixaController.listar();
+        cbCaixa.removeAllItems();
+        for (Caixa c : caixas) {
+            cbCaixa.addItem(c.getNome());
+        }
     }
 
     private void salvar() {
@@ -138,6 +190,16 @@ public class MovimentacaoDialog extends JDialog {
             movimentacao.setVantagem(parseBigDecimal(txtVantagem.getText()));
             movimentacao.setLiquido(parseBigDecimal(txtLiquido.getText()));
             movimentacao.setStatus(cbStatus.getSelectedIndex() == 0 ? 1 : 2);
+            if (cbPeriodo.getSelectedIndex() >= 0) {
+                movimentacao.setPeriodo(periodos.get(cbPeriodo.getSelectedIndex()));
+            }
+            if (cbCaixa.getSelectedIndex() >= 0) {
+                movimentacao.setCaixa(caixas.get(cbCaixa.getSelectedIndex()));
+            }
+            if (movimentacao.getPeriodo() == null || movimentacao.getCaixa() == null) {
+                JOptionPane.showMessageDialog(this, "Período e Caixa são obrigatórios", "Erro", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
             confirmed = true;
             dispose();
         } catch (NumberFormatException ex) {
