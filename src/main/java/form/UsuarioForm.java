@@ -10,6 +10,11 @@ import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
 import java.awt.GridLayout;
+import java.awt.FontMetrics;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
@@ -19,7 +24,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.ImageIcon;
 import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
@@ -28,8 +32,14 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
+import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
+import javax.swing.AbstractCellEditor;
+import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
+import javax.swing.Icon;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -57,7 +67,7 @@ public class UsuarioForm extends JPanel {
     private JPanel viewContainer;
     private java.awt.CardLayout viewLayout;
     private JPanel cardsPanel;
-    private JPanel listPanel;
+    private javax.swing.JTable table;
     private JPanel emptyPanel;
     private JPanel paginationPanel;
     private JButton btnPrev;
@@ -152,11 +162,44 @@ public class UsuarioForm extends JPanel {
         cardScroll.getVerticalScrollBar().setUnitIncrement(16);
         viewContainer.add(cardScroll, "cards");
 
-        // List view (vertical cards)
-        listPanel = new JPanel();
-        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
-        listPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        JScrollPane listScroll = new JScrollPane(listPanel);
+        // List view (table)
+        table = new javax.swing.JTable();
+        table.setRowHeight(60);
+        table.setAutoCreateRowSorter(true);
+        table.setShowHorizontalLines(true);
+        table.setShowVerticalLines(true);
+        table.setGridColor(new Color(0xE0, 0xE0, 0xE0));
+        table.setIntercellSpacing(new Dimension(4, 8));
+        table.setAutoResizeMode(javax.swing.JTable.AUTO_RESIZE_OFF);
+
+        table.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2 && table.getModel() instanceof UsuarioTableModel) {
+                    int row = table.rowAtPoint(e.getPoint());
+                    if (row >= 0) {
+                        int modelRow = table.convertRowIndexToModel(row);
+                        Usuario u = ((UsuarioTableModel) table.getModel()).getUsuarioAt(modelRow);
+                        editarUsuario(u);
+                    }
+                }
+            }
+        });
+
+        javax.swing.table.JTableHeader header = table.getTableHeader();
+        header.setPreferredSize(new Dimension(header.getPreferredSize().width, 36));
+        header.setDefaultRenderer(new javax.swing.table.DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(javax.swing.JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                swing.table.TableHeader h = new swing.table.TableHeader(String.valueOf(value));
+                if (column == table.getColumnCount() - 1) {
+                    h.setHorizontalAlignment(javax.swing.JLabel.CENTER);
+                }
+                return h;
+            }
+        });
+
+        JScrollPane listScroll = new JScrollPane(table);
         listScroll.setVerticalScrollBar(new ScrollBarCustom());
         listScroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
         listScroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -228,15 +271,27 @@ public class UsuarioForm extends JPanel {
         }
     }
 
-    private void populateList() {
-        listPanel.removeAll();
-        for (Usuario u : getPageUsuarios()) {
-            JComponent item = createListItem(u);
-            listPanel.add(item);
-            listPanel.add(Box.createVerticalStrut(10));
+    private void populateTable() {
+        if (table.getModel() instanceof UsuarioTableModel) {
+            ((UsuarioTableModel) table.getModel()).setUsuarios(getPageUsuarios());
+        } else {
+            table.setModel(new UsuarioTableModel(getPageUsuarios()));
+            table.getColumnModel().getColumn(0).setMinWidth(72);
+            table.getColumnModel().getColumn(0).setMaxWidth(72);
+            table.getColumnModel().getColumn(0).setPreferredWidth(72);
+            table.getColumnModel().getColumn(1).setPreferredWidth(220);
+            table.getColumnModel().getColumn(2).setPreferredWidth(240);
+            table.getColumnModel().getColumn(3).setPreferredWidth(100);
+            table.getColumnModel().getColumn(4).setMinWidth(110);
+            table.getColumnModel().getColumn(4).setMaxWidth(130);
+            table.getColumnModel().getColumn(4).setPreferredWidth(120);
+
+            table.getColumnModel().getColumn(0).setCellRenderer(new AvatarRenderer());
+            table.getColumnModel().getColumn(3).setCellRenderer(new StatusRenderer());
+            ActionCell actionCell = new ActionCell();
+            table.getColumnModel().getColumn(4).setCellRenderer(actionCell);
+            table.getColumnModel().getColumn(4).setCellEditor(actionCell);
         }
-        listPanel.revalidate();
-        listPanel.repaint();
     }
 
     private void populateCards() {
@@ -258,7 +313,7 @@ public class UsuarioForm extends JPanel {
 
     private void refreshPage() {
         populateCards();
-        populateList();
+        populateTable();
         updateView();
         updatePagination();
     }
@@ -349,12 +404,6 @@ public class UsuarioForm extends JPanel {
         return card;
     }
 
-    private JComponent createListItem(Usuario u) {
-        JComponent card = createCard(u);
-        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
-        return card;
-    }
-
     private void adicionarUsuario() {
         Frame frame = (Frame) SwingUtilities.getWindowAncestor(this);
         UsuarioDialog dialog = new UsuarioDialog(frame, null);
@@ -403,6 +452,186 @@ public class UsuarioForm extends JPanel {
     private String getFilterText() {
         String text = txtSearch.getText();
         return PLACEHOLDER.equals(text) ? "" : text;
+    }
+
+    private Icon createInitialsIcon(String name) {
+        int size = 36;
+        BufferedImage img = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = img.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setColor(new Color(200, 200, 200));
+        g2.fillOval(0, 0, size, size);
+        g2.setColor(Color.DARK_GRAY);
+        g2.setFont(g2.getFont().deriveFont(Font.BOLD, 14f));
+        String initials = getInitials(name);
+        FontMetrics fm = g2.getFontMetrics();
+        int x = (size - fm.stringWidth(initials)) / 2;
+        int y = (size - fm.getHeight()) / 2 + fm.getAscent();
+        g2.drawString(initials, x, y);
+        g2.dispose();
+        return new ImageIcon(img);
+    }
+
+    private String getInitials(String name) {
+        if (name == null || name.isEmpty()) {
+            return "";
+        }
+        String[] parts = name.trim().split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < Math.min(2, parts.length); i++) {
+            sb.append(Character.toUpperCase(parts[i].charAt(0)));
+        }
+        return sb.toString();
+    }
+
+    private class AvatarRenderer implements TableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            Usuario u = (Usuario) value;
+            ImageAvatar avatar = new ImageAvatar();
+            avatar.setPreferredSize(new Dimension(36, 36));
+            ImageIcon icon = ImageUtils.bytesToImageIcon(u.getFoto());
+            if (icon != null) {
+                avatar.setIcon(icon);
+            } else {
+                avatar.setIcon(createInitialsIcon(u.getNome()));
+            }
+            JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 0));
+            panel.add(avatar);
+            panel.setOpaque(true);
+            panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+            return panel;
+        }
+    }
+
+    private class StatusRenderer extends javax.swing.table.DefaultTableCellRenderer {
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            JLabel lbl = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            lbl.setHorizontalAlignment(JLabel.LEFT);
+            lbl.setOpaque(true);
+            String status = String.valueOf(value);
+            if ("Blocked".equalsIgnoreCase(status)) {
+                lbl.setBackground(new Color(0xEEEEEE));
+                lbl.setForeground(Color.DARK_GRAY);
+            } else {
+                lbl.setBackground(new Color(0xE8F5E9));
+                lbl.setForeground(new Color(0x2E7D32));
+            }
+            return lbl;
+        }
+    }
+
+    private class ActionCell extends AbstractCellEditor implements TableCellRenderer, TableCellEditor {
+        private final JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        private final JButton btnEdit = new JButton("\u270E");
+        private final JButton btnDelete = new JButton("\uD83D\uDDD1\uFE0F");
+        private Usuario current;
+
+        public ActionCell() {
+            btnEdit.setBorder(null);
+            btnEdit.setContentAreaFilled(false);
+            btnDelete.setBorder(null);
+            btnDelete.setContentAreaFilled(false);
+            btnEdit.addActionListener(e -> {
+                if (current != null) {
+                    editarUsuario(current);
+                }
+                fireEditingStopped();
+            });
+            btnDelete.addActionListener(e -> {
+                if (current != null) {
+                    excluirUsuario(current);
+                }
+                fireEditingStopped();
+            });
+            panel.add(btnEdit);
+            panel.add(btnDelete);
+            panel.setOpaque(true);
+        }
+
+        @Override
+        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+            panel.setBackground(isSelected ? table.getSelectionBackground() : table.getBackground());
+            return panel;
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            current = (Usuario) value;
+            panel.setBackground(table.getSelectionBackground());
+            return panel;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return current;
+        }
+    }
+
+    private static class UsuarioTableModel extends AbstractTableModel {
+        private final String[] cols = {"Avatar", "Nome", "Email", "Status", "Ações"};
+        private List<Usuario> usuarios;
+
+        public UsuarioTableModel(List<Usuario> usuarios) {
+            this.usuarios = new ArrayList<>(usuarios);
+        }
+
+        public void setUsuarios(List<Usuario> usuarios) {
+            this.usuarios = new ArrayList<>(usuarios);
+            fireTableDataChanged();
+        }
+
+        public Usuario getUsuarioAt(int row) {
+            return usuarios.get(row);
+        }
+
+        @Override
+        public int getRowCount() {
+            return usuarios.size();
+        }
+
+        @Override
+        public int getColumnCount() {
+            return cols.length;
+        }
+
+        @Override
+        public String getColumnName(int column) {
+            return cols[column];
+        }
+
+        @Override
+        public Object getValueAt(int rowIndex, int columnIndex) {
+            Usuario u = usuarios.get(rowIndex);
+            switch (columnIndex) {
+                case 0:
+                    return u;
+                case 1:
+                    return u.getNome();
+                case 2:
+                    return u.getEmail();
+                case 3:
+                    return "Active";
+                case 4:
+                    return u;
+                default:
+                    return null;
+            }
+        }
+
+        @Override
+        public Class<?> getColumnClass(int columnIndex) {
+            if (columnIndex == 0 || columnIndex == 4) {
+                return Usuario.class;
+            }
+            return String.class;
+        }
+
+        @Override
+        public boolean isCellEditable(int rowIndex, int columnIndex) {
+            return columnIndex == 4;
+        }
     }
 }
 
