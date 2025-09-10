@@ -9,6 +9,7 @@ import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
+import java.awt.GridLayout;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
 import java.awt.event.MouseAdapter;
@@ -61,10 +62,15 @@ public class UsuarioForm extends JPanel {
     private JPanel cardsPanel;
     private Table table;
     private JPanel emptyPanel;
+    private JPanel paginationPanel;
+    private JButton btnPrev;
+    private JButton btnNext;
 
     private List<Usuario> allUsuarios = new ArrayList<>();
     private List<Usuario> filteredUsuarios = new ArrayList<>();
     private boolean showingCards = true;
+    private final int PAGE_SIZE = 6;
+    private int currentPage = 0;
 
     public UsuarioForm() {
         controller = new UsuarioController(new UsuarioDaoNativeImpl());
@@ -118,8 +124,8 @@ public class UsuarioForm extends JPanel {
         btnAdd = new Button();
         btnAdd.setBackground(new Color(75, 134, 253));
         btnAdd.setForeground(Color.WHITE);
-        btnAdd.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ADD, 18, Color.WHITE));
-        btnAdd.setText("Adicionar");
+        btnAdd.setIcon(new ImageIcon(getClass().getResource("/icon/11.png")));
+        btnAdd.setText("");
         btnAdd.addActionListener(e -> adicionarUsuario());
 
         topBar.add(txtSearch);
@@ -133,7 +139,7 @@ public class UsuarioForm extends JPanel {
         viewContainer = new JPanel(viewLayout);
 
         // Cards view
-        cardsPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
+        cardsPanel = new JPanel(new GridLayout(0, 3, 10, 10));
         cardsPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
         JScrollPane cardScroll = new JScrollPane(cardsPanel);
         cardScroll.getVerticalScrollBar().setUnitIncrement(16);
@@ -152,8 +158,9 @@ public class UsuarioForm extends JPanel {
             public void mouseClicked(MouseEvent e) {
                 if (e.getClickCount() == 2) {
                     int row = table.getSelectedRow();
-                    if (row >= 0 && row < filteredUsuarios.size()) {
-                        editarUsuario(filteredUsuarios.get(row));
+                    List<Usuario> page = getPageUsuarios();
+                    if (row >= 0 && row < page.size()) {
+                        editarUsuario(page.get(row));
                     }
                 }
             }
@@ -169,6 +176,24 @@ public class UsuarioForm extends JPanel {
         viewContainer.add(emptyPanel, "empty");
 
         add(viewContainer, BorderLayout.CENTER);
+
+        // Pagination panel
+        paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        btnPrev = new JButton("Previous");
+        btnPrev.addActionListener(e -> {
+            if (currentPage > 0) {
+                currentPage--;
+                refreshPage();
+            }
+        });
+        btnNext = new JButton("Next");
+        btnNext.addActionListener(e -> {
+            if ((currentPage + 1) * PAGE_SIZE < filteredUsuarios.size()) {
+                currentPage++;
+                refreshPage();
+            }
+        });
+        add(paginationPanel, BorderLayout.SOUTH);
     }
 
     private void loadUsuarios() {
@@ -186,10 +211,11 @@ public class UsuarioForm extends JPanel {
 
         if (filteredUsuarios.isEmpty()) {
             viewLayout.show(viewContainer, "empty");
+            paginationPanel.setVisible(false);
         } else {
-            populateCards();
-            populateTable();
-            updateView();
+            currentPage = 0;
+            refreshPage();
+            paginationPanel.setVisible(true);
         }
     }
 
@@ -217,23 +243,56 @@ public class UsuarioForm extends JPanel {
                 editarUsuario(u);
             }
         };
-        for (Usuario u : filteredUsuarios) {
+        for (Usuario u : getPageUsuarios()) {
             model.addRow(new Object[]{u.getIdUsuario(), u.getNome(), u.getEmail(), u.getCpf(), new ModelAction<>(u, eventAction)});
         }
     }
 
     private void populateCards() {
         cardsPanel.removeAll();
-        for (Usuario u : filteredUsuarios) {
+        for (Usuario u : getPageUsuarios()) {
             cardsPanel.add(createCard(u));
         }
         cardsPanel.revalidate();
         cardsPanel.repaint();
     }
 
+    private List<Usuario> getPageUsuarios() {
+        int start = currentPage * PAGE_SIZE;
+        int end = Math.min(start + PAGE_SIZE, filteredUsuarios.size());
+        return filteredUsuarios.subList(start, end);
+    }
+
+    private void refreshPage() {
+        populateCards();
+        populateTable();
+        updateView();
+        updatePagination();
+    }
+
+    private void updatePagination() {
+        paginationPanel.removeAll();
+        int totalPages = (int) Math.ceil(filteredUsuarios.size() / (double) PAGE_SIZE);
+        btnPrev.setEnabled(currentPage > 0);
+        btnNext.setEnabled(currentPage < totalPages - 1);
+        paginationPanel.add(btnPrev);
+        for (int i = 0; i < totalPages; i++) {
+            JButton btn = new JButton(String.valueOf(i + 1));
+            final int page = i;
+            btn.setEnabled(page != currentPage);
+            btn.addActionListener(e -> {
+                currentPage = page;
+                refreshPage();
+            });
+            paginationPanel.add(btn);
+        }
+        paginationPanel.add(btnNext);
+        paginationPanel.revalidate();
+        paginationPanel.repaint();
+    }
+
     private JComponent createCard(Usuario u) {
         JPanel card = new JPanel(new BorderLayout());
-        card.setPreferredSize(new Dimension(220, 150));
         card.setBackground(Color.WHITE);
         card.setBorder(new javax.swing.border.LineBorder(new Color(230, 230, 230), 1, true));
 
