@@ -85,28 +85,36 @@ public class MovimentacaoForm extends JPanel {
         JPanel cards = new JPanel(new java.awt.GridLayout(1, 4, 18, 0));
         cards.setBackground(Color.WHITE);
 
-        iconDesc = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.MONEY_OFF, 60, Color.WHITE, new Color(255, 255, 255, 15));
+        iconDesc = IconFontSwing.buildIcon(
+                GoogleMaterialDesignIcons.MONEY_OFF, 60, Color.WHITE,
+                new Color(255, 255, 255, 15));
         cardDesconto = new Card();
         cardDesconto.setBackground(new Color(33, 150, 243));
         cardDesconto.setColorGradient(new Color(33, 203, 243));
         cardDesconto.setData(new ModelCard("Total Desconto", 0, 0, iconDesc));
         cards.add(cardDesconto);
 
-        iconVant = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.TRENDING_UP, 60, Color.WHITE, new Color(255, 255, 255, 15));
+        iconVant = IconFontSwing.buildIcon(
+                GoogleMaterialDesignIcons.TRENDING_UP, 60, Color.WHITE,
+                new Color(255, 255, 255, 15));
         cardVantagem = new Card();
         cardVantagem.setBackground(new Color(76, 175, 80));
         cardVantagem.setColorGradient(new Color(129, 199, 132));
         cardVantagem.setData(new ModelCard("Total Vantagem", 0, 0, iconVant));
         cards.add(cardVantagem);
 
-        iconLiq = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ACCOUNT_BALANCE, 60, Color.WHITE, new Color(255, 255, 255, 15));
+        iconLiq = IconFontSwing.buildIcon(
+                GoogleMaterialDesignIcons.ACCOUNT_BALANCE, 60, Color.WHITE,
+                new Color(255, 255, 255, 15));
         cardLiquido = new Card();
         cardLiquido.setBackground(new Color(255, 152, 0));
         cardLiquido.setColorGradient(new Color(255, 203, 107));
         cardLiquido.setData(new ModelCard("Total Líquido", 0, 0, iconLiq));
         cards.add(cardLiquido);
 
-        iconCaixa = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ACCOUNT_BALANCE_WALLET, 60, Color.WHITE, new Color(255, 255, 255, 15));
+        iconCaixa = IconFontSwing.buildIcon(
+                GoogleMaterialDesignIcons.ACCOUNT_BALANCE_WALLET, 60, Color.WHITE,
+                new Color(255, 255, 255, 15));
         cardCaixa = new Card();
         cardCaixa.setBackground(new Color(63, 81, 181));
         cardCaixa.setColorGradient(new Color(121, 134, 203));
@@ -251,9 +259,12 @@ public class MovimentacaoForm extends JPanel {
         }
         String busca = txtBuscarPonto.getText();
         List<Movimentacao> filtrados = movsAno.stream()
-                .filter(m -> mes == null || (m.getPeriodo() != null && mes.equals(m.getPeriodo().getMes())))
-                .filter(m -> filtroStatus == null || (m.getStatus() != null && filtroStatus.equals(m.getStatus())))
-                .filter(m -> busca == null || busca.isEmpty() || (m.getPonto() != null && String.valueOf(m.getPonto()).contains(busca)))
+                .filter(m -> mes == null
+                        || (m.getPeriodo() != null && mes.equals(m.getPeriodo().getMes())))
+                .filter(m -> filtroStatus == null
+                        || (m.getStatus() != null && filtroStatus.equals(m.getStatus())))
+                .filter(m -> busca == null || busca.isEmpty()
+                        || (m.getPonto() != null && String.valueOf(m.getPonto()).contains(busca)))
                 .collect(Collectors.toList());
         atualizarTabela(filtrados);
         atualizarCards(filtrados);
