@@ -9,6 +9,7 @@ import form.CategoriaForm;
 import form.EventoForm;
 import form.Form_Home;
 import form.MainForm;
+import form.MovimentacaoForm;
 import swing.MenuItem;
 import swing.PopupMenu;
 import swing.icon.GoogleMaterialDesignIcons;
@@ -53,6 +54,8 @@ public class Main extends javax.swing.JFrame {
                         main.showForm(new CategoriaForm());
                     } else if (subMenuIndex == 3) {
                         main.showForm(new EventoForm());
+                    } else if (subMenuIndex == 4) {
+                        main.showForm(new MovimentacaoForm());
                     }
                 }
             }
