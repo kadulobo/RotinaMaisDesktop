@@ -9,6 +9,7 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.FlowLayout;
 import java.awt.Dimension;
+import java.awt.Frame;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.util.ArrayList;
@@ -24,6 +25,8 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
+import javax.swing.JOptionPane;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
@@ -34,6 +37,8 @@ import swing.Button;
 import swing.icon.GoogleMaterialDesignIcons;
 import swing.icon.IconFontSwing;
 import swing.table.Table;
+import swing.table.EventAction;
+import swing.table.ModelAction;
 import component.Card;
 
 /**
@@ -168,7 +173,7 @@ public class MovimentacaoForm extends JPanel {
         btnNova.setForeground(Color.WHITE);
         btnNova.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ADD, 20, Color.WHITE));
         btnNova.setPreferredSize(new Dimension(30,30));
-        btnNova.addActionListener(e -> new MovimentacaoDialog(null).setVisible(true));
+        btnNova.addActionListener(e -> adicionarMovimentacao());
         filtro.add(btnNova);
 
         filtroWrapper.add(filtro, BorderLayout.CENTER);
@@ -179,11 +184,11 @@ public class MovimentacaoForm extends JPanel {
         // Tabela de movimentações
         table = new Table();
         table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{
-            "Tipo", "Ponto", "Desconto", "Vantagem", "Líquido", "Status"
+            "Tipo", "Ponto", "Desconto", "Vantagem", "Líquido", "Status", "Ações"
         }) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return false;
+                return column == 6;
             }
         });
         JScrollPane scroll = new JScrollPane(table);
@@ -326,9 +331,81 @@ public class MovimentacaoForm extends JPanel {
         cardPontos.setData(new ModelCard("Total Pontos", totalPontos, 0, iconPonto));
     }
 
+    private Periodo getPeriodoSelecionado() {
+        Integer ano = (Integer) cbAno.getSelectedItem();
+        String mesSel = (String) cbMes.getSelectedItem();
+        if (ano != null && mesSel != null && !"Todos".equals(mesSel)) {
+            Integer mes = Integer.valueOf(mesSel);
+            List<Periodo> periodosAno = periodoController.buscarPorAno(ano);
+            for (Periodo p : periodosAno) {
+                if (p.getMes() != null && p.getMes().equals(mes)) {
+                    return p;
+                }
+            }
+        }
+        return null;
+    }
+
+    private void adicionarMovimentacao() {
+        Periodo periodo = getPeriodoSelecionado();
+        Frame frame = (Frame) SwingUtilities.getWindowAncestor(this);
+        MovimentacaoDialog dialog = new MovimentacaoDialog(frame, null, periodo);
+        dialog.setVisible(true);
+        if (dialog.isConfirmed()) {
+            try {
+                movController.criar(dialog.getMovimentacao());
+                carregarMovimentacoes();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private void editarMovimentacao(Movimentacao m) {
+        try {
+            Movimentacao completo = movController.buscarPorId(m.getIdMovimentacao());
+            Frame frame = (Frame) SwingUtilities.getWindowAncestor(this);
+            MovimentacaoDialog dialog = new MovimentacaoDialog(frame, completo, completo.getPeriodo());
+            dialog.setVisible(true);
+            if (dialog.isConfirmed()) {
+                try {
+                    movController.atualizar(dialog.getMovimentacao());
+                    carregarMovimentacoes();
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void excluirMovimentacao(Movimentacao m) {
+        int opt = JOptionPane.showConfirmDialog(this, "Excluir movimentação?", "Confirmação", JOptionPane.YES_NO_OPTION);
+        if (opt == JOptionPane.YES_OPTION) {
+            try {
+                movController.remover(m.getIdMovimentacao());
+                carregarMovimentacoes();
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
     private void atualizarTabela(List<Movimentacao> movs) {
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
+        EventAction<Movimentacao> eventAction = new EventAction<Movimentacao>() {
+            @Override
+            public void delete(Movimentacao m) {
+                excluirMovimentacao(m);
+            }
+
+            @Override
+            public void update(Movimentacao m) {
+                editarMovimentacao(m);
+            }
+        };
         for (Movimentacao m : movs) {
             String tipo = tipoTexto(m.getTipo());
             String status = statusTexto(m.getStatus());
@@ -338,10 +415,11 @@ public class MovimentacaoForm extends JPanel {
                 m.getDesconto(),
                 m.getVantagem(),
                 m.getLiquido(),
-                status
+                status,
+                new ModelAction<>(m, eventAction)
             });
         }
-        int statusCol = table.getColumnModel().getColumnCount() - 1;
+        int statusCol = table.getColumnModel().getColumnCount() - 2;
         table.getColumnModel().getColumn(statusCol).setCellRenderer(new TableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
