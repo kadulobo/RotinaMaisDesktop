@@ -20,6 +20,9 @@ public class Cofre {
     @Column(name = "tipo")
     private Integer tipo;
 
+    @Column(name = "foto")
+    private byte[] foto;
+
     @Column(name = "plataforma")
     private String plataforma;
 
@@ -35,6 +38,8 @@ public class Cofre {
     public void setSenha(String senha) { this.senha = senha; }
     public Integer getTipo() { return tipo; }
     public void setTipo(Integer tipo) { this.tipo = tipo; }
+    public byte[] getFoto() { return foto; }
+    public void setFoto(byte[] foto) { this.foto = foto; }
     public String getPlataforma() { return plataforma; }
     public void setPlataforma(String plataforma) { this.plataforma = plataforma; }
     public Integer getIdUsuario() { return idUsuario; }

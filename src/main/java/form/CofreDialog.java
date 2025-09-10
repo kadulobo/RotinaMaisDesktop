@@ -5,6 +5,8 @@ import java.awt.Frame;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.io.IOException;
+import java.io.InputStream;
 import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JLabel;
@@ -39,6 +41,28 @@ public class CofreDialog extends JDialog {
             if (this.cofre.getTipo() != null && this.cofre.getTipo() >= 1 && this.cofre.getTipo() <= 3) {
                 cbTipo.setSelectedIndex(this.cofre.getTipo() - 1);
             }
+        }
+    }
+
+    private byte[] defaultFoto(int tipo) {
+        String path;
+        switch (tipo) {
+            case 1:
+                path = "/icon/profile.jpg";
+                break;
+            case 2:
+                path = "/icon/profile1.jpg";
+                break;
+            case 3:
+                path = "/icon/profile2.jpg";
+                break;
+            default:
+                return null;
+        }
+        try (InputStream is = getClass().getResourceAsStream(path)) {
+            return is != null ? is.readAllBytes() : null;
+        } catch (IOException ex) {
+            return null;
         }
     }
 
@@ -99,6 +123,7 @@ public class CofreDialog extends JDialog {
         cofre.setLogin(txtLogin.getText());
         cofre.setSenha(new String(txtSenha.getPassword()));
         cofre.setTipo(cbTipo.getSelectedIndex() + 1);
+        cofre.setFoto(defaultFoto(cofre.getTipo()));
         confirmed = true;
         dispose();
     }

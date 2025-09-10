@@ -52,6 +52,11 @@ public class CofreController {
         return dao.findByLogin(login);
     }
 
+    public List<Cofre> buscarPorTipo(Integer tipo) {
+        Logger.info("CofreController.buscarPorTipo");
+        return dao.findByTipo(tipo);
+    }
+
     public List<Cofre> pesquisar(Cofre filtro) {
         Logger.info("CofreController.pesquisar");
         return dao.search(filtro);

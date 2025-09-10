@@ -27,6 +27,9 @@ import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import model.Cofre;
 import model.ModelCard;
+import javax.swing.ImageIcon;
+import swing.ImageAvatar;
+import util.ImageUtils;
 import swing.Button;
 import swing.icon.GoogleMaterialDesignIcons;
 import swing.icon.IconFontSwing;
@@ -149,13 +152,19 @@ public class CofreForm extends JPanel {
 
         table = new Table();
         table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{
-            "ID", "Plataforma", "Login", "Senha", "Tipo", "Ações"
+            "Foto", "Plataforma", "Login", "Senha", "Tipo", "Ações"
         }) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return column == 5;
             }
+
+            @Override
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 0 ? ImageIcon.class : Object.class;
+            }
         });
+        table.setRowHeight(40);
         JScrollPane scroll = new JScrollPane(table);
         table.fixTable(scroll);
         table.setRowSelectionAllowed(false);
@@ -207,8 +216,12 @@ public class CofreForm extends JPanel {
             }
         };
         for (Cofre c : lista) {
+            ImageIcon icon = ImageUtils.bytesToImageIcon(c.getFoto());
+            if (icon == null) {
+                icon = new ImageIcon(getClass().getResource("/icon/profile.jpg"));
+            }
             model.addRow(new Object[]{
-                c.getIdCofre(),
+                icon,
                 c.getPlataforma(),
                 c.getLogin(),
                 mask(c.getSenha()),
@@ -216,6 +229,17 @@ public class CofreForm extends JPanel {
                 new ModelAction<>(c, eventAction)
             });
         }
+        table.getColumnModel().getColumn(0).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                ImageAvatar avatar = new ImageAvatar();
+                avatar.setPreferredSize(new Dimension(40, 40));
+                if (value instanceof ImageIcon) {
+                    avatar.setIcon((ImageIcon) value);
+                }
+                return avatar;
+            }
+        });
         int tipoCol = table.getColumnModel().getColumnCount() - 2;
         table.getColumnModel().getColumn(tipoCol).setCellRenderer(new TableCellRenderer() {
             @Override

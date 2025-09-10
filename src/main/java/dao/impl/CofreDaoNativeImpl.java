@@ -22,6 +22,7 @@ public class CofreDaoNativeImpl implements CofreDao {
         c.setSenha(rs.getString("senha"));
         int tipo = rs.getInt("tipo");
         c.setTipo(rs.wasNull() ? null : tipo);
+        c.setFoto(rs.getBytes("foto"));
         c.setPlataforma(rs.getString("plataforma"));
         int idUsuario = rs.getInt("id_usuario");
         c.setIdUsuario(rs.wasNull() ? null : idUsuario);
@@ -31,7 +32,7 @@ public class CofreDaoNativeImpl implements CofreDao {
     @Override
     public void create(Cofre c) {
         Logger.info("CofreDao.create");
-        String sql = "INSERT INTO Cofre (login, senha, tipo, plataforma, id_usuario) VALUES (?,?,?,?,?)";
+        String sql = "INSERT INTO Cofre (login, senha, tipo, plataforma, id_usuario, foto) VALUES (?,?,?,?,?,?)";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
@@ -42,6 +43,7 @@ public class CofreDaoNativeImpl implements CofreDao {
                 if (c.getTipo() != null) ps.setInt(3, c.getTipo()); else ps.setNull(3, java.sql.Types.INTEGER);
                 ps.setString(4, c.getPlataforma());
                 if (c.getIdUsuario() != null) ps.setInt(5, c.getIdUsuario()); else ps.setNull(5, java.sql.Types.INTEGER);
+                if (c.getFoto() != null) ps.setBytes(6, c.getFoto()); else ps.setNull(6, java.sql.Types.BINARY);
                 ps.executeUpdate();
             }
             conn.commit();
@@ -61,7 +63,7 @@ public class CofreDaoNativeImpl implements CofreDao {
     @Override
     public void update(Cofre c) {
         Logger.info("CofreDao.update");
-        String sql = "UPDATE Cofre SET login=?, senha=?, tipo=?, plataforma=?, id_usuario=? WHERE id_cofre=?";
+        String sql = "UPDATE Cofre SET login=?, senha=?, tipo=?, plataforma=?, id_usuario=?, foto=? WHERE id_cofre=?";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
@@ -72,7 +74,8 @@ public class CofreDaoNativeImpl implements CofreDao {
                 if (c.getTipo() != null) ps.setInt(3, c.getTipo()); else ps.setNull(3, java.sql.Types.INTEGER);
                 ps.setString(4, c.getPlataforma());
                 if (c.getIdUsuario() != null) ps.setInt(5, c.getIdUsuario()); else ps.setNull(5, java.sql.Types.INTEGER);
-                ps.setInt(6, c.getIdCofre());
+                if (c.getFoto() != null) ps.setBytes(6, c.getFoto()); else ps.setNull(6, java.sql.Types.BINARY);
+                ps.setInt(7, c.getIdCofre());
                 int upd = ps.executeUpdate();
                 if (upd == 0) throw new CofreException("Cofre nao encontrado: id=" + c.getIdCofre());
             }
@@ -119,7 +122,7 @@ public class CofreDaoNativeImpl implements CofreDao {
 
     @Override
     public Cofre findById(Integer id) {
-        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario FROM Cofre WHERE id_cofre = ?";
+        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario, foto FROM Cofre WHERE id_cofre = ?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -154,31 +157,31 @@ public class CofreDaoNativeImpl implements CofreDao {
 
     @Override
     public List<Cofre> findAll() {
-        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario FROM Cofre";
+        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario, foto FROM Cofre";
         return listBySql(sql);
     }
 
     @Override
     public List<Cofre> findAll(int page, int size) {
-        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario FROM Cofre LIMIT ? OFFSET ?";
+        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario, foto FROM Cofre LIMIT ? OFFSET ?";
         return listBySql(sql, size, page * size);
     }
 
     @Override
     public List<Cofre> findByLogin(String login) {
-        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario FROM Cofre WHERE login = ?";
+        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario, foto FROM Cofre WHERE login = ?";
         return listBySql(sql, login);
     }
 
     @Override
     public List<Cofre> findByTipo(Integer tipo) {
-        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario FROM Cofre WHERE tipo = ?";
+        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario, foto FROM Cofre WHERE tipo = ?";
         return listBySql(sql, tipo);
     }
 
     @Override
     public List<Cofre> findByIdUsuario(Integer idUsuario) {
-        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario FROM Cofre WHERE id_usuario = ?";
+        String sql = "SELECT id_cofre, login, senha, tipo, plataforma, id_usuario, foto FROM Cofre WHERE id_usuario = ?";
         return listBySql(sql, idUsuario);
     }
 
@@ -189,7 +192,7 @@ public class CofreDaoNativeImpl implements CofreDao {
 
     @Override
     public List<Cofre> search(Cofre f, int page, int size) {
-        StringBuilder sb = new StringBuilder("SELECT id_cofre, login, senha, tipo, plataforma, id_usuario FROM Cofre WHERE 1=1");
+        StringBuilder sb = new StringBuilder("SELECT id_cofre, login, senha, tipo, plataforma, id_usuario, foto FROM Cofre WHERE 1=1");
         List<Object> params = new ArrayList<>();
         if (f.getLogin() != null && !f.getLogin().isEmpty()) {
             sb.append(" AND login = ?");
