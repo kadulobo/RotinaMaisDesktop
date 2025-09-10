@@ -10,6 +10,7 @@ import form.EventoForm;
 import form.Form_Home;
 import form.MainForm;
 import form.MovimentacaoForm;
+import form.CofreForm;
 import swing.MenuItem;
 import swing.PopupMenu;
 import swing.icon.GoogleMaterialDesignIcons;
@@ -74,6 +75,8 @@ public class Main extends javax.swing.JFrame {
                         main.showForm(new EventoForm());
                     } else if (subMenuIndex == 4) {
                         main.showForm(new MovimentacaoForm());
+                    } else if (subMenuIndex == 5) {
+                        main.showForm(new CofreForm());
                     }
                 } else if (menuIndex == 1) {
                     System.exit(0);
