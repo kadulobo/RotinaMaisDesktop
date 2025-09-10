@@ -22,6 +22,8 @@ public class ImageAvatar extends JComponent {
 
     public void setIcon(Icon icon) {
         this.icon = icon;
+        revalidate();
+        repaint();
     }
 
     public int getBorderSize() {
