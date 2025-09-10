@@ -51,7 +51,8 @@ public class UsuarioForm extends JPanel {
     private final String PLACEHOLDER = "Search users...";
 
     private JTextField txtSearch;
-    private JButton btnToggleView;
+    private JButton btnCardView;
+    private JButton btnListView;
     private Button btnAdd;
     private JPanel viewContainer;
     private java.awt.CardLayout viewLayout;
@@ -110,10 +111,17 @@ public class UsuarioForm extends JPanel {
             public void changedUpdate(DocumentEvent e) { applyFilter(); }
         });
 
-        btnToggleView = new JButton();
-        btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 18, Color.BLACK));
-        btnToggleView.addActionListener(e -> {
-            showingCards = !showingCards;
+        btnCardView = new JButton();
+        btnCardView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_MODULE, 18, Color.BLACK));
+        btnCardView.addActionListener(e -> {
+            showingCards = true;
+            updateView();
+        });
+
+        btnListView = new JButton();
+        btnListView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 18, Color.BLACK));
+        btnListView.addActionListener(e -> {
+            showingCards = false;
             updateView();
         });
 
@@ -125,7 +133,8 @@ public class UsuarioForm extends JPanel {
         btnAdd.addActionListener(e -> adicionarUsuario());
 
         topBar.add(txtSearch);
-        topBar.add(btnToggleView);
+        topBar.add(btnCardView);
+        topBar.add(btnListView);
         topBar.add(btnAdd);
 
         add(topBar, BorderLayout.NORTH);
@@ -163,14 +172,16 @@ public class UsuarioForm extends JPanel {
 
         // Pagination panel
         paginationPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        btnPrev = new JButton("Previous");
+        btnPrev = new JButton();
+        btnPrev.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHEVRON_LEFT, 18, Color.BLACK));
         btnPrev.addActionListener(e -> {
             if (currentPage > 0) {
                 currentPage--;
                 refreshPage();
             }
         });
-        btnNext = new JButton("Next");
+        btnNext = new JButton();
+        btnNext.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHEVRON_RIGHT, 18, Color.BLACK));
         btnNext.addActionListener(e -> {
             if ((currentPage + 1) * PAGE_SIZE < filteredUsuarios.size()) {
                 currentPage++;
@@ -178,6 +189,8 @@ public class UsuarioForm extends JPanel {
             }
         });
         add(paginationPanel, BorderLayout.SOUTH);
+
+        updateView();
     }
 
     private void loadUsuarios() {
@@ -206,10 +219,12 @@ public class UsuarioForm extends JPanel {
     private void updateView() {
         if (showingCards) {
             viewLayout.show(viewContainer, "cards");
-            btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 18, Color.BLACK));
+            btnCardView.setEnabled(false);
+            btnListView.setEnabled(true);
         } else {
             viewLayout.show(viewContainer, "list");
-            btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_MODULE, 18, Color.BLACK));
+            btnCardView.setEnabled(true);
+            btnListView.setEnabled(false);
         }
     }
 
