@@ -400,8 +400,21 @@ public class UsuarioForm extends JPanel {
         int opt = JOptionPane.showConfirmDialog(this, "Excluir usuário?", "Confirmação", JOptionPane.YES_NO_OPTION);
         if (opt == JOptionPane.YES_OPTION) {
             try {
-                controller.remover(u.getIdUsuario());
+                // Obter sempre o ID da linha atualmente editada/selecionada
+                int row = table.getEditingRow();
+                if (row < 0) {
+                    row = table.getSelectedRow();
+                }
+                int id = u.getIdUsuario();
+                if (row >= 0) {
+                    Object val = table.getValueAt(row, 0);
+                    if (val instanceof Integer) {
+                        id = (Integer) val;
+                    }
+                }
+                controller.remover(id);
                 loadUsuarios();
+                table.clearSelection();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
