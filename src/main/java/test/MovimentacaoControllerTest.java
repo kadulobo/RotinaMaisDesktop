@@ -67,6 +67,12 @@ public class MovimentacaoControllerTest {
         controller.remover(buscado.getIdMovimentacao());
 
         // Recriar movimentação para manter dados na tabela
-        controller.criar(mov);
+        for (int i = 0; i < 1000; i++) {
+        	mov.setPonto(i);
+        	mov.setVantagem(mov.getVantagem().add(BigDecimal.ONE));
+        	mov.setDesconto(mov.getDesconto().add(BigDecimal.ONE));
+            controller.criar(mov);
+		}
+ 
     }
 }
