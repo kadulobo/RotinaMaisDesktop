@@ -9,6 +9,7 @@ import dao.impl.PeriodoDaoNativeImpl;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.FlowLayout;
 import java.math.BigDecimal;
 import java.time.Year;
 import java.util.ArrayList;
@@ -19,16 +20,21 @@ import java.util.stream.Collectors;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.JComboBox;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import model.Caixa;
 import model.Movimentacao;
 import model.ModelCard;
 import model.Periodo;
+import swing.Button;
 import swing.icon.GoogleMaterialDesignIcons;
 import swing.icon.IconFontSwing;
 import swing.table.Table;
@@ -49,6 +55,13 @@ public class MovimentacaoForm extends JPanel {
     private Card cardCaixa;
     private Table table;
     private JComboBox<Integer> cbAno;
+    private JComboBox<String> cbMes;
+    private Button btnConcluido;
+    private Button btnPendente;
+    private Button btnTodas;
+    private JTextField txtBuscarPonto;
+    private Integer filtroStatus;
+    private List<Movimentacao> movsAno;
 
     private Icon iconDesc;
     private Icon iconVant;
@@ -102,14 +115,60 @@ public class MovimentacaoForm extends JPanel {
 
         add(cards, BorderLayout.NORTH);
 
-        // Filtro de ano
-        JPanel filtro = new JPanel(new java.awt.FlowLayout(java.awt.FlowLayout.LEFT));
+        // Painel de filtros e novo registro
+        JPanel filtroWrapper = new JPanel(new BorderLayout());
+        filtroWrapper.setBackground(Color.WHITE);
+
+        JPanel filtro = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filtro.setBackground(Color.WHITE);
         filtro.add(new JLabel("Ano:"));
         cbAno = new JComboBox<>();
         cbAno.addActionListener(e -> carregarMovimentacoes());
         filtro.add(cbAno);
-        add(filtro, BorderLayout.CENTER);
+
+        filtro.add(new JLabel("Mês:"));
+        cbMes = new JComboBox<>();
+        cbMes.addActionListener(e -> aplicarFiltros());
+        filtro.add(cbMes);
+
+        btnTodas = new Button();
+        btnTodas.setText("Todas");
+        btnTodas.addActionListener(e -> {filtroStatus = null; aplicarFiltros();});
+        filtro.add(btnTodas);
+
+        btnConcluido = new Button();
+        btnConcluido.setText("Concluído");
+        btnConcluido.setBackground(new Color(76,175,80));
+        btnConcluido.setForeground(Color.WHITE);
+        btnConcluido.addActionListener(e -> {filtroStatus = 1; aplicarFiltros();});
+        filtro.add(btnConcluido);
+
+        btnPendente = new Button();
+        btnPendente.setText("Pendente");
+        btnPendente.setBackground(new Color(255,193,7));
+        btnPendente.setForeground(Color.BLACK);
+        btnPendente.addActionListener(e -> {filtroStatus = 2; aplicarFiltros();});
+        filtro.add(btnPendente);
+
+        filtro.add(new JLabel("Buscar ponto:"));
+        txtBuscarPonto = new JTextField(10);
+        txtBuscarPonto.getDocument().addDocumentListener(new DocumentListener(){
+            @Override public void insertUpdate(DocumentEvent e){aplicarFiltros();}
+            @Override public void removeUpdate(DocumentEvent e){aplicarFiltros();}
+            @Override public void changedUpdate(DocumentEvent e){aplicarFiltros();}
+        });
+        filtro.add(txtBuscarPonto);
+
+        filtroWrapper.add(filtro, BorderLayout.CENTER);
+
+        Button btnNova = new Button();
+        btnNova.setText("Nova movimentação");
+        btnNova.setBackground(new Color(33,150,243));
+        btnNova.setForeground(Color.WHITE);
+        btnNova.addActionListener(e -> new MovimentacaoDialog(null).setVisible(true));
+        filtroWrapper.add(btnNova, BorderLayout.EAST);
+
+        add(filtroWrapper, BorderLayout.CENTER);
 
         // Tabela de movimentações
         table = new Table();
@@ -141,6 +200,7 @@ public class MovimentacaoForm extends JPanel {
         if (model.getSize() > 0) {
             cbAno.setSelectedItem(Year.now().getValue());
         }
+        carregarMeses();
     }
 
     private void carregarMovimentacoes() {
@@ -149,12 +209,54 @@ public class MovimentacaoForm extends JPanel {
             return;
         }
         List<Periodo> periodosAno = periodoController.buscarPorAno(ano);
-        List<Movimentacao> movs = new ArrayList<>();
+        movsAno = new ArrayList<>();
         for (Periodo p : periodosAno) {
-            movs.addAll(movController.buscarPorIdPeriodo(p.getIdPeriodo()));
+            movsAno.addAll(movController.buscarPorIdPeriodo(p.getIdPeriodo()));
         }
-        atualizarTabela(movs);
-        atualizarCards(movs);
+        carregarMeses(periodosAno);
+        aplicarFiltros();
+    }
+
+    private void carregarMeses() {
+        Integer ano = (Integer) cbAno.getSelectedItem();
+        if (ano == null) {
+            cbMes.setModel(new DefaultComboBoxModel<>());
+            return;
+        }
+        List<Periodo> periodosAno = periodoController.buscarPorAno(ano);
+        carregarMeses(periodosAno);
+    }
+
+    private void carregarMeses(List<Periodo> periodosAno) {
+        Set<Integer> meses = periodosAno.stream()
+                .map(Periodo::getMes)
+                .collect(Collectors.toCollection(java.util.TreeSet::new));
+        DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>();
+        model.addElement("Todos");
+        for (Integer m : meses) {
+            model.addElement(m.toString());
+        }
+        cbMes.setModel(model);
+        cbMes.setSelectedIndex(0);
+    }
+
+    private void aplicarFiltros() {
+        if (movsAno == null) {
+            return;
+        }
+        String mesSel = (String) cbMes.getSelectedItem();
+        Integer mes = null;
+        if (mesSel != null && !"Todos".equals(mesSel)) {
+            mes = Integer.valueOf(mesSel);
+        }
+        String busca = txtBuscarPonto.getText();
+        List<Movimentacao> filtrados = movsAno.stream()
+                .filter(m -> mes == null || (m.getPeriodo() != null && mes.equals(m.getPeriodo().getMes())))
+                .filter(m -> filtroStatus == null || (m.getStatus() != null && filtroStatus.equals(m.getStatus())))
+                .filter(m -> busca == null || busca.isEmpty() || (m.getPonto() != null && String.valueOf(m.getPonto()).contains(busca)))
+                .collect(Collectors.toList());
+        atualizarTabela(filtrados);
+        atualizarCards(filtrados);
     }
 
     private void atualizarCards(List<Movimentacao> movs) {
