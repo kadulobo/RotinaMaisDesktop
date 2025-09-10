@@ -270,12 +270,12 @@ public class EventoForm extends JPanel {
         EventAction<Evento> eventAction = new EventAction<Evento>() {
             @Override
             public void delete(Evento u) {
-                excluirEvento(e);
+                excluirEvento(u);
             }
 
             @Override
             public void update(Evento u) {
-                editarEvento(e);
+                editarEvento(u);
             }
         };
         for (Evento e : getCurrentPageEventos()) {
@@ -326,9 +326,9 @@ public class EventoForm extends JPanel {
 
         JPopupMenu popup = new JPopupMenu();
         JMenuItem miEdit = new JMenuItem("Editar");
-        miEdit.addActionListener(e -> editarEvento(e));
+        miEdit.addActionListener(evt -> editarEvento(e));
         JMenuItem miDelete = new JMenuItem("Excluir");
-        miDelete.addActionListener(e -> excluirEvento(e));
+        miDelete.addActionListener(evt -> excluirEvento(e));
         popup.add(miEdit);
         popup.add(miDelete);
         lblMenu.addMouseListener(new MouseAdapter() {

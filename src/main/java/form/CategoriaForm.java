@@ -270,12 +270,12 @@ public class CategoriaForm extends JPanel {
         EventAction<Categoria> eventAction = new EventAction<Categoria>() {
             @Override
             public void delete(Categoria u) {
-                excluirCategoria(c);
+                excluirCategoria(u);
             }
 
             @Override
             public void update(Categoria u) {
-                editarCategoria(c);
+                editarCategoria(u);
             }
         };
         for (Categoria c : getCurrentPageCategorias()) {
