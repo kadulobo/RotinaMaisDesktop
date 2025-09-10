@@ -17,6 +17,9 @@ import swing.icon.IconFontSwing;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import net.miginfocom.swing.MigLayout;
 import org.jdesktop.animation.timing.Animator;
 import org.jdesktop.animation.timing.TimingTarget;
@@ -29,6 +32,8 @@ public class Main extends javax.swing.JFrame {
     private Header header;
     private MainForm main;
     private Animator animator;
+    private int x;
+    private int y;
 
     public Main() {
         initComponents();
@@ -41,6 +46,19 @@ public class Main extends javax.swing.JFrame {
         menu = new Menu();
         header = new Header();
         main = new MainForm();
+        header.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mousePressed(MouseEvent e) {
+                x = e.getX();
+                y = e.getY();
+            }
+        });
+        header.addMouseMotionListener(new MouseMotionAdapter() {
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                setLocation(e.getXOnScreen() - x, e.getYOnScreen() - y);
+            }
+        });
         menu.addEvent(new EventMenuSelected() {
             @Override
             public void menuSelected(int menuIndex, int subMenuIndex) {
@@ -57,6 +75,8 @@ public class Main extends javax.swing.JFrame {
                     } else if (subMenuIndex == 4) {
                         main.showForm(new MovimentacaoForm());
                     }
+                } else if (menuIndex == 1) {
+                    System.exit(0);
                 }
             }
         });

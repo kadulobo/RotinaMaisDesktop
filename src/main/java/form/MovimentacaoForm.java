@@ -1,9 +1,7 @@
 package form;
 
-import controller.CaixaController;
 import controller.MovimentacaoController;
 import controller.PeriodoController;
-import dao.impl.CaixaDaoNativeImpl;
 import dao.impl.MovimentacaoDaoNativeImpl;
 import dao.impl.PeriodoDaoNativeImpl;
 import java.awt.BorderLayout;
@@ -27,7 +25,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
-import model.Caixa;
 import model.Movimentacao;
 import model.ModelCard;
 import model.Periodo;
@@ -44,12 +41,10 @@ public class MovimentacaoForm extends JPanel {
 
     private final MovimentacaoController movController;
     private final PeriodoController periodoController;
-    private final CaixaController caixaController;
 
     private Card cardDesconto;
     private Card cardVantagem;
     private Card cardLiquido;
-    private Card cardCaixa;
     private Card cardPontos;
     private Table table;
     private JComboBox<Integer> cbAno;
@@ -64,13 +59,11 @@ public class MovimentacaoForm extends JPanel {
     private Icon iconDesc;
     private Icon iconVant;
     private Icon iconLiq;
-    private Icon iconCaixa;
     private Icon iconPonto;
 
     public MovimentacaoForm() {
         movController = new MovimentacaoController(new MovimentacaoDaoNativeImpl());
         periodoController = new PeriodoController(new PeriodoDaoNativeImpl());
-        caixaController = new CaixaController(new CaixaDaoNativeImpl());
         initComponents();
         carregarAnos();
         carregarMovimentacoes();
@@ -81,7 +74,7 @@ public class MovimentacaoForm extends JPanel {
         setBackground(Color.WHITE);
 
         // Painel de cards
-        JPanel cards = new JPanel(new java.awt.GridLayout(1, 5, 18, 0));
+        JPanel cards = new JPanel(new java.awt.GridLayout(1, 4, 18, 0));
         cards.setBackground(Color.WHITE);
 
         iconDesc = IconFontSwing.buildIcon(
@@ -110,15 +103,6 @@ public class MovimentacaoForm extends JPanel {
         cardLiquido.setColorGradient(new Color(255, 203, 107));
         cardLiquido.setData(new ModelCard("Total Líquido", 0, 0, iconLiq));
         cards.add(cardLiquido);
-
-        iconCaixa = IconFontSwing.buildIcon(
-                GoogleMaterialDesignIcons.ACCOUNT_BALANCE_WALLET, 60, Color.WHITE,
-                new Color(255, 255, 255, 15));
-        cardCaixa = new Card();
-        cardCaixa.setBackground(new Color(63, 81, 181));
-        cardCaixa.setColorGradient(new Color(121, 134, 203));
-        cardCaixa.setData(new ModelCard("Saldo Caixa", 0, 0, iconCaixa));
-        cards.add(cardCaixa);
 
         iconPonto = IconFontSwing.buildIcon(
                 GoogleMaterialDesignIcons.PIN_DROP, 60, Color.WHITE,
@@ -271,9 +255,7 @@ public class MovimentacaoForm extends JPanel {
         BigDecimal totalDesc = BigDecimal.ZERO;
         BigDecimal totalVant = BigDecimal.ZERO;
         BigDecimal totalLiq = BigDecimal.ZERO;
-        BigDecimal totalCx = BigDecimal.ZERO;
         int totalPontos = 0;
-        Set<Integer> caixasProcessadas = new HashSet<>();
 
         for (Movimentacao m : movs) {
             if (m.getDesconto() != null) {
@@ -285,15 +267,6 @@ public class MovimentacaoForm extends JPanel {
             if (m.getLiquido() != null) {
                 totalLiq = totalLiq.add(m.getLiquido());
             }
-            if (m.getCaixa() != null && m.getCaixa().getIdCaixa() != null) {
-                int id = m.getCaixa().getIdCaixa();
-                if (caixasProcessadas.add(id)) {
-                    Caixa c = caixaController.buscarPorId(id);
-                    if (c != null && c.getValorTotal() != null) {
-                        totalCx = totalCx.add(c.getValorTotal());
-                    }
-                }
-            }
             if (m.getPonto() != null) {
                 totalPontos += m.getPonto();
             }
@@ -302,7 +275,6 @@ public class MovimentacaoForm extends JPanel {
         cardDesconto.setData(new ModelCard("Total Desconto", totalDesc.doubleValue(), 0, iconDesc));
         cardVantagem.setData(new ModelCard("Total Vantagem", totalVant.doubleValue(), 0, iconVant));
         cardLiquido.setData(new ModelCard("Total Líquido", totalLiq.doubleValue(), 0, iconLiq));
-        cardCaixa.setData(new ModelCard("Saldo Caixa", totalCx.doubleValue(), 0, iconCaixa));
         cardPontos.setData(new ModelCard("Total Pontos", totalPontos, 0, iconPonto));
     }
 
