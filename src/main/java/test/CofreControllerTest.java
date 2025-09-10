@@ -27,6 +27,7 @@ public class CofreControllerTest {
         cofre.setPlataforma("Plataforma x");
         cofre.setSenha("123");
         cofre.setTipo(1);
+        cofre.setFoto(new byte[]{1});
         controller.criar(cofre);
 
         List<Cofre> list = controller.listar();
