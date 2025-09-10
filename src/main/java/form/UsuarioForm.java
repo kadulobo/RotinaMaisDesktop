@@ -28,23 +28,17 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
-import javax.swing.table.DefaultTableModel;
 
 import model.Usuario;
 import swing.Button;
 import swing.ImageAvatar;
 import swing.icon.GoogleMaterialDesignIcons;
 import swing.icon.IconFontSwing;
-import swing.table.EventAction;
-import swing.table.ModelAction;
-import swing.table.ModelProfile;
-import swing.table.Table;
 import util.ImageUtils;
 
 /**
@@ -61,7 +55,7 @@ public class UsuarioForm extends JPanel {
     private JPanel viewContainer;
     private java.awt.CardLayout viewLayout;
     private JPanel cardsPanel;
-    private Table table;
+    private JPanel listPanel;
     private JPanel emptyPanel;
     private JPanel paginationPanel;
     private JButton btnPrev;
@@ -146,31 +140,12 @@ public class UsuarioForm extends JPanel {
         cardScroll.getVerticalScrollBar().setUnitIncrement(16);
         viewContainer.add(cardScroll, "cards");
 
-        // List view
-        table = new Table();
-        table.setModel(new DefaultTableModel(
-                new Object[][]{},
-                new String[]{"Usuário", "Email", "CPF", ""}) {
-            @Override
-            public boolean isCellEditable(int row, int column) {
-                return column == 3;
-            }
-        });
-        table.setRowHeight(60);
-        table.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = table.getSelectedRow();
-                    List<Usuario> page = getPageUsuarios();
-                    if (row >= 0 && row < page.size()) {
-                        editarUsuario(page.get(row));
-                    }
-                }
-            }
-        });
-        JScrollPane listScroll = new JScrollPane(table);
-        table.fixTable(listScroll);
+        // List view (vertical cards)
+        listPanel = new JPanel();
+        listPanel.setLayout(new BoxLayout(listPanel, BoxLayout.Y_AXIS));
+        listPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        JScrollPane listScroll = new JScrollPane(listPanel);
+        listScroll.getVerticalScrollBar().setUnitIncrement(16);
         viewContainer.add(listScroll, "list");
 
         // Empty view
@@ -233,34 +208,23 @@ public class UsuarioForm extends JPanel {
         }
     }
 
-    private void populateTable() {
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
-        model.setRowCount(0);
-        EventAction<Usuario> eventAction = new EventAction<Usuario>() {
-            @Override
-            public void delete(Usuario u) {
-                excluirUsuario(u);
-            }
-
-            @Override
-            public void update(Usuario u) {
-                editarUsuario(u);
-            }
-        };
+    private void populateList() {
+        listPanel.removeAll();
         for (Usuario u : getPageUsuarios()) {
-            ImageIcon icon = ImageUtils.bytesToImageIcon(u.getFoto());
-            if (icon == null) {
-                icon = new ImageIcon(getClass().getResource("/icon/profile.jpg"));
-            }
-            ModelProfile profile = new ModelProfile(icon, u.getNome());
-            model.addRow(new Object[]{profile, u.getEmail(), u.getCpf(), new ModelAction<>(u, eventAction)});
+            JComponent item = createListItem(u);
+            listPanel.add(item);
+            listPanel.add(Box.createVerticalStrut(10));
         }
+        listPanel.revalidate();
+        listPanel.repaint();
     }
 
     private void populateCards() {
         cardsPanel.removeAll();
         for (Usuario u : getPageUsuarios()) {
-            cardsPanel.add(createCard(u));
+            JComponent card = createCard(u);
+            card.setPreferredSize(new Dimension(200, 200));
+            cardsPanel.add(card);
         }
         cardsPanel.revalidate();
         cardsPanel.repaint();
@@ -274,7 +238,7 @@ public class UsuarioForm extends JPanel {
 
     private void refreshPage() {
         populateCards();
-        populateTable();
+        populateList();
         updateView();
         updatePagination();
     }
@@ -304,7 +268,6 @@ public class UsuarioForm extends JPanel {
         JPanel card = new JPanel(new BorderLayout());
         card.setBackground(Color.WHITE);
         card.setBorder(new javax.swing.border.LineBorder(new Color(230, 230, 230), 1, true));
-        card.setPreferredSize(new Dimension(200, 200));
 
         // Header
         JPanel header = new JPanel(new BorderLayout());
@@ -363,6 +326,12 @@ public class UsuarioForm extends JPanel {
         body.add(lblCpf);
 
         card.add(body, BorderLayout.CENTER);
+        return card;
+    }
+
+    private JComponent createListItem(Usuario u) {
+        JComponent card = createCard(u);
+        card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
         return card;
     }
 
