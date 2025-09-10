@@ -5,6 +5,8 @@ import component.Menu;
 import event.EventMenuSelected;
 import event.EventShowPopupMenu;
 import form.UsuarioForm;
+import form.CategoriaForm;
+import form.EventoForm;
 import form.Form_Home;
 import form.MainForm;
 import swing.MenuItem;
@@ -47,6 +49,10 @@ public class Main extends javax.swing.JFrame {
                         main.showForm(new Form_Home());
                     } else if (subMenuIndex == 1) {
                         main.showForm(new UsuarioForm());
+                    } else if (subMenuIndex == 2) {
+                        main.showForm(new CategoriaForm());
+                    } else if (subMenuIndex == 3) {
+                        main.showForm(new EventoForm());
                     }
                 }
             }
