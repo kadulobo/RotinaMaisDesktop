@@ -286,7 +286,11 @@ public class CofreForm extends JPanel {
     private String mask(String s) {
         if (s == null) return "";
         int len = Math.min(6, s.length());
-        return "*".repeat(len);
+        StringBuilder sb = new StringBuilder(len);
+        for (int i = 0; i < len; i++) {
+            sb.append('*');
+        }
+        return sb.toString();
     }
 
     private String tipoTexto(Integer tipo) {
