@@ -19,12 +19,14 @@ import java.util.stream.Collectors;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.Icon;
 import javax.swing.JComboBox;
+import javax.swing.JButton;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
-import javax.swing.table.DefaultTableCellRenderer;
+import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.TableCellRenderer;
 import model.Movimentacao;
 import model.ModelCard;
 import model.Periodo;
@@ -55,6 +57,11 @@ public class MovimentacaoForm extends JPanel {
     private Button btnNova;
     private Integer filtroStatus;
     private List<Movimentacao> movsAno;
+    private List<Movimentacao> movsFiltrados;
+    private JButton btnPrevPage;
+    private JButton btnNextPage;
+    private int currentPage = 0;
+    private static final int PAGE_SIZE = 10;
 
     private Icon iconDesc;
     private Icon iconVant;
@@ -72,6 +79,10 @@ public class MovimentacaoForm extends JPanel {
     private void initComponents() {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
+
+        // Painel superior com cards e filtros
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(Color.WHITE);
 
         // Painel de cards
         JPanel cards = new JPanel(new java.awt.GridLayout(1, 4, 18, 0));
@@ -113,7 +124,7 @@ public class MovimentacaoForm extends JPanel {
         cardPontos.setData(new ModelCard("Total Pontos", 0, 0, iconPonto));
         cards.add(cardPontos);
 
-        add(cards, BorderLayout.NORTH);
+        top.add(cards, BorderLayout.NORTH);
 
         // Painel de filtros e novo registro
         JPanel filtroWrapper = new JPanel(new BorderLayout());
@@ -133,6 +144,8 @@ public class MovimentacaoForm extends JPanel {
 
         btnTodas = new Button();
         btnTodas.setText("Todas");
+        btnTodas.setBackground(new Color(33,150,243));
+        btnTodas.setForeground(Color.WHITE);
         btnTodas.addActionListener(e -> {filtroStatus = null; aplicarFiltros();});
         filtro.add(btnTodas);
 
@@ -160,7 +173,8 @@ public class MovimentacaoForm extends JPanel {
 
         filtroWrapper.add(filtro, BorderLayout.CENTER);
 
-        add(filtroWrapper, BorderLayout.CENTER);
+        top.add(filtroWrapper, BorderLayout.CENTER);
+        add(top, BorderLayout.NORTH);
 
         // Tabela de movimentações
         table = new Table();
@@ -175,7 +189,28 @@ public class MovimentacaoForm extends JPanel {
         JScrollPane scroll = new JScrollPane(table);
         table.fixTable(scroll);
         table.setRowSelectionAllowed(false);
-        add(scroll, BorderLayout.SOUTH);
+        add(scroll, BorderLayout.CENTER);
+
+        // Rodapé com paginação
+        btnPrevPage = new JButton("Anterior");
+        btnNextPage = new JButton("Próximo");
+        btnPrevPage.addActionListener(e -> {
+            if (currentPage > 0) {
+                currentPage--;
+                atualizarPagina();
+            }
+        });
+        btnNextPage.addActionListener(e -> {
+            if ((currentPage + 1) * PAGE_SIZE < (movsFiltrados != null ? movsFiltrados.size() : 0)) {
+                currentPage++;
+                atualizarPagina();
+            }
+        });
+        JPanel pagination = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pagination.setBackground(Color.WHITE);
+        pagination.add(btnPrevPage);
+        pagination.add(btnNextPage);
+        add(pagination, BorderLayout.SOUTH);
     }
 
     private void carregarAnos() {
@@ -241,14 +276,27 @@ public class MovimentacaoForm extends JPanel {
         final Integer mes = (mesSel != null && !"Todos".equals(mesSel))
                 ? Integer.valueOf(mesSel)
                 : null;
-        List<Movimentacao> filtrados = movsAno.stream()
+        movsFiltrados = movsAno.stream()
                 .filter(m -> mes == null
                         || (m.getPeriodo() != null && mes.equals(m.getPeriodo().getMes())))
                 .filter(m -> filtroStatus == null
                         || (m.getStatus() != null && filtroStatus.equals(m.getStatus())))
                 .collect(Collectors.toList());
-        atualizarTabela(filtrados);
-        atualizarCards(filtrados);
+        currentPage = 0;
+        atualizarPagina();
+        atualizarCards(movsFiltrados);
+    }
+
+    private void atualizarPagina() {
+        if (movsFiltrados == null) {
+            return;
+        }
+        int start = currentPage * PAGE_SIZE;
+        int end = Math.min(start + PAGE_SIZE, movsFiltrados.size());
+        List<Movimentacao> page = movsFiltrados.subList(start, end);
+        atualizarTabela(page);
+        btnPrevPage.setEnabled(currentPage > 0);
+        btnNextPage.setEnabled(end < movsFiltrados.size());
     }
 
     private void atualizarCards(List<Movimentacao> movs) {
@@ -294,12 +342,12 @@ public class MovimentacaoForm extends JPanel {
             });
         }
         int statusCol = table.getColumnModel().getColumnCount() - 1;
-        table.getColumnModel().getColumn(statusCol).setCellRenderer(new DefaultTableCellRenderer() {
+        table.getColumnModel().getColumn(statusCol).setCellRenderer(new TableCellRenderer() {
             @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                JLabel lbl = (JLabel) super.getTableCellRendererComponent(table, value, false, false, row, column);
-                lbl.setHorizontalAlignment(JLabel.CENTER);
-                lbl.setOpaque(true);
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Button lbl = new Button();
+                lbl.setText(value == null ? "" : value.toString());
+                lbl.setBorder(new EmptyBorder(5, 5, 5, 5));
                 if ("Concluído".equals(value)) {
                     lbl.setBackground(new Color(76,175,80));
                     lbl.setForeground(Color.WHITE);
