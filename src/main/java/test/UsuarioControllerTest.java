@@ -4,6 +4,7 @@ import controller.UsuarioController;
 import dao.impl.UsuarioDaoNativeImpl;
 import model.Usuario;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -14,6 +15,21 @@ import java.util.List;
 public class UsuarioControllerTest {
 
     public static void main(String[] args) {
+    	UsuarioDaoNativeImpl dao = new UsuarioDaoNativeImpl();
+    	  UsuarioController controller = new UsuarioController(dao);
+ 
+    	for (int i = 0; i < 1000; i++) {
+    		 // Criar usuário fictício
+            Usuario usuario = new Usuario();
+            usuario.setNome("Usuário Exemplo"+i);
+            usuario.setSenha("senha123"+i);
+            usuario.setEmail("usuario@example.com"+i);
+            usuario.setCpf("12345678900"+i);
+            controller.criar(usuario);
+		}
+    }
+    
+    public void testMassivo() {
         UsuarioDaoNativeImpl dao = new UsuarioDaoNativeImpl();
         UsuarioController controller = new UsuarioController(dao);
 
