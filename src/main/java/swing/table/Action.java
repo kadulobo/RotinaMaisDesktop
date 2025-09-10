@@ -5,6 +5,8 @@ import java.awt.Graphics;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import javax.swing.DefaultCellEditor;
+
 public class Action<T> extends javax.swing.JPanel {
 
     public Action(ModelAction<T> data) {
@@ -18,6 +20,24 @@ public class Action<T> extends javax.swing.JPanel {
         cmdDelete.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent ae) {
+                data.getEvent().delete(data.getData());
+            }
+        });
+    }
+
+    public Action(ModelAction<T> data, DefaultCellEditor editor) {
+        initComponents();
+        cmdEdit.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                editor.stopCellEditing();
+                data.getEvent().update(data.getData());
+            }
+        });
+        cmdDelete.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent ae) {
+                editor.stopCellEditing();
                 data.getEvent().delete(data.getData());
             }
         });
