@@ -313,33 +313,34 @@ public class UsuarioForm extends JPanel {
         card.add(header, BorderLayout.NORTH);
 
         // Body
-        JPanel body = new JPanel();
+        JPanel body = new JPanel(new BorderLayout());
         body.setOpaque(false);
-        body.setLayout(new BoxLayout(body, BoxLayout.Y_AXIS));
         body.setBorder(new EmptyBorder(10, 10, 10, 10));
 
         ImageAvatar avatar = new ImageAvatar();
-        avatar.setPreferredSize(new Dimension(64, 64));
+        avatar.setPreferredSize(new Dimension(80, 80));
         ImageIcon icon = ImageUtils.bytesToImageIcon(u.getFoto());
         if (icon != null) {
             avatar.setIcon(icon);
         } else {
             avatar.setIcon(new ImageIcon(getClass().getResource("/icon/profile.jpg")));
         }
-        avatar.setAlignmentX(Component.CENTER_ALIGNMENT);
-        body.add(avatar);
-        body.add(javax.swing.Box.createVerticalStrut(5));
+        body.add(avatar, BorderLayout.WEST);
+
+        JPanel infoPanel = new JPanel();
+        infoPanel.setOpaque(false);
+        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
 
         JLabel lblEmail = new JLabel(u.getEmail());
         lblEmail.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.EMAIL, 16, Color.DARK_GRAY));
-        lblEmail.setAlignmentX(Component.LEFT_ALIGNMENT);
-        body.add(lblEmail);
+        infoPanel.add(lblEmail);
+        infoPanel.add(Box.createVerticalStrut(5));
 
         JLabel lblCpf = new JLabel(u.getCpf());
         lblCpf.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.PERM_IDENTITY, 16, Color.DARK_GRAY));
-        lblCpf.setAlignmentX(Component.LEFT_ALIGNMENT);
-        body.add(lblCpf);
+        infoPanel.add(lblCpf);
 
+        body.add(infoPanel, BorderLayout.CENTER);
         card.add(body, BorderLayout.CENTER);
         return card;
     }
