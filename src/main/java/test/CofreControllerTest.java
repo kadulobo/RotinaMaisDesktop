@@ -29,6 +29,7 @@ public class CofreControllerTest {
         cofre.setTipo(1);
         cofre.setFoto(new byte[]{1});
         controller.criar(cofre);
+        
 
         List<Cofre> list = controller.listar();
         if (!list.isEmpty()) {
@@ -37,5 +38,32 @@ public class CofreControllerTest {
             controller.remover(buscado.getIdCofre());
             controller.criar(cofre);
         }
+        for (int i = 0; i < 100; i++) {
+              cofre.setLogin("login"+i);
+              cofre.setIdUsuario(buscadoUsu.getIdUsuario());
+              cofre.setPlataforma("Plataforma x"+i);
+              cofre.setSenha("123"+i);
+              cofre.setTipo(1);
+              cofre.setFoto(new byte[]{1});
+              controller.criar(cofre);      
+		}
+        for (int i = 100; i < 200; i++) {
+            cofre.setLogin("login"+i);
+            cofre.setIdUsuario(buscadoUsu.getIdUsuario());
+            cofre.setPlataforma("Plataforma x"+i);
+            cofre.setSenha("123"+i);
+            cofre.setTipo(2);
+            cofre.setFoto(new byte[]{1});
+            controller.criar(cofre);      
+		}
+        for (int i = 200; i < 300; i++) {
+            cofre.setLogin("login"+i);
+            cofre.setIdUsuario(buscadoUsu.getIdUsuario());
+            cofre.setPlataforma("Plataforma x"+i);
+            cofre.setSenha("123"+i);
+            cofre.setTipo(3);
+            cofre.setFoto(new byte[]{1});
+            controller.criar(cofre);      
+		}
     }
 }
