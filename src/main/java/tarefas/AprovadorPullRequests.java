@@ -44,6 +44,9 @@ public class AprovadorPullRequests {
     public AprovadorPullRequests(String repoUrl, String token) {
         this.repoUrl = repoUrl;
         this.token = token;
+        if (this.token == null || this.token.isBlank()) {
+            throw new IllegalArgumentException("Token do GitHub não fornecido");
+        }
     }
 
     /**
@@ -71,24 +74,34 @@ public class AprovadorPullRequests {
     }
 
     private List<Integer> listarPullRequests(String owner, String repo) throws IOException {
-        URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/pulls");
-        HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
-        conexao.setRequestProperty("Authorization", "Bearer " + token);
-        conexao.setRequestProperty("Accept", "application/vnd.github+json");
-
         List<Integer> numeros = new ArrayList<>();
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(conexao.getInputStream(), StandardCharsets.UTF_8))) {
-            StringBuilder json = new StringBuilder();
-            String linha;
-            while ((linha = reader.readLine()) != null) {
-                json.append(linha);
+        Pattern padrao = Pattern.compile("\"number\"\s*:\s*(\\d+)");
+        int page = 1;
+        while (true) {
+            URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo
+                    + "/pulls?state=open&per_page=100&page=" + page);
+            HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
+            conexao.setRequestProperty("Authorization", "Bearer " + token);
+            conexao.setRequestProperty("Accept", "application/vnd.github+json");
+
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(conexao.getInputStream(), StandardCharsets.UTF_8))) {
+                StringBuilder json = new StringBuilder();
+                String linha;
+                while ((linha = reader.readLine()) != null) {
+                    json.append(linha);
+                }
+                Matcher matcher = padrao.matcher(json.toString());
+                int encontrados = 0;
+                while (matcher.find()) {
+                    numeros.add(Integer.parseInt(matcher.group(1)));
+                    encontrados++;
+                }
+                if (encontrados == 0) {
+                    break;
+                }
             }
-            Pattern padrao = Pattern.compile("\"number\"\s*:\s*(\\d+)");
-            Matcher matcher = padrao.matcher(json.toString());
-            while (matcher.find()) {
-                numeros.add(Integer.parseInt(matcher.group(1)));
-            }
+            page++;
         }
         return numeros;
     }
