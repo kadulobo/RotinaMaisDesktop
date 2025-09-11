@@ -44,7 +44,7 @@ public class AprovadorPullRequests {
     public AprovadorPullRequests(String repoUrl, String token) {
         this.repoUrl = repoUrl;
         this.token = token;
-        if (this.token == null || this.token.isBlank()) {
+        if (this.token == null || this.token.isEmpty()) {
             throw new IllegalArgumentException("Token do GitHub não fornecido");
         }
     }
