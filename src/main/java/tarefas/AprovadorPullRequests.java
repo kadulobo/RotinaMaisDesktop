@@ -75,7 +75,7 @@ public class AprovadorPullRequests {
 
     private List<Integer> listarPullRequests(String owner, String repo) throws IOException {
         List<Integer> numeros = new ArrayList<>();
-        Pattern padrao = Pattern.compile("\"number\"\s*:\s*(\\d+)");
+        Pattern padrao = Pattern.compile("\"number\"\\s*:\\s*(\\d+)");
         int page = 1;
         while (true) {
             URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo
