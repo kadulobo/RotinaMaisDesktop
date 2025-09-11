@@ -23,3 +23,39 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
   - `aprovar(String owner, String repo, int pr)`: envia uma revisão de aprovação para o pull request.
   - `mesclar(String owner, String repo, int pr)`: realiza o merge do pull request aprovado.
 
+
+Entidades JPA
+-------------
+Lista resumida dos campos principais de cada entidade:
+
+- **Alimentacao**: idAlimentacao, status, nome, link, video, preparo, idRotina
+- **AlimentacaoIngrediente**: idAlimentacaoIngrediente, quantidade, idAlimentacao, idIngrediente
+- **Caixa**: idCaixa, nome, reservaEmergencia, salarioMedio, valorTotal, usuario, movimentacoes
+- **Carteira**: idCarteira, nome, tipo, dataInicio, idUsuario
+- **Categoria**: idCategoria, nome, descricao, foto, dataCriacao, eventos
+- **Cofre**: idCofre, login, senha, tipo, foto, plataforma, idUsuario
+- **Documento**: idDocumento, nome, arquivo, foto, video, data, idUsuario
+- **Evento**: idEvento, vantagem, foto, nome, descricao, dataCriacao, categoria, lancamentos
+- **Exercicio**: idExercicio, nome, cargaLeve, cargaMedia, cargaMaxima
+- **Fornecedor**: idFornecedor, nome, foto, endereco, online
+- **Ingrediente**: foto, idIngrediente, nome, descricao
+- **IngredienteFornecedor**: idFornecedorIngrediente, valor, data, idFornecedor, idIngrediente
+- **Lancamento**: idLancamento, valor, fixo, dataPagamento, status, movimentacao, evento
+- **Meta**: idMeta, pontoMinimo, pontoMedio, pontoMaximo, status, foto, idPeriodo
+- **ModelCard**: title, values, percentage, icon
+- **ModelMenu**: icon, menuName, subMenu[]
+- **ModelStudent**: icon, name, gender, course, fees
+- **Monitoramento**: idMonitoramento, status, nome, descricao, foto, idPeriodo
+- **MonitoramentoObjeto**: idMonitoramentoObjeto, data, idMonitoramento, idObjeto
+- **Movimentacao**: idMovimentacao, desconto, vantagem, liquido, tipo, status, ponto, usuario, caixa, periodo, lancamentos
+- **Objeto**: idObjeto, nome, tipo, valor, descricao, foto
+- **Operacao**: idOperacao, fechamento, tempoOperacao, qtdCompra, abertura, qtdVenda, lado, precoCompra, precoVenda, precoMedio, resIntervalo, numeroOperacao, resOperacao, drawdon, ganhoMax, perdaMax, tet, total, idCarteira, idPapel
+- **Papel**: idPapel, codigo, tipo, vencimento
+- **Periodo**: idPeriodo, ano, mes, movimentacoes
+- **Rotina**: idRotina, nome, inicio, fim, descricao, status, ponto, idUsuario
+- **RotinaPeriodo**: idRotinaPeriodo, idRotina, idPeriodo
+- **Site**: idSite, url, ativo, logo
+- **SiteObjeto**: idSiteObjeto, idSite, idObjeto
+- **Treino**: idTreino, nome, classe, idRotina
+- **TreinoExercicio**: idTreinoExercicio, qtdRepeticao, tempoDescanso, ordem, feito, idExercicio, idTreino
+- **Usuario**: idUsuario, nome, senha, foto, email, cpf, movimentacoes, caixas
