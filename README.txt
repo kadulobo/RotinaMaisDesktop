@@ -14,5 +14,12 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Exemplos de entidades JPA e DAOs nativos adicionados para Monitoramento, Alimentacao, Treino, Objeto, Site, Caixa e Periodo.
 
 - Classe `AprovadorPullRequests`: utiliza a API REST do GitHub para aprovar e mesclar automaticamente pull requests pendentes de um repositório.
-  Requer um token de acesso pessoal e possui um exemplo de uso em `src/main/java/tarefas/ExemploAprovadorPullRequests.java`.
+ Requer um token de acesso pessoal e possui um exemplo de uso em `src/main/java/tarefas/ExemploAprovadorPullRequests.java`.
+ Funções principais:
+  - `aprovarPendentes()`: aprova e mescla todos os pull requests abertos.
+  - `extrairRepositorio(String url)`: extrai o par owner/repo a partir da URL do repositório.
+  - `listarPullRequests(String owner, String repo)`: obtém os números dos pull requests em aberto.
+  - `podeAprovar(String owner, String repo, int pr, String authLogin)`: valida se o pull request pode ser aprovado automaticamente.
+  - `aprovar(String owner, String repo, int pr)`: envia uma revisão de aprovação para o pull request.
+  - `mesclar(String owner, String repo, int pr)`: realiza o merge do pull request aprovado.
 
