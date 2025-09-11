@@ -2,6 +2,7 @@ package tarefas;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -59,13 +60,29 @@ public class AprovadorPullRequests {
         String owner = partes[0];
         String repo = partes[1];
 
+        String authLogin = getAuthLogin();
+
         for (Integer pr : listarPullRequests(owner, repo)) {
-            aprovar(owner, repo, pr);
+            if (podeAprovar(owner, repo, pr, authLogin)) {
+                aprovar(owner, repo, pr);
+            }
         }
     }
 
     private String[] extrairRepositorio(String url) {
-        String caminho = url.replace("https://github.com/", "");
+        String caminho = url.trim();
+        if (caminho.startsWith("git@")) {
+            int idx = caminho.indexOf(':');
+            if (idx < 0) {
+                throw new IllegalArgumentException("URL do repositório inválida: " + url);
+            }
+            caminho = caminho.substring(idx + 1);
+        } else {
+            caminho = caminho.replaceFirst("^https://github.com/", "");
+        }
+        caminho = caminho.replaceFirst("/+$", "");
+        caminho = caminho.replaceFirst("\\.git$", "");
+        caminho = caminho.replaceFirst("/+$", "");
         String[] partes = caminho.split("/");
         if (partes.length < 2) {
             throw new IllegalArgumentException("URL do repositório inválida: " + url);
@@ -75,31 +92,28 @@ public class AprovadorPullRequests {
 
     private List<Integer> listarPullRequests(String owner, String repo) throws IOException {
         List<Integer> numeros = new ArrayList<>();
-        Pattern padrao = Pattern.compile("\"number\"\\s*:\\s*(\\d+)");
+        Pattern padrao = Pattern.compile("\"number\"\s*:\s*([0-9]+)");
         int page = 1;
         while (true) {
             URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo
                     + "/pulls?state=open&per_page=100&page=" + page);
             HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
-            conexao.setRequestProperty("Authorization", "Bearer " + token);
-            conexao.setRequestProperty("Accept", "application/vnd.github+json");
+            padraoHeaders(conexao);
 
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(conexao.getInputStream(), StandardCharsets.UTF_8))) {
-                StringBuilder json = new StringBuilder();
-                String linha;
-                while ((linha = reader.readLine()) != null) {
-                    json.append(linha);
-                }
-                Matcher matcher = padrao.matcher(json.toString());
-                int encontrados = 0;
-                while (matcher.find()) {
-                    numeros.add(Integer.parseInt(matcher.group(1)));
-                    encontrados++;
-                }
-                if (encontrados == 0) {
-                    break;
-                }
+            int status = conexao.getResponseCode();
+            String json = readBody(conexao);
+            if (status >= 300) {
+                throw new IOException("Falha ao listar PRs: HTTP " + status + " - " + json);
+            }
+
+            Matcher matcher = padrao.matcher(json);
+            int encontrados = 0;
+            while (matcher.find()) {
+                numeros.add(Integer.parseInt(matcher.group(1)));
+                encontrados++;
+            }
+            if (encontrados == 0) {
+                break;
             }
             page++;
         }
@@ -110,20 +124,87 @@ public class AprovadorPullRequests {
         URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/pulls/" + numero + "/reviews");
         HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
         conexao.setRequestMethod("POST");
-        conexao.setRequestProperty("Authorization", "Bearer " + token);
-        conexao.setRequestProperty("Accept", "application/vnd.github+json");
+        padraoHeaders(conexao);
         conexao.setRequestProperty("Content-Type", "application/json");
         conexao.setDoOutput(true);
 
-        String corpo = "{\"event\":\"APPROVE\"}";
+        String corpo = "{\"event\":\"APPROVE\",\"body\":\"Aprovado automaticamente pelo RotinaMaisDesktop\"}";
         try (OutputStream os = conexao.getOutputStream()) {
             os.write(corpo.getBytes(StandardCharsets.UTF_8));
         }
 
         int status = conexao.getResponseCode();
+        String body = readBody(conexao);
         if (status >= 300) {
-            throw new IOException("Falha ao aprovar PR " + numero + ": " + conexao.getResponseMessage());
+            throw new IOException("Falha ao aprovar PR " + numero + ": HTTP " + status + " - " + body);
         }
     }
-}
 
+    private void padraoHeaders(HttpURLConnection c) {
+        c.setRequestProperty("Authorization", "Bearer " + token);
+        c.setRequestProperty("Accept", "application/vnd.github+json");
+        c.setRequestProperty("X-GitHub-Api-Version", "2022-11-28");
+        c.setRequestProperty("User-Agent", "RotinaMaisDesktop/1.0");
+        c.setConnectTimeout(15000);
+        c.setReadTimeout(30000);
+    }
+
+    private String readBody(HttpURLConnection c) throws IOException {
+        int status = c.getResponseCode();
+        InputStream is = status < 400 ? c.getInputStream() : c.getErrorStream();
+        if (is == null) {
+            return "";
+        }
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+            StringBuilder sb = new StringBuilder();
+            String linha;
+            while ((linha = reader.readLine()) != null) {
+                sb.append(linha);
+            }
+            return sb.toString();
+        }
+    }
+
+    private String getAuthLogin() throws IOException {
+        URL url = new URL("https://api.github.com/user");
+        HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
+        padraoHeaders(conexao);
+        int status = conexao.getResponseCode();
+        String body = readBody(conexao);
+        if (status >= 300) {
+            throw new IOException("Falha ao obter usuário autenticado: HTTP " + status + " - " + body);
+        }
+        Matcher matcher = Pattern.compile("\"login\"\s*:\s*\"([^\"]+)\"").matcher(body);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        throw new IOException("Campo 'login' não encontrado na resposta do GitHub");
+    }
+
+    private boolean podeAprovar(String owner, String repo, int pr, String authLogin) throws IOException {
+        URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/pulls/" + pr);
+        HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
+        padraoHeaders(conexao);
+        int status = conexao.getResponseCode();
+        String body = readBody(conexao);
+        if (status >= 300) {
+            throw new IOException("Falha ao consultar PR " + pr + ": HTTP " + status + " - " + body);
+        }
+        if (Pattern.compile("\"draft\"\s*:\s*true").matcher(body).find()) {
+            return false;
+        }
+        int idxUser = body.indexOf("\"user\"");
+        if (idxUser >= 0) {
+            String sub = body.substring(idxUser);
+            Matcher matcher = Pattern.compile("\"login\"\s*:\s*\"([^\"]+)\"").matcher(sub);
+            if (matcher.find()) {
+                String autor = matcher.group(1);
+                if (authLogin != null && authLogin.equals(autor)) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+}
