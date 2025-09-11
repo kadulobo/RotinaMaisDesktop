@@ -74,7 +74,7 @@
             <manifest>
               <addClasspath>true</addClasspath>
               <!-- Ajuste o pacote da sua Main -->
-              <mainClass>tarefas.ExemploAprovadorPullRequests</mainClass>
+              <mainClass>main.Main</mainClass>
             </manifest>
           </archive>
         </configuration>
