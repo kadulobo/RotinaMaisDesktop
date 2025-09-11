@@ -3,9 +3,11 @@ RotinaMaisDesktop (estrutura completa)
 Requer **Java 17** ou superior para compilar e executar, devido às
 dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Versão do projeto definida no pom.xml: 1.0.0-SNAPSHOT.
+- A versão `1.0.0-SNAPSHOT` indica que o projeto está em desenvolvimento (snapshot).
 - Para alterar a versão, edite a tag <version> no pom.xml.
 - Para consultar a versão atual pela linha de comando, execute `mvn -q help:evaluate -Dexpression=project.version -DforceStdout`.
 - Em cada release, incremente este número seguindo a convenção MAJOR.MINOR.PATCH.
+- Para atualizar automaticamente, utilize `mvn versions:set -DnewVersion=X.Y.Z` (plugin Versions).
 - O valor de `project.version` é utilizado pelo Maven para nomear artefatos e deve estar sempre alinhado com o número acima.
 - Sempre que alterar `<version>` no `pom.xml`, atualize também este README para documentar a versão em uso.
 - Código refatorado em PT-BR (component, swing, evento, model, dialog, form, main).
