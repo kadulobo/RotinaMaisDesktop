@@ -36,7 +36,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'      # ajuste para a versão do seu projeto
+          java-version: '8'      # ajuste para a versão do seu projeto
           cache: maven
 
       # ---------- DEBUG 1: ver se o arquivo existe e qual o package ----------
@@ -78,5 +78,5 @@ jobs:
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests \
             exec:java \
-            -Dexec.mainClass=tarefas.ExemploAprovadorPullRequests \
+            -Dexec.mainClass=ExemploAprovadorPullRequests \
             -Dexec.classpathScope=runtime
