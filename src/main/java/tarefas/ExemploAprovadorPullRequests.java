@@ -15,7 +15,7 @@ public class ExemploAprovadorPullRequests {
     public static void main(String[] args) {
 
         try {
-            TOKEN = LeitorToken.ler("C:\\Users\\User\\Desktop\\git\\token.txt");
+            TOKEN = LeitorToken.ler(readToken());
             AprovadorPullRequests aprovador = new AprovadorPullRequests(REPO_URL, TOKEN);
             aprovador.aprovarPendentes();
             System.out.println("Pull requests aprovados e mesclados com sucesso.");
@@ -23,5 +23,13 @@ public class ExemploAprovadorPullRequests {
             e.printStackTrace();
         }
     }
+    
+	static String readToken() {
+		String t = System.getenv("GH_PAT");
+		if (t == null || t.isEmpty()) {
+			throw new IllegalStateException("Defina GH_PAT no ambiente/Action");
+		}
+		return t;
+	}
 }
 
