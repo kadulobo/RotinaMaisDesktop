@@ -18,7 +18,7 @@ public class ExemploAprovadorPullRequests {
             TOKEN = LeitorToken.ler("C:\\Users\\User\\Desktop\\git\\token.txt");
             AprovadorPullRequests aprovador = new AprovadorPullRequests(REPO_URL, TOKEN);
             aprovador.aprovarPendentes();
-            System.out.println("Pull requests aprovados com sucesso.");
+            System.out.println("Pull requests aprovados e mesclados com sucesso.");
         } catch (Exception e) {
             e.printStackTrace();
         }
