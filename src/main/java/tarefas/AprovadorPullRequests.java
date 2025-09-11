@@ -92,7 +92,7 @@ public class AprovadorPullRequests {
 
     private List<Integer> listarPullRequests(String owner, String repo) throws IOException {
         List<Integer> numeros = new ArrayList<>();
-        Pattern padrao = Pattern.compile("\"number\"\s*:\s*([0-9]+)");
+        Pattern padrao = Pattern.compile("\"number\"\\s*:\\s*([0-9]+)");
         int page = 1;
         while (true) {
             URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo
@@ -174,7 +174,7 @@ public class AprovadorPullRequests {
         if (status >= 300) {
             throw new IOException("Falha ao obter usuário autenticado: HTTP " + status + " - " + body);
         }
-        Matcher matcher = Pattern.compile("\"login\"\s*:\s*\"([^\"]+)\"").matcher(body);
+        Matcher matcher = Pattern.compile("\"login\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
         if (matcher.find()) {
             return matcher.group(1);
         }
@@ -190,17 +190,19 @@ public class AprovadorPullRequests {
         if (status >= 300) {
             throw new IOException("Falha ao consultar PR " + pr + ": HTTP " + status + " - " + body);
         }
-        if (Pattern.compile("\"draft\"\s*:\s*true").matcher(body).find()) {
+        if (Pattern.compile("\"draft\"\\s*:\\s*true").matcher(body).find()) {
             return false;
         }
         int idxUser = body.indexOf("\"user\"");
         if (idxUser >= 0) {
             String sub = body.substring(idxUser);
-            Matcher matcher = Pattern.compile("\"login\"\s*:\s*\"([^\"]+)\"").matcher(sub);
+            Matcher matcher = Pattern.compile("\"login\"\\s*:\\s*\"([^\"]+)\"").matcher(sub);
             if (matcher.find()) {
                 String autor = matcher.group(1);
                 if (authLogin != null && authLogin.equals(autor)) {
-                    return false;
+                    return true;
+                }else {
+                	return false;
                 }
             }
         }

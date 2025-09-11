@@ -13,12 +13,9 @@ public class ExemploAprovadorPullRequests {
     private static String TOKEN;
 
     public static void main(String[] args) {
-        if (args.length == 0) {
-            System.err.println("Informe o caminho relativo do arquivo com o token.");
-            return;
-        }
+
         try {
-            TOKEN = LeitorToken.ler(args[0]);
+            TOKEN = LeitorToken.ler("C:\\Users\\User\\Desktop\\git\\token.txt");
             AprovadorPullRequests aprovador = new AprovadorPullRequests(REPO_URL, TOKEN);
             aprovador.aprovarPendentes();
             System.out.println("Pull requests aprovados com sucesso.");
