@@ -19,12 +19,9 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
-    # >>> VARIÁVEIS DE AMBIENTE DO JOB <<<
-    env:
-      # use o seu secret (Settings > Secrets > Actions > New repository secret)
-      GITHUB_TOKEN: ${{ secrets.GH_PAT }}     # ou  ${{ github.token }}  se o token padrão bastar
-      # outras variáveis que sua classe usar:
-      # REPO_URL: https://github.com/usuario/repositorio
+    # se a classe usa token, injete aqui (ou no step)
+    # env:
+    #   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
 
     steps:
       - name: Checkout código do HEAD do PR
@@ -37,21 +34,28 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'                  # ajuste para a versão do seu projeto
+          java-version: '17'      # use a versão do seu projeto
           cache: maven
 
+      # 1) Compile antes de executar
       - name: Build (clean + compile)
         run: |
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests clean compile
 
+      # 2) Debug: onde a .class foi gerada?
+      - name: Listar classes compiladas (debug)
+        run: |
+          echo "Conteúdo de target/classes:"
+          find target/classes -maxdepth 3 -type f -name "*.class" -print | sort || true
+
+      # 3) Executar a classe com classpath de runtime
       - name: Executar classe via Maven
-        # >>> Se preferir, poderia declarar env AQUI só para este step <<<
         # env:
         #   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
-          $MVN -B -ntp -U -DskipTests exec:java \
+          $MVN -B -ntp -U -DskipTests \
+            exec:java \
             -Dexec.mainClass=tarefas.ExemploAprovadorPullRequests \
-            -Dexec.classpathScope=runtime \
-            -Dexec.args=""
+            -Dexec.classpathScope=runtime
