@@ -22,7 +22,7 @@ jobs:
     # ====== ajuste aqui se preferir usar github.token em vez de um PAT ======
     env:
       GITHUB_TOKEN: ${{ secrets.GH_PAT }}    # ou: ${{ github.token }}
-      MAIN_CLASS: tarefas.ExemploAprovadorPullRequests
+      MAIN_CLASS: ExemploAprovadorPullRequests
     # ========================================================================
 
     steps:
@@ -74,9 +74,9 @@ jobs:
       # ---------- EXECUÇÃO ----------
       - name: Executar classe via Maven
         run: |
-          echo "Executando main class: tarefas.ExemploAprovadorPullRequests"
+          echo "Executando main class: ${MAIN_CLASS}"
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests \
             exec:java \
-            -Dexec.mainClass=ExemploAprovadorPullRequests \
+            -Dexec.mainClass=${MAIN_CLASS} \
             -Dexec.classpathScope=runtime
