@@ -11,6 +11,7 @@ import java.awt.Frame;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Collections;
 import java.util.stream.Collectors;
 import javax.swing.JButton;
 import javax.swing.JLabel;
@@ -59,6 +60,10 @@ public class CofreForm extends JPanel {
     private javax.swing.Icon iconLogin;
     private javax.swing.Icon iconPlat;
     private javax.swing.Icon iconSenha;
+    private JButton btnPrevPage;
+    private JButton btnNextPage;
+    private int currentPage = 0;
+    private static final int PAGE_SIZE = 6;
 
     public CofreForm() {
         controller = new CofreController(new CofreDaoNativeImpl());
@@ -169,6 +174,26 @@ public class CofreForm extends JPanel {
         table.fixTable(scroll);
         table.setRowSelectionAllowed(false);
         add(scroll, BorderLayout.CENTER);
+
+        btnPrevPage = new JButton("Anterior");
+        btnNextPage = new JButton("Próximo");
+        btnPrevPage.addActionListener(e -> {
+            if (currentPage > 0) {
+                currentPage--;
+                updatePage();
+            }
+        });
+        btnNextPage.addActionListener(e -> {
+            if ((currentPage + 1) * PAGE_SIZE < (filtrados != null ? filtrados.size() : 0)) {
+                currentPage++;
+                updatePage();
+            }
+        });
+        JPanel pagination = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pagination.setBackground(Color.WHITE);
+        pagination.add(btnPrevPage);
+        pagination.add(btnNextPage);
+        add(pagination, BorderLayout.SOUTH);
     }
 
     private void carregarCofres() {
@@ -184,8 +209,9 @@ public class CofreForm extends JPanel {
                 .filter(c -> filtroTipo == null || (c.getTipo() != null && filtroTipo.equals(c.getTipo())))
                 .filter(c -> filtro == null || (c.getPlataforma() != null && c.getPlataforma().toLowerCase().contains(filtro)))
                 .collect(Collectors.toList());
-        atualizarTabela(filtrados);
         atualizarCards(filtrados);
+        currentPage = 0;
+        updatePage();
     }
 
     private void atualizarCards(List<Cofre> lista) {
@@ -260,6 +286,27 @@ public class CofreForm extends JPanel {
                 return lbl;
             }
         });
+    }
+
+    private void updatePage() {
+        List<Cofre> page = getCurrentPageCofres();
+        atualizarTabela(page);
+        updatePaginationButtons();
+    }
+
+    private List<Cofre> getCurrentPageCofres() {
+        if (filtrados == null) {
+            return Collections.emptyList();
+        }
+        int start = currentPage * PAGE_SIZE;
+        int end = Math.min(start + PAGE_SIZE, filtrados.size());
+        return filtrados.subList(start, end);
+    }
+
+    private void updatePaginationButtons() {
+        int size = filtrados != null ? filtrados.size() : 0;
+        btnPrevPage.setEnabled(currentPage > 0);
+        btnNextPage.setEnabled((currentPage + 1) * PAGE_SIZE < size);
     }
 
     private void adicionarCofre() {
