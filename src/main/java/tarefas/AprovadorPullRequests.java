@@ -64,10 +64,15 @@ public class AprovadorPullRequests {
         String authLogin = getAuthLogin();
 
         for (Integer pr : listarPullRequests(owner, repo)) {
-            if (podeAprovar(owner, repo, pr, authLogin)) {
+            // verifica draft e autor
+            boolean draftOuSelf = !podeAprovar(owner, repo, pr, authLogin);
+            if (!draftOuSelf) {
+                // aprova só quando NÃO é seu PR e não é draft
                 aprovar(owner, repo, pr);
-                mesclar(owner, repo, pr);
             }
+            // tenta o merge de qualquer forma; sua mescla já valida merged:true e usa sha
+            // se branch protection exigir review, aqui vai falhar com mensagem clara
+            mesclar(owner, repo, pr);
         }
     }
 
@@ -142,7 +147,15 @@ public class AprovadorPullRequests {
         }
     }
 
+ // 4) Mesclar validando "merged:true" e usando sha
     private void mesclar(String owner, String repo, int numero) throws IOException {
+        if (!aguardarMergeavel(owner, repo, numero)) {
+            throw new IOException("PR " + numero + " não está mergeável (mergeable=false/estado não limpo).");
+        }
+
+        String sha = obterHeadSha(owner, repo, numero);
+        String metodo = escolherMetodoMerge(owner, repo); // merge|squash|rebase
+
         URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/pulls/" + numero + "/merge");
         HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
         conexao.setRequestMethod("PUT");
@@ -150,17 +163,24 @@ public class AprovadorPullRequests {
         conexao.setRequestProperty("Content-Type", "application/json");
         conexao.setDoOutput(true);
 
-        String corpo = "{\"merge_method\":\"merge\"}";
+        String corpo = String.format(
+            "{\"sha\":\"%s\",\"merge_method\":\"%s\",\"commit_title\":\"Merge PR #%d (bot)\",\"commit_message\":\"Mesclado automaticamente\"}",
+            sha, metodo, numero
+        );
         try (OutputStream os = conexao.getOutputStream()) {
             os.write(corpo.getBytes(StandardCharsets.UTF_8));
         }
 
         int status = conexao.getResponseCode();
         String body = readBody(conexao);
-        if (status >= 300) {
+
+        // *** PONTO-CHAVE: só considerar sucesso se merged:true ***
+        boolean merged = Pattern.compile("\"merged\"\\s*:\\s*true").matcher(body).find();
+        if (status >= 300 || !merged) {
             throw new IOException("Falha ao mesclar PR " + numero + ": HTTP " + status + " - " + body);
         }
     }
+
 
     private void padraoHeaders(HttpURLConnection c) {
         c.setRequestProperty("Authorization", "Bearer " + token);
@@ -222,13 +242,61 @@ public class AprovadorPullRequests {
             if (matcher.find()) {
                 String autor = matcher.group(1);
                 if (authLogin != null && authLogin.equals(autor)) {
-                    return true;
-                }else {
-                	return false;
+                    return false;
                 }
             }
         }
         return true;
     }
+ // 1) Espera o PR ficar mergeable (o GitHub recalcula isso após a aprovação)
+    private boolean aguardarMergeavel(String owner, String repo, int pr) throws IOException {
+        URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/pulls/" + pr);
+        for (int i = 0; i < 5; i++) { // ~5s
+            HttpURLConnection c = (HttpURLConnection) url.openConnection();
+            padraoHeaders(c);
+            String body = readBody(c);
+            if (c.getResponseCode() >= 300) {
+                throw new IOException("Falha ao consultar PR " + pr + ": HTTP " + c.getResponseCode() + " - " + body);
+            }
+            boolean mergeable = Pattern.compile("\"mergeable\"\\s*:\\s*true").matcher(body).find();
+            String state = null;
+            Matcher ms = Pattern.compile("\"mergeable_state\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
+            if (ms.find()) state = ms.group(1);
+            if (mergeable && ("clean".equals(state) || "unstable".equals(state))) return true;
+            try { Thread.sleep(1000); } catch (InterruptedException ignored) {}
+        }
+        return false;
+    }
+ // 2) Captura o head.sha do PR
+    private String obterHeadSha(String owner, String repo, int pr) throws IOException {
+        URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/pulls/" + pr);
+        HttpURLConnection c = (HttpURLConnection) url.openConnection();
+        padraoHeaders(c);
+        String body = readBody(c);
+        if (c.getResponseCode() >= 300) {
+            throw new IOException("Falha ao obter head.sha do PR " + pr + ": HTTP " + c.getResponseCode() + " - " + body);
+        }
+        Matcher m = Pattern.compile("\"head\"\\s*:\\s*\\{[^}]*\"sha\"\\s*:\\s*\"([^\"]+)\"").matcher(body);
+        if (m.find()) return m.group(1);
+        throw new IOException("head.sha não encontrado no PR " + pr);
+    }
+    
+ // 3) (opcional) lê quais métodos de merge o repo aceita
+    private String escolherMetodoMerge(String owner, String repo) throws IOException {
+        URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo);
+        HttpURLConnection c = (HttpURLConnection) url.openConnection();
+        padraoHeaders(c);
+        String body = readBody(c);
+        if (c.getResponseCode() >= 300) return "merge"; // fallback
+        boolean allowMerge  = body.contains("\"allow_merge_commit\":true");
+        boolean allowSquash = body.contains("\"allow_squash_merge\":true");
+        boolean allowRebase = body.contains("\"allow_rebase_merge\":true");
+        if (allowMerge)  return "merge";
+        if (allowSquash) return "squash";
+        if (allowRebase) return "rebase";
+        return "merge";
+    }
+
+
 
 }
