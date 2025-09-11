@@ -15,7 +15,7 @@ public class ExemploAprovadorPullRequests {
     public static void main(String[] args) {
 
         try {
-            TOKEN = LeitorToken.ler(readToken());
+            TOKEN = readToken();
             AprovadorPullRequests aprovador = new AprovadorPullRequests(REPO_URL, TOKEN);
             aprovador.aprovarPendentes();
             System.out.println("Pull requests aprovados e mesclados com sucesso.");
