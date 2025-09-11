@@ -3,18 +3,22 @@ package tarefas;
 /**
  * Exemplo de utilização da classe {@link AprovadorPullRequests}.
  *
- * <p>Substitua o valor da constante {@code TOKEN} por um token pessoal
- * do GitHub antes de executar.</p>
+ * <p>O token de acesso é lido de um arquivo texto cujo caminho relativo
+ * deve ser informado como primeiro argumento da aplicação.</p>
  */
 public class ExemploAprovadorPullRequests {
 
     private static final String REPO_URL = "https://github.com/kadulobo/RotinaMaisDesktop";
 
-    // TODO: inserir token do GitHub aqui
-    private static final String TOKEN = "SEU_TOKEN_AQUI";
+    private static String TOKEN;
 
     public static void main(String[] args) {
+        if (args.length == 0) {
+            System.err.println("Informe o caminho relativo do arquivo com o token.");
+            return;
+        }
         try {
+            TOKEN = LeitorToken.ler(args[0]);
             AprovadorPullRequests aprovador = new AprovadorPullRequests(REPO_URL, TOKEN);
             aprovador.aprovarPendentes();
             System.out.println("Pull requests aprovados com sucesso.");
@@ -23,3 +27,4 @@ public class ExemploAprovadorPullRequests {
         }
     }
 }
+
