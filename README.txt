@@ -6,6 +6,8 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Para alterar a versão, edite a tag <version> no pom.xml.
 - Para consultar a versão atual pela linha de comando, execute `mvn -q help:evaluate -Dexpression=project.version -DforceStdout`.
 - Em cada release, incremente este número seguindo a convenção MAJOR.MINOR.PATCH.
+- O valor de `project.version` é utilizado pelo Maven para nomear artefatos e deve estar sempre alinhado com o número acima.
+- Sempre que alterar `<version>` no `pom.xml`, atualize também este README para documentar a versão em uso.
 - Código refatorado em PT-BR (component, swing, evento, model, dialog, form, main).
 - Utilitário de ícones: swing.icon.Icones (PNG/JPG em /resources/icon + fallback Material Icons).
 - Coloque seus PNGs/JPGs de ícones em: src/main/resources/icon/
