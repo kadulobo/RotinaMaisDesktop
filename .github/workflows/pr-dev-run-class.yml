@@ -20,9 +20,10 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # use um PAT no secret GH_PAT ou troque por ${{ github.token }} se servir
+      # 1) Preferimos seu PAT (GH_PAT) definido em Settings → Secrets and variables → Actions
+      # 2) Se não existir/estiver vazio, faremos fallback para o token padrão do Actions (github.token) logo abaixo.
       GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-      # nome do arquivo de classe (sem pacote); ajuste se mudar o nome da sua classe
+      # Nome do arquivo da sua main class (sem pacote)
       CLASS_FILE_NAME: ExemploAprovadorPullRequests.class
 
     steps:
@@ -36,8 +37,33 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'          # ajuste conforme o seu projeto
+          java-version: '17'          # ajuste conforme o seu projeto (8/11/17)
           cache: maven
+
+      # Fallback automático: se GH_PAT não estiver definido, usa o token padrão do Actions
+      - name: Garantir GITHUB_TOKEN (fallback para github.token)
+        run: |
+          if [ -z "${GITHUB_TOKEN}" ]; then
+            echo "GITHUB_TOKEN não veio de secrets.GH_PAT; usando token padrão do Actions."
+            echo "GITHUB_TOKEN=${{ github.token }}" >> $GITHUB_ENV
+          else
+            echo "GITHUB_TOKEN obtido de secrets.GH_PAT."
+          fi
+
+      # (Opcional) Caso use um JAR local em libs/, instale-o no runner
+      - name: Instalar JAR local (TimingFramework) - opcional
+        run: |
+          if [ -f libs/TimingFramework-0.55.jar ]; then
+            echo "Instalando libs/TimingFramework-0.55.jar no repositório local do Maven..."
+            mvn -B -ntp install:install-file \
+              -Dfile=libs/TimingFramework-0.55.jar \
+              -DgroupId=local.timing \
+              -DartifactId=timingframework \
+              -Dversion=0.55 \
+              -Dpackaging=jar
+          else
+            echo "Aviso: libs/TimingFramework-0.55.jar não encontrado; seguindo..."
+          fi
 
       # ---------- DEBUG 1: ver cabeçalho do arquivo ----------
       - name: Mostrar cabeçalho da classe (package)
@@ -68,13 +94,11 @@ jobs:
         shell: bash
         run: |
           set -e
-          # acha o primeiro .class com o nome especificado
           CLASS_PATH=$(find target/classes -type f -name "${CLASS_FILE_NAME}" -print -quit || true)
           if [ -z "$CLASS_PATH" ]; then
             echo "❌ Não encontrei ${CLASS_FILE_NAME} em target/classes. Compile falhou?"
             exit 1
           fi
-          # converte caminho do .class para FQN (pacote.classe)
           FQN=${CLASS_PATH#target/classes/}
           FQN=${FQN%.class}
           FQN=${FQN//\//.}

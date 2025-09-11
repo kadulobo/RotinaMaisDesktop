@@ -1,4 +1,4 @@
-name: PR para desenvolvimento → roda classe (Maven, com debug)
+name: PR para desenvolvimento → roda classe (Maven, com debug e detecção de main)
 
 on:
   pull_request:
@@ -19,11 +19,11 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
-    # ====== ajuste aqui se preferir usar github.token em vez de um PAT ======
     env:
-      GITHUB_TOKEN: ${{ secrets.GH_PAT }}    # ou: ${{ github.token }}
-      MAIN_CLASS: ExemploAprovadorPullRequests
-    # ========================================================================
+      # use um PAT no secret GH_PAT ou troque por ${{ github.token }} se servir
+      GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+      # nome do arquivo de classe (sem pacote); ajuste se mudar o nome da sua classe
+      CLASS_FILE_NAME: ExemploAprovadorPullRequests.class
 
     steps:
       - name: Checkout código do HEAD do PR
@@ -36,22 +36,18 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'      # ajuste para a versão do seu projeto
+          java-version: '17'          # ajuste conforme o seu projeto
           cache: maven
 
-      # ---------- DEBUG 1: ver se o arquivo existe e qual o package ----------
+      # ---------- DEBUG 1: ver cabeçalho do arquivo ----------
       - name: Mostrar cabeçalho da classe (package)
         run: |
-          echo "Arquivo-fonte esperado:"
-          echo "  src/main/java/tarefas/ExemploAprovadorPullRequests.java"
-          echo
+          echo "Fonte esperado: src/main/java/tarefas/ExemploAprovadorPullRequests.java"
           if [ -f src/main/java/tarefas/ExemploAprovadorPullRequests.java ]; then
-            echo ">> Primeiras 20 linhas:"
             sed -n '1,20p' src/main/java/tarefas/ExemploAprovadorPullRequests.java
           else
-            echo "❌ Arquivo não encontrado no caminho esperado."
-            echo "Conteúdo de src/main/java para ajudar na inspeção:"
-            find src/main/java -maxdepth 3 -type f -name "*.java" -print | sort || true
+            echo "❌ Não achei em tarefas/. Listando .java para ajudar:"
+            find src/main/java -maxdepth 4 -type f -name "*.java" -print | sort || true
           fi
 
       # ---------- COMPILAÇÃO ----------
@@ -60,23 +56,37 @@ jobs:
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests clean compile
 
-      # ---------- DEBUG 2: listar .class geradas ----------
-      - name: Listar classes compiladas (debug)
+      # ---------- DEBUG 2: listar .class ----------
+      - name: Listar classes compiladas
         run: |
-          echo
-          echo ">> .class geradas em target/classes:"
-          find target/classes -maxdepth 5 -type f -name "*.class" -print | sort || true
-          echo
-          echo "Se a classe não apareceu como target/classes/tarefas/ExemploAprovadorPullRequests.class"
-          echo "provavelmente falta a linha 'package tarefas;' no topo do arquivo-fonte,"
-          echo "ou o MAIN_CLASS está diferente do FQN compilado."
+          echo ">> .class em target/classes:"
+          find target/classes -maxdepth 10 -type f -name "*.class" -print | sort || true
+
+      # ---------- DETECTAR FQN DA MAIN ----------
+      - name: Detectar main class compilada
+        id: detect
+        shell: bash
+        run: |
+          set -e
+          # acha o primeiro .class com o nome especificado
+          CLASS_PATH=$(find target/classes -type f -name "${CLASS_FILE_NAME}" -print -quit || true)
+          if [ -z "$CLASS_PATH" ]; then
+            echo "❌ Não encontrei ${CLASS_FILE_NAME} em target/classes. Compile falhou?"
+            exit 1
+          fi
+          # converte caminho do .class para FQN (pacote.classe)
+          FQN=${CLASS_PATH#target/classes/}
+          FQN=${FQN%.class}
+          FQN=${FQN//\//.}
+          echo "Detectado FQN: $FQN"
+          echo "MAIN_CLASS_DETECTED=$FQN" >> $GITHUB_ENV
 
       # ---------- EXECUÇÃO ----------
-      - name: Executar classe via Maven
+      - name: Executar classe via Maven (usa FQN detectado)
         run: |
-          echo "Executando main class: ${MAIN_CLASS}"
+          echo "Executando main: ${MAIN_CLASS_DETECTED}"
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests \
             exec:java \
-            -Dexec.mainClass=${MAIN_CLASS} \
-            -Dexec.classpathScope=runtime
+            -Dexec.classpathScope=runtime \
+            -Dexec.mainClass="${MAIN_CLASS_DETECTED}"
