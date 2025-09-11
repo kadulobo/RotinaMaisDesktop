@@ -1,4 +1,4 @@
-name: PR para desenvolvimento → roda classe (Maven)
+name: PR para desenvolvimento → roda classe (Maven, com debug)
 
 on:
   pull_request:
@@ -19,9 +19,11 @@ jobs:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
 
-    # se a classe usa token, injete aqui (ou no step)
-    # env:
-    #   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+    # ====== ajuste aqui se preferir usar github.token em vez de um PAT ======
+    env:
+      GITHUB_TOKEN: ${{ secrets.GH_PAT }}    # ou: ${{ github.token }}
+      MAIN_CLASS: tarefas.ExemploAprovadorPullRequests
+    # ========================================================================
 
     steps:
       - name: Checkout código do HEAD do PR
@@ -34,26 +36,45 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'      # use a versão do seu projeto
+          java-version: '8'      # ajuste para a versão do seu projeto
           cache: maven
 
-      # 1) Compile antes de executar
+      # ---------- DEBUG 1: ver se o arquivo existe e qual o package ----------
+      - name: Mostrar cabeçalho da classe (package)
+        run: |
+          echo "Arquivo-fonte esperado:"
+          echo "  src/main/java/tarefas/ExemploAprovadorPullRequests.java"
+          echo
+          if [ -f src/main/java/tarefas/ExemploAprovadorPullRequests.java ]; then
+            echo ">> Primeiras 20 linhas:"
+            sed -n '1,20p' src/main/java/tarefas/ExemploAprovadorPullRequests.java
+          else
+            echo "❌ Arquivo não encontrado no caminho esperado."
+            echo "Conteúdo de src/main/java para ajudar na inspeção:"
+            find src/main/java -maxdepth 3 -type f -name "*.java" -print | sort || true
+          fi
+
+      # ---------- COMPILAÇÃO ----------
       - name: Build (clean + compile)
         run: |
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests clean compile
 
-      # 2) Debug: onde a .class foi gerada?
+      # ---------- DEBUG 2: listar .class geradas ----------
       - name: Listar classes compiladas (debug)
         run: |
-          echo "Conteúdo de target/classes:"
-          find target/classes -maxdepth 3 -type f -name "*.class" -print | sort || true
+          echo
+          echo ">> .class geradas em target/classes:"
+          find target/classes -maxdepth 5 -type f -name "*.class" -print | sort || true
+          echo
+          echo "Se a classe não apareceu como target/classes/tarefas/ExemploAprovadorPullRequests.class"
+          echo "provavelmente falta a linha 'package tarefas;' no topo do arquivo-fonte,"
+          echo "ou o MAIN_CLASS está diferente do FQN compilado."
 
-      # 3) Executar a classe com classpath de runtime
+      # ---------- EXECUÇÃO ----------
       - name: Executar classe via Maven
-        # env:
-        #   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
+          echo "Executando main class: tarefas.ExemploAprovadorPullRequests"
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests \
             exec:java \
