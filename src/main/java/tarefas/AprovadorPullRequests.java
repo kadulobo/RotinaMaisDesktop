@@ -14,10 +14,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Responsável por aprovar todos os pull requests pendentes de um repositório.
+ * Responsável por aprovar e mesclar todos os pull requests pendentes de um
+ * repositório.
  * <p>
  * A classe utiliza a API REST do GitHub. É necessário fornecer um token
- * de acesso pessoal com permissão para aprovar pull requests.
+ * de acesso pessoal com permissão para aprovar e mesclar pull requests.
  * O token pode ser informado no construtor ou pela variável de ambiente
  * {@code GITHUB_TOKEN}.
  */
@@ -51,7 +52,7 @@ public class AprovadorPullRequests {
     }
 
     /**
-     * Aprova todos os pull requests abertos do repositório informado.
+     * Aprova e mescla todos os pull requests abertos do repositório informado.
      *
      * @throws IOException se ocorrer erro de comunicação com a API do GitHub
      */
@@ -65,6 +66,7 @@ public class AprovadorPullRequests {
         for (Integer pr : listarPullRequests(owner, repo)) {
             if (podeAprovar(owner, repo, pr, authLogin)) {
                 aprovar(owner, repo, pr);
+                mesclar(owner, repo, pr);
             }
         }
     }
@@ -137,6 +139,26 @@ public class AprovadorPullRequests {
         String body = readBody(conexao);
         if (status >= 300) {
             throw new IOException("Falha ao aprovar PR " + numero + ": HTTP " + status + " - " + body);
+        }
+    }
+
+    private void mesclar(String owner, String repo, int numero) throws IOException {
+        URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/pulls/" + numero + "/merge");
+        HttpURLConnection conexao = (HttpURLConnection) url.openConnection();
+        conexao.setRequestMethod("PUT");
+        padraoHeaders(conexao);
+        conexao.setRequestProperty("Content-Type", "application/json");
+        conexao.setDoOutput(true);
+
+        String corpo = "{\"merge_method\":\"merge\"}";
+        try (OutputStream os = conexao.getOutputStream()) {
+            os.write(corpo.getBytes(StandardCharsets.UTF_8));
+        }
+
+        int status = conexao.getResponseCode();
+        String body = readBody(conexao);
+        if (status >= 300) {
+            throw new IOException("Falha ao mesclar PR " + numero + ": HTTP " + status + " - " + body);
         }
     }
 
