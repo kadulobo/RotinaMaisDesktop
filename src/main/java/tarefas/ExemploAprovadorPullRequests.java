@@ -25,7 +25,7 @@ public class ExemploAprovadorPullRequests {
     }
     
 	static String readToken() {
-		String t = System.getenv("GH_PAT");
+		String t = System.getenv("GITHUB_TOKEN");
 		if (t == null || t.isEmpty()) {
 			throw new IllegalStateException("Defina GH_PAT no ambiente/Action");
 		}

@@ -2,20 +2,29 @@ name: PR para desenvolvimento → roda classe (Maven)
 
 on:
   pull_request:
-    # Dispara quando o PR aparece (é aberto), é reaberto, atualizado (novos commits)
     types: [opened, reopened, synchronize, ready_for_review]
-    branches: [ desenvolvimento ]   # ← base do PR deve ser "desenvolvimento"
-  workflow_dispatch: {}             # opcional: permite rodar manualmente
+    branches: [ desenvolvimento ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
 
 concurrency:
   group: pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true          # cancela execução anterior desse mesmo PR
+  cancel-in-progress: true
 
 jobs:
   run-class:
-    # evite rodar em PRs "Draft" (opcional)
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+
+    # >>> VARIÁVEIS DE AMBIENTE DO JOB <<<
+    env:
+      # use o seu secret (Settings > Secrets > Actions > New repository secret)
+      GITHUB_TOKEN: ${{ secrets.GH_PAT }}     # ou  ${{ github.token }}  se o token padrão bastar
+      # outras variáveis que sua classe usar:
+      # REPO_URL: https://github.com/usuario/repositorio
 
     steps:
       - name: Checkout código do HEAD do PR
@@ -24,16 +33,25 @@ jobs:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
 
-      - name: Set up JDK 17
+      - name: Set up JDK
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'         # ← ajuste se seu projeto usa outra versão
+          java-version: '8'                  # ajuste para a versão do seu projeto
           cache: maven
 
+      - name: Build (clean + compile)
+        run: |
+          if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
+          $MVN -B -ntp -U -DskipTests clean compile
+
       - name: Executar classe via Maven
-        # Se seu projeto é multi-módulo, adicione: working-directory: caminho/do/modulo
+        # >>> Se preferir, poderia declarar env AQUI só para este step <<<
+        # env:
+        #   GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
           $MVN -B -ntp -U -DskipTests exec:java \
             -Dexec.mainClass=tarefas.ExemploAprovadorPullRequests \
+            -Dexec.classpathScope=runtime \
+            -Dexec.args=""

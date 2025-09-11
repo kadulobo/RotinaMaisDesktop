@@ -1,0 +1,39 @@
+name: PR para desenvolvimento → roda classe (Maven)
+
+on:
+  pull_request:
+    # Dispara quando o PR aparece (é aberto), é reaberto, atualizado (novos commits)
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [ desenvolvimento ]   # ← base do PR deve ser "desenvolvimento"
+  workflow_dispatch: {}             # opcional: permite rodar manualmente
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true          # cancela execução anterior desse mesmo PR
+
+jobs:
+  run-class:
+    # evite rodar em PRs "Draft" (opcional)
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout código do HEAD do PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '8'         # ← ajuste se seu projeto usa outra versão
+          cache: maven
+
+      - name: Executar classe via Maven
+        # Se seu projeto é multi-módulo, adicione: working-directory: caminho/do/modulo
+        run: |
+          if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
+          $MVN -B -ntp -U -DskipTests exec:java \
+            -Dexec.mainClass=tarefas.ExemploAprovadorPullRequests \
