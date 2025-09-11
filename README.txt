@@ -4,6 +4,8 @@ Requer **Java 17** ou superior para compilar e executar, devido às
 dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Versão do projeto definida no pom.xml: 1.0.0-SNAPSHOT.
 - Para alterar a versão, edite a tag <version> no pom.xml.
+- Para consultar a versão atual pela linha de comando, execute `mvn -q help:evaluate -Dexpression=project.version -DforceStdout`.
+- Em cada release, incremente este número seguindo a convenção MAJOR.MINOR.PATCH.
 - Código refatorado em PT-BR (component, swing, evento, model, dialog, form, main).
 - Utilitário de ícones: swing.icon.Icones (PNG/JPG em /resources/icon + fallback Material Icons).
 - Coloque seus PNGs/JPGs de ícones em: src/main/resources/icon/
