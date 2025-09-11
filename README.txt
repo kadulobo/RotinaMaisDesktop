@@ -13,3 +13,6 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
 
 - Exemplos de entidades JPA e DAOs nativos adicionados para Monitoramento, Alimentacao, Treino, Objeto, Site, Caixa e Periodo.
 
+- Classe `AprovadorPullRequests`: utiliza a API REST do GitHub para aprovar automaticamente pull requests pendentes de um repositório.
+  Requer um token de acesso pessoal e possui um exemplo de uso em `src/main/java/tarefas/ExemploAprovadorPullRequests.java`.
+
