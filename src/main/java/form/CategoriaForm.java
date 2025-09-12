@@ -5,29 +5,18 @@ import dao.impl.CategoriaDaoNativeImpl;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.ImageIcon;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -35,8 +24,9 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
-
+import javax.swing.table.TableCellRenderer;
 import model.Categoria;
+import model.ModelCard;
 import swing.Button;
 import swing.ImageAvatar;
 import swing.icon.GoogleMaterialDesignIcons;
@@ -44,161 +34,136 @@ import swing.icon.IconFontSwing;
 import swing.table.EventAction;
 import swing.table.ModelAction;
 import swing.table.Table;
+import component.Card;
 import util.ImageUtils;
 
 /**
- * Form that lists categorias fetched from the database with card and list views.
+ * Formulário para gerenciamento de Categorias.
  */
 public class CategoriaForm extends JPanel {
 
     private final CategoriaController controller;
-    private final String PLACEHOLDER = "Search by description...";
-
-    private JTextField txtSearch;
-    private JButton btnToggleView;
-    private Button btnAdd;
-    private JPanel viewContainer;
-    private java.awt.CardLayout viewLayout;
-    private JPanel cardsPanel;
-    private JPanel cardsTopPanel;
-    private JPanel cardsBottomPanel;
+    private Card cardTotal;
+    private Card cardAtivas;
+    private Card cardInativas;
     private Table table;
-    private JPanel emptyPanel;
+    private JTextField txtBusca;
+    private Button btnAtiva;
+    private Button btnInativa;
+    private Button btnNovo;
+    private Integer filtroStatus;
+    private List<Categoria> categorias;
+    private List<Categoria> filtradas;
+    private javax.swing.Icon iconTotal;
+    private javax.swing.Icon iconAtiva;
+    private javax.swing.Icon iconInativa;
     private JButton btnPrevPage;
     private JButton btnNextPage;
-
-    private List<Categoria> allCategorias = new ArrayList<>();
-    private List<Categoria> filteredCategorias = new ArrayList<>();
-    private boolean showingCards = true;
     private int currentPage = 0;
     private static final int PAGE_SIZE = 6;
 
     public CategoriaForm() {
         controller = new CategoriaController(new CategoriaDaoNativeImpl());
         initComponents();
-        loadCategorias();
+        carregarCategorias();
     }
 
     private void initComponents() {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // Top bar
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topBar.setBackground(Color.WHITE);
-        txtSearch = new JTextField(20);
-        txtSearch.setText(PLACEHOLDER);
-        txtSearch.setForeground(Color.GRAY);
-        txtSearch.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (txtSearch.getText().equals(PLACEHOLDER)) {
-                    txtSearch.setText("");
-                    txtSearch.setForeground(Color.BLACK);
-                }
-            }
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(Color.WHITE);
 
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (txtSearch.getText().isEmpty()) {
-                    txtSearch.setForeground(Color.GRAY);
-                    txtSearch.setText(PLACEHOLDER);
-                }
-            }
+        JPanel cards = new JPanel(new java.awt.GridLayout(1,3,18,0));
+        cards.setBackground(Color.WHITE);
+
+        iconTotal = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.LABEL, 60, Color.WHITE,
+                new Color(255,255,255,15));
+        cardTotal = new Card();
+        cardTotal.setBackground(new Color(33,150,243));
+        cardTotal.setColorGradient(new Color(33,203,243));
+        cardTotal.setData(new ModelCard("Categorias",0,0,iconTotal));
+        cards.add(cardTotal);
+
+        iconAtiva = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHECK_CIRCLE, 60, Color.WHITE,
+                new Color(255,255,255,15));
+        cardAtivas = new Card();
+        cardAtivas.setBackground(new Color(76,175,80));
+        cardAtivas.setColorGradient(new Color(129,199,132));
+        cardAtivas.setData(new ModelCard("Ativas",0,0,iconAtiva));
+        cards.add(cardAtivas);
+
+        iconInativa = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 60, Color.WHITE,
+                new Color(255,255,255,15));
+        cardInativas = new Card();
+        cardInativas.setBackground(new Color(255,152,0));
+        cardInativas.setColorGradient(new Color(255,203,107));
+        cardInativas.setData(new ModelCard("Inativas",0,0,iconInativa));
+        cards.add(cardInativas);
+
+        top.add(cards, BorderLayout.NORTH);
+
+        JPanel filtroWrapper = new JPanel(new BorderLayout());
+        filtroWrapper.setBackground(Color.WHITE);
+
+        JPanel filtro = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filtro.setBackground(Color.WHITE);
+
+        btnAtiva = new Button();
+        btnAtiva.setText("Ativa");
+        btnAtiva.setBackground(new Color(76,175,80));
+        btnAtiva.setForeground(Color.WHITE);
+        btnAtiva.addActionListener(e -> {filtroStatus = 1; aplicarFiltros();});
+        filtro.add(btnAtiva);
+
+        btnInativa = new Button();
+        btnInativa.setText("Inativa");
+        btnInativa.setBackground(new Color(255,152,0));
+        btnInativa.setForeground(Color.BLACK);
+        btnInativa.addActionListener(e -> {filtroStatus = 0; aplicarFiltros();});
+        filtro.add(btnInativa);
+
+        txtBusca = new JTextField(15);
+        txtBusca.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { aplicarFiltros(); }
+            @Override public void removeUpdate(DocumentEvent e) { aplicarFiltros(); }
+            @Override public void changedUpdate(DocumentEvent e) { aplicarFiltros(); }
         });
-        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) { applyFilter(); }
+        filtro.add(new JLabel("Pesquisar:"));
+        filtro.add(txtBusca);
 
-            @Override
-            public void removeUpdate(DocumentEvent e) { applyFilter(); }
+        btnNovo = new Button();
+        btnNovo.setBackground(new Color(33,150,243));
+        btnNovo.setForeground(Color.WHITE);
+        btnNovo.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ADD,20,Color.WHITE));
+        btnNovo.setPreferredSize(new Dimension(30,30));
+        btnNovo.addActionListener(e -> adicionarCategoria());
+        filtro.add(btnNovo);
 
-            @Override
-            public void changedUpdate(DocumentEvent e) { applyFilter(); }
-        });
+        filtroWrapper.add(filtro, BorderLayout.CENTER);
+        top.add(filtroWrapper, BorderLayout.CENTER);
+        add(top, BorderLayout.NORTH);
 
-        btnToggleView = new JButton();
-        btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 18, Color.BLACK));
-        btnToggleView.addActionListener(e -> {
-            showingCards = !showingCards;
-            updateView();
-        });
-
-        btnAdd = new Button();
-        btnAdd.setBackground(new Color(75, 134, 253));
-        btnAdd.setForeground(Color.WHITE);
-        btnAdd.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ADD, 18, Color.WHITE));
-        btnAdd.setText("Adicionar");
-        btnAdd.addActionListener(e -> adicionarCategoria());
-
-        topBar.add(txtSearch);
-        topBar.add(btnToggleView);
-        topBar.add(btnAdd);
-
-        add(topBar, BorderLayout.NORTH);
-
-        // View container with CardLayout
-        viewLayout = new java.awt.CardLayout();
-        viewContainer = new JPanel(viewLayout);
-        viewContainer.setBackground(Color.WHITE);
-
-        // Cards view split into two rows of three cards
-        int buttonHeight = btnAdd.getPreferredSize().height;
-        cardsPanel = new JPanel();
-        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
-        cardsPanel.setBorder(new EmptyBorder(buttonHeight, 10, 10, 10));
-        cardsPanel.setBackground(Color.WHITE);
-
-        cardsTopPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        cardsBottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        cardsTopPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardsBottomPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardsTopPanel.setBackground(Color.WHITE);
-        cardsBottomPanel.setBackground(Color.WHITE);
-        cardsPanel.add(cardsTopPanel);
-        cardsPanel.add(Box.createVerticalStrut(buttonHeight));
-        cardsPanel.add(cardsBottomPanel);
-
-        JScrollPane cardScroll = new JScrollPane(cardsPanel,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        cardScroll.getViewport().setBackground(Color.WHITE);
-        viewContainer.add(cardScroll, "cards");
-
-        // List view
         table = new Table();
-        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"ID", "Nome", "Descrição", "Status", ""}) {
+        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{
+            "Foto", "Nome", "Descrição", "Status", "Ações"
+        }) {
             @Override
             public boolean isCellEditable(int row, int column) {
                 return column == 4;
             }
-        });
-        table.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = table.getSelectedRow();
-                    if (row >= 0 && row < filteredCategorias.size()) {
-                        editarCategoria(filteredCategorias.get(row));
-                    }
-                }
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 0 ? ImageIcon.class : Object.class;
             }
         });
-        JScrollPane listScroll = new JScrollPane(table);
-        table.fixTable(listScroll);
-        listScroll.getViewport().setBackground(Color.WHITE);
-        viewContainer.add(listScroll, "list");
+        table.setRowHeight(40);
+        JScrollPane scroll = new JScrollPane(table);
+        table.fixTable(scroll);
+        table.setRowSelectionAllowed(false);
+        add(scroll, BorderLayout.CENTER);
 
-        // Empty view
-        emptyPanel = new JPanel(new BorderLayout());
-        emptyPanel.setBackground(Color.WHITE);
-        JLabel lblEmpty = new JLabel("No categories found", JLabel.CENTER);
-        emptyPanel.add(lblEmpty, BorderLayout.CENTER);
-        viewContainer.add(emptyPanel, "empty");
-
-        add(viewContainer, BorderLayout.CENTER);
-
-        // Pagination controls
         btnPrevPage = new JButton("Anterior");
         btnNextPage = new JButton("Próximo");
         btnPrevPage.addActionListener(e -> {
@@ -208,167 +173,127 @@ public class CategoriaForm extends JPanel {
             }
         });
         btnNextPage.addActionListener(e -> {
-            if ((currentPage + 1) * PAGE_SIZE < filteredCategorias.size()) {
+            if ((currentPage + 1) * PAGE_SIZE < (filtradas != null ? filtradas.size() : 0)) {
                 currentPage++;
                 updatePage();
             }
         });
         JPanel pagination = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pagination.setBackground(Color.WHITE);
         pagination.add(btnPrevPage);
         pagination.add(btnNextPage);
         add(pagination, BorderLayout.SOUTH);
     }
 
-    private void loadCategorias() {
-        allCategorias = controller.listar();
-        applyFilter();
+    private void carregarCategorias() {
+        categorias = controller.listar();
+        aplicarFiltros();
     }
 
-    private void applyFilter() {
-        String text = getFilterText().toLowerCase();
-        filteredCategorias = allCategorias.stream()
-                .filter(c -> c.getDescricao() != null && c.getDescricao().toLowerCase().contains(text))
+    private void aplicarFiltros() {
+        if (categorias == null) return;
+        String busca = txtBusca.getText();
+        String filtro = (busca != null && !busca.isEmpty()) ? busca.toLowerCase() : null;
+        filtradas = categorias.stream()
+                .filter(c -> filtroStatus == null || (c.getStatus() != null && filtroStatus.equals(c.getStatus())))
+                .filter(c -> filtro == null || (c.getNome() != null && c.getNome().toLowerCase().contains(filtro)))
                 .collect(Collectors.toList());
+        atualizarCards(filtradas);
+        currentPage = 0;
+        updatePage();
+    }
 
-        if (filteredCategorias.isEmpty()) {
-            viewLayout.show(viewContainer, "empty");
-            btnPrevPage.setEnabled(false);
-            btnNextPage.setEnabled(false);
-        } else {
-            currentPage = 0;
-            updatePage();
+    private void atualizarCards(List<Categoria> lista) {
+        int total = lista.size();
+        int ativas = 0;
+        int inativas = 0;
+        for (Categoria c : lista) {
+            if (c.getStatus() != null && c.getStatus() == 1) {
+                ativas++;
+            } else {
+                inativas++;
+            }
         }
+        cardTotal.setData(new ModelCard("Categorias", total, 0, iconTotal));
+        cardAtivas.setData(new ModelCard("Ativas", ativas, 0, iconAtiva));
+        cardInativas.setData(new ModelCard("Inativas", inativas, 0, iconInativa));
     }
 
-    private void updateView() {
-        if (showingCards) {
-            viewLayout.show(viewContainer, "cards");
-            btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 18, Color.BLACK));
-        } else {
-            viewLayout.show(viewContainer, "list");
-            btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_MODULE, 18, Color.BLACK));
-        }
-    }
-
-    private void updatePage() {
-        populateCards();
-        populateTable();
-        updatePaginationButtons();
-        updateView();
-    }
-
-    private List<Categoria> getCurrentPageCategorias() {
-        int start = currentPage * PAGE_SIZE;
-        int end = Math.min(start + PAGE_SIZE, filteredCategorias.size());
-        return filteredCategorias.subList(start, end);
-    }
-
-    private void populateTable() {
+    private void atualizarTabela(List<Categoria> lista) {
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
         EventAction<Categoria> eventAction = new EventAction<Categoria>() {
             @Override
-            public void delete(Categoria u) {
-                excluirCategoria(u);
+            public void delete(Categoria c) {
+                excluirCategoria(c);
             }
-
             @Override
-            public void update(Categoria u) {
-                editarCategoria(u);
+            public void update(Categoria c) {
+                editarCategoria(c);
             }
         };
-        for (Categoria c : getCurrentPageCategorias()) {
-            model.addRow(new Object[]{c.getIdCategoria(), c.getNome(), c.getDescricao(), c.getStatus(), new ModelAction<>(c, eventAction)});
+        for (Categoria c : lista) {
+            ImageIcon icon = ImageUtils.bytesToImageIcon(c.getFoto());
+            if (icon == null) {
+                icon = new ImageIcon(getClass().getResource("/icon/profile.jpg"));
+            }
+            model.addRow(new Object[]{
+                icon,
+                c.getNome(),
+                c.getDescricao(),
+                statusTexto(c.getStatus()),
+                new ModelAction<>(c, eventAction)
+            });
         }
+        table.getColumnModel().getColumn(0).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                ImageAvatar avatar = new ImageAvatar();
+                avatar.setPreferredSize(new Dimension(40, 40));
+                if (value instanceof ImageIcon) {
+                    avatar.setIcon((ImageIcon) value);
+                }
+                return avatar;
+            }
+        });
+        int statusCol = table.getColumnModel().getColumnCount() - 2;
+        table.getColumnModel().getColumn(statusCol).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Button lbl = new Button();
+                lbl.setText(value == null ? "" : value.toString());
+                lbl.setBorder(new EmptyBorder(5,5,5,5));
+                if ("Ativa".equals(value)) {
+                    lbl.setBackground(new Color(76,175,80));
+                    lbl.setForeground(Color.WHITE);
+                } else {
+                    lbl.setBackground(new Color(255,152,0));
+                    lbl.setForeground(Color.BLACK);
+                }
+                return lbl;
+            }
+        });
     }
 
-    private void populateCards() {
-        cardsTopPanel.removeAll();
-        cardsBottomPanel.removeAll();
-        List<Categoria> categorias = getCurrentPageCategorias();
-        for (int i = 0; i < categorias.size(); i++) {
-            JComponent card = createCard(categorias.get(i));
-            if (i < 3) {
-                cardsTopPanel.add(card);
-            } else {
-                cardsBottomPanel.add(card);
-            }
+    private void updatePage() {
+        List<Categoria> page = getCurrentPageCategorias();
+        atualizarTabela(page);
+        updatePaginationButtons();
+    }
+
+    private List<Categoria> getCurrentPageCategorias() {
+        if (filtradas == null) {
+            return Collections.emptyList();
         }
-        cardsTopPanel.revalidate();
-        cardsTopPanel.repaint();
-        cardsBottomPanel.revalidate();
-        cardsBottomPanel.repaint();
-        cardsPanel.revalidate();
-        cardsPanel.repaint();
+        int start = currentPage * PAGE_SIZE;
+        int end = Math.min(start + PAGE_SIZE, filtradas.size());
+        return filtradas.subList(start, end);
     }
 
     private void updatePaginationButtons() {
+        int size = filtradas != null ? filtradas.size() : 0;
         btnPrevPage.setEnabled(currentPage > 0);
-        btnNextPage.setEnabled((currentPage + 1) * PAGE_SIZE < filteredCategorias.size());
-    }
-
-    private JComponent createCard(Categoria c) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setPreferredSize(new Dimension(260, 180));
-        card.setBackground(Color.WHITE);
-        card.setBorder(new javax.swing.border.LineBorder(new Color(230, 230, 230), 1, true));
-
-        // Header
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(new Color(0x15, 0x65, 0xC0));
-        JLabel lblName = new JLabel(c.getNome());
-        lblName.setForeground(Color.WHITE);
-        lblName.setBorder(new EmptyBorder(5, 5, 5, 5));
-        JLabel lblMenu = new JLabel(new ImageIcon(getClass().getResource("/icon/menu.png")));
-        lblMenu.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        lblMenu.setBorder(new EmptyBorder(0, 0, 0, 5));
-
-        JPopupMenu popup = new JPopupMenu();
-        JMenuItem miEdit = new JMenuItem("Editar");
-        miEdit.addActionListener(e -> editarCategoria(c));
-        JMenuItem miDelete = new JMenuItem("Excluir");
-        miDelete.addActionListener(e -> excluirCategoria(c));
-        popup.add(miEdit);
-        popup.add(miDelete);
-        lblMenu.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                popup.show(lblMenu, e.getX(), e.getY());
-            }
-        });
-
-        header.add(lblName, BorderLayout.WEST);
-        header.add(lblMenu, BorderLayout.EAST);
-        card.add(header, BorderLayout.NORTH);
-
-        // Body
-        JPanel body = new JPanel(new BorderLayout());
-        body.setOpaque(false);
-        body.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        ImageAvatar avatar = new ImageAvatar();
-        avatar.setPreferredSize(new Dimension(90, 90));
-        ImageIcon icon = ImageUtils.bytesToImageIcon(c.getFoto());
-        if (icon != null) {
-            avatar.setIcon(icon);
-        } else {
-            avatar.setIcon(new ImageIcon(getClass().getResource("/icon/profile.jpg")));
-        }
-        body.add(avatar, BorderLayout.WEST);
-
-        JPanel infoPanel = new JPanel();
-        infoPanel.setOpaque(false);
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-
-        JLabel lblDescricao = new JLabel(c.getDescricao() != null ? c.getDescricao() : "");
-        infoPanel.add(lblDescricao);
-        infoPanel.add(Box.createVerticalStrut(5));
-        JLabel lblStatus = new JLabel("Status: " + (c.getStatus() != null ? c.getStatus() : ""));
-        infoPanel.add(lblStatus);
-
-        body.add(infoPanel, BorderLayout.CENTER);
-        card.add(body, BorderLayout.CENTER);
-        return card;
+        btnNextPage.setEnabled((currentPage + 1) * PAGE_SIZE < size);
     }
 
     private void adicionarCategoria() {
@@ -378,7 +303,7 @@ public class CategoriaForm extends JPanel {
         if (dialog.isConfirmed()) {
             try {
                 controller.criar(dialog.getCategoria());
-                loadCategorias();
+                carregarCategorias();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -394,7 +319,7 @@ public class CategoriaForm extends JPanel {
             if (dialog.isConfirmed()) {
                 try {
                     controller.atualizar(dialog.getCategoria());
-                    loadCategorias();
+                    carregarCategorias();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
@@ -408,30 +333,15 @@ public class CategoriaForm extends JPanel {
         int opt = JOptionPane.showConfirmDialog(this, "Excluir categoria?", "Confirmação", JOptionPane.YES_NO_OPTION);
         if (opt == JOptionPane.YES_OPTION) {
             try {
-                // Obter sempre o ID da linha atualmente editada/selecionada
-                int row = table.getEditingRow();
-                if (row < 0) {
-                    row = table.getSelectedRow();
-                }
-                int id = c.getIdCategoria();
-                if (row >= 0) {
-                    Object val = table.getValueAt(row, 0);
-                    if (val instanceof Integer) {
-                        id = (Integer) val;
-                    }
-                }
-                controller.remover(id);
-                loadCategorias();
-                table.clearSelection();
+                controller.remover(c.getIdCategoria());
+                carregarCategorias();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    private String getFilterText() {
-        String text = txtSearch.getText();
-        return PLACEHOLDER.equals(text) ? "" : text;
+    private String statusTexto(Integer status) {
+        return status != null && status == 1 ? "Ativa" : "Inativa";
     }
 }
-
