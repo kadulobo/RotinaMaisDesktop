@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Codex Auto PR",
+  "version": "1.0.0",
+  "description": "Clique em Código → primeira tarefa → Criar PR, com liga/desliga via checklist.",
+  "permissions": ["storage", "scripting", "activeTab", "tabs"],
+  "host_permissions": ["https://chat.openai.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://chat.openai.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_title": "Codex Auto PR",
+    "default_popup": "popup.html"
+  }
+}
