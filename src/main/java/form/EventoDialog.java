@@ -8,20 +8,25 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JDialog;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.DefaultListCellRenderer;
 
 import model.Categoria;
 import model.Evento;
+import controller.CategoriaController;
+import dao.impl.CategoriaDaoNativeImpl;
 import swing.Button;
 import swing.ImageAvatar;
 import util.ImageUtils;
@@ -37,23 +42,34 @@ public class EventoDialog extends JDialog {
     private JTextField txtId;
     private JTextField txtNome;
     private JTextArea txtDescricao;
-    private JCheckBox chkVantagem;
-    private JTextField txtIdCategoria;
+    private JComboBox<String> cbStatus;
+    private JComboBox<Categoria> cbCategoria;
     private ImageAvatar avatarPreview;
     private JButton btnEscolherImagem;
+
+    private final CategoriaController categoriaController;
 
     public EventoDialog(Frame parent, Evento evento) {
         super(parent, true);
         this.evento = evento != null ? evento : new Evento();
+        this.categoriaController = new CategoriaController(new CategoriaDaoNativeImpl());
         initComponents();
         setLocationRelativeTo(parent);
         if (this.evento.getIdEvento() != null) {
             txtId.setText(String.valueOf(this.evento.getIdEvento()));
             txtNome.setText(this.evento.getNome());
             txtDescricao.setText(this.evento.getDescricao());
-            chkVantagem.setSelected(Boolean.TRUE.equals(this.evento.getVantagem()));
+            if (this.evento.getStatus() != null) {
+                cbStatus.setSelectedIndex(this.evento.getStatus() == 1 ? 0 : 1);
+            }
             if (this.evento.getCategoria() != null) {
-                txtIdCategoria.setText(String.valueOf(this.evento.getCategoria().getIdCategoria()));
+                for (int i = 0; i < cbCategoria.getItemCount(); i++) {
+                    Categoria c = cbCategoria.getItemAt(i);
+                    if (c.getIdCategoria().equals(this.evento.getCategoria().getIdCategoria())) {
+                        cbCategoria.setSelectedIndex(i);
+                        break;
+                    }
+                }
             }
             if (this.evento.getFoto() != null) {
                 avatarPreview.setIcon(ImageUtils.bytesToImageIcon(this.evento.getFoto()));
@@ -85,15 +101,16 @@ public class EventoDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = y; panel.add(lblDescricao, gbc);
         gbc.gridx = 1; panel.add(txtDescricao, gbc); y++;
 
-        JLabel lblVantagem = new JLabel("Vantagem");
-        chkVantagem = new JCheckBox();
-        gbc.gridx = 0; gbc.gridy = y; panel.add(lblVantagem, gbc);
-        gbc.gridx = 1; panel.add(chkVantagem, gbc); y++;
+        JLabel lblStatus = new JLabel("Status");
+        cbStatus = new JComboBox<>(new String[]{"Ativo","Desativado"});
+        gbc.gridx = 0; gbc.gridy = y; panel.add(lblStatus, gbc);
+        gbc.gridx = 1; panel.add(cbStatus, gbc); y++;
 
-        JLabel lblIdCategoria = new JLabel("ID Categoria");
-        txtIdCategoria = new JTextField(10);
-        gbc.gridx = 0; gbc.gridy = y; panel.add(lblIdCategoria, gbc);
-        gbc.gridx = 1; panel.add(txtIdCategoria, gbc); y++;
+        JLabel lblCategoria = new JLabel("Categoria");
+        cbCategoria = new JComboBox<>();
+        carregarCategorias();
+        gbc.gridx = 0; gbc.gridy = y; panel.add(lblCategoria, gbc);
+        gbc.gridx = 1; panel.add(cbCategoria, gbc); y++;
 
         JLabel lblFoto = new JLabel("Foto");
         avatarPreview = new ImageAvatar();
@@ -124,19 +141,36 @@ public class EventoDialog extends JDialog {
         getRootPane().setDefaultButton(btnSalvar);
     }
 
+    private void carregarCategorias() {
+        try {
+            List<Categoria> categorias = categoriaController.listar();
+            for (Categoria c : categorias) {
+                if (c.getStatus() != null && c.getStatus() == 1) {
+                    cbCategoria.addItem(c);
+                }
+            }
+        } catch (Exception ex) {
+            // ignore errors loading categories
+        }
+        cbCategoria.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public java.awt.Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Categoria) {
+                    setText(((Categoria) value).getNome());
+                }
+                return this;
+            }
+        });
+    }
+
     private void salvar() {
         evento.setNome(txtNome.getText());
         evento.setDescricao(txtDescricao.getText());
-        evento.setVantagem(chkVantagem.isSelected());
-        if (!txtIdCategoria.getText().isEmpty()) {
-            try {
-                int idCat = Integer.parseInt(txtIdCategoria.getText());
-                Categoria c = new Categoria();
-                c.setIdCategoria(idCat);
-                evento.setCategoria(c);
-            } catch (NumberFormatException ex) {
-                // ignore invalid id
-            }
+        evento.setStatus(cbStatus.getSelectedIndex() == 0 ? 1 : 2);
+        Categoria cat = (Categoria) cbCategoria.getSelectedItem();
+        if (cat != null) {
+            evento.setCategoria(cat);
         }
         confirmed = true;
         dispose();
