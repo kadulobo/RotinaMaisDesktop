@@ -67,7 +67,14 @@
       <artifactId>webdrivermanager</artifactId>
       <version>${webdrivermanager.version}</version>
     </dependency>
-    
+
+    <!-- Evita erro "NoSuchMethodError: IOUtils.skip" ao carregar embedded-postgres -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-compress</artifactId>
+      <version>1.26.1</version>
+    </dependency>
+
       <!-- PostgreSQL real embutido -->
   <dependency>
     <groupId>io.zonky.test</groupId>
