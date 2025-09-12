@@ -34,6 +34,17 @@ public class CaixaDaoNativeImpl implements CaixaDao {
         if (!rs.wasNull()) {
             Usuario u = new Usuario();
             u.setIdUsuario(idUsuario);
+            // Tenta obter o nome do usuário caso a consulta tenha realizado
+            // JOIN com a tabela de usuários. Se a coluna não existir, o nome
+            // permanecerá nulo e será tratado pela aplicação.
+            try {
+                String nomeUsuario = rs.getString("usuario_nome");
+                if (nomeUsuario != null) {
+                    u.setNome(nomeUsuario);
+                }
+            } catch (SQLException ex) {
+                // Coluna ausente, ignorar
+            }
             c.setUsuario(u);
         }
         return c;
@@ -147,7 +158,7 @@ public class CaixaDaoNativeImpl implements CaixaDao {
     @Override
     public Caixa findById(Integer id) throws CaixaException {
         Logger.info("CaixaDaoNativeImpl.findById - inicio");
-        String sql = "SELECT id_caixa, nome, reserva_emergencia, salario_medio, valor_total, id_usuario FROM Caixa WHERE id_caixa=?";
+        String sql = "SELECT c.id_caixa, c.nome, c.reserva_emergencia, c.salario_medio, c.valor_total, c.id_usuario, u.nome AS usuario_nome FROM Caixa c LEFT JOIN Usuario u ON c.id_usuario = u.id_usuario WHERE c.id_caixa=?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -167,7 +178,7 @@ public class CaixaDaoNativeImpl implements CaixaDao {
     @Override
     public List<Caixa> findAll() {
         Logger.info("CaixaDaoNativeImpl.findAll - inicio");
-        String sql = "SELECT id_caixa, nome, reserva_emergencia, salario_medio, valor_total, id_usuario FROM Caixa";
+        String sql = "SELECT c.id_caixa, c.nome, c.reserva_emergencia, c.salario_medio, c.valor_total, c.id_usuario, u.nome AS usuario_nome FROM Caixa c LEFT JOIN Usuario u ON c.id_usuario = u.id_usuario";
         List<Caixa> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -185,7 +196,7 @@ public class CaixaDaoNativeImpl implements CaixaDao {
     @Override
     public List<Caixa> findAll(int page, int size) {
         Logger.info("CaixaDaoNativeImpl.findAll(page) - inicio");
-        String sql = "SELECT id_caixa, nome, reserva_emergencia, salario_medio, valor_total, id_usuario FROM Caixa LIMIT ? OFFSET ?";
+        String sql = "SELECT c.id_caixa, c.nome, c.reserva_emergencia, c.salario_medio, c.valor_total, c.id_usuario, u.nome AS usuario_nome FROM Caixa c LEFT JOIN Usuario u ON c.id_usuario = u.id_usuario LIMIT ? OFFSET ?";
         List<Caixa> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
