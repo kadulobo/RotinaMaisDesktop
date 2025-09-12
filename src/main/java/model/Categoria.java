@@ -29,6 +29,9 @@ public class Categoria {
     @Column(name = "descricao")
     private String descricao;
 
+    @Column(name = "status")
+    private Integer status;
+
     @Column(name = "foto")
     private byte[] foto;
 
@@ -60,6 +63,14 @@ public class Categoria {
 
     public void setDescricao(String descricao) {
         this.descricao = descricao;
+    }
+
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
     }
 
     public byte[] getFoto() {
@@ -105,6 +116,7 @@ public class Categoria {
                 "idCategoria=" + idCategoria +
                 ", nome='" + nome + '\'' +
                 ", descricao='" + descricao + '\'' +
+                ", status=" + status +
                 ", dataCriacao=" + dataCriacao +
                 '}';
     }

@@ -38,6 +38,9 @@ public class Evento {
     @Column(name = "descricao")
     private String descricao;
 
+    @Column(name = "status")
+    private Integer status;
+
     @Column(name = "data_criacao")
     private LocalDate dataCriacao;
 
@@ -88,6 +91,14 @@ public class Evento {
         this.descricao = descricao;
     }
 
+    public Integer getStatus() {
+        return status;
+    }
+
+    public void setStatus(Integer status) {
+        this.status = status;
+    }
+
     public LocalDate getDataCriacao() {
         return dataCriacao;
     }
@@ -132,6 +143,7 @@ public class Evento {
                 ", vantagem=" + vantagem +
                 ", nome='" + nome + '\'' +
                 ", descricao='" + descricao + '\'' +
+                ", status=" + status +
                 ", dataCriacao=" + dataCriacao +
                 ", categoria=" + categoria +
                 '}';

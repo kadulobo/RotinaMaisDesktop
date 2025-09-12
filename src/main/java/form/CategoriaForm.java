@@ -52,7 +52,7 @@ import util.ImageUtils;
 public class CategoriaForm extends JPanel {
 
     private final CategoriaController controller;
-    private final String PLACEHOLDER = "Search categories...";
+    private final String PLACEHOLDER = "Search by description...";
 
     private JTextField txtSearch;
     private JButton btnToggleView;
@@ -167,10 +167,10 @@ public class CategoriaForm extends JPanel {
 
         // List view
         table = new Table();
-        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"ID", "Nome", "Descrição", ""}) {
+        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"ID", "Nome", "Descrição", "Status", ""}) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 3;
+                return column == 4;
             }
         });
         table.addMouseListener(new MouseAdapter() {
@@ -227,8 +227,7 @@ public class CategoriaForm extends JPanel {
     private void applyFilter() {
         String text = getFilterText().toLowerCase();
         filteredCategorias = allCategorias.stream()
-                .filter(c -> c.getNome().toLowerCase().contains(text)
-                        || (c.getDescricao() != null && c.getDescricao().toLowerCase().contains(text)))
+                .filter(c -> c.getDescricao() != null && c.getDescricao().toLowerCase().contains(text))
                 .collect(Collectors.toList());
 
         if (filteredCategorias.isEmpty()) {
@@ -279,7 +278,7 @@ public class CategoriaForm extends JPanel {
             }
         };
         for (Categoria c : getCurrentPageCategorias()) {
-            model.addRow(new Object[]{c.getIdCategoria(), c.getNome(), c.getDescricao(), new ModelAction<>(c, eventAction)});
+            model.addRow(new Object[]{c.getIdCategoria(), c.getNome(), c.getDescricao(), c.getStatus(), new ModelAction<>(c, eventAction)});
         }
     }
 
@@ -363,6 +362,9 @@ public class CategoriaForm extends JPanel {
 
         JLabel lblDescricao = new JLabel(c.getDescricao() != null ? c.getDescricao() : "");
         infoPanel.add(lblDescricao);
+        infoPanel.add(Box.createVerticalStrut(5));
+        JLabel lblStatus = new JLabel("Status: " + (c.getStatus() != null ? c.getStatus() : ""));
+        infoPanel.add(lblStatus);
 
         body.add(infoPanel, BorderLayout.CENTER);
         card.add(body, BorderLayout.CENTER);

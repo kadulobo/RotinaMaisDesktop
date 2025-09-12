@@ -52,7 +52,7 @@ import util.ImageUtils;
 public class EventoForm extends JPanel {
 
     private final EventoController controller;
-    private final String PLACEHOLDER = "Search events...";
+    private final String PLACEHOLDER = "Search by name...";
 
     private JTextField txtSearch;
     private JButton btnToggleView;
@@ -167,10 +167,10 @@ public class EventoForm extends JPanel {
 
         // List view
         table = new Table();
-        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"ID", "Nome", "Descrição", "Vantagem", ""}) {
+        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"ID", "Nome", "Descrição", "Vantagem", "Status", ""}) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4;
+                return column == 5;
             }
         });
         table.addMouseListener(new MouseAdapter() {
@@ -227,8 +227,7 @@ public class EventoForm extends JPanel {
     private void applyFilter() {
         String text = getFilterText().toLowerCase();
         filteredEventos = allEventos.stream()
-                .filter(e -> e.getNome().toLowerCase().contains(text)
-                        || (e.getDescricao() != null && e.getDescricao().toLowerCase().contains(text)))
+                .filter(e -> e.getNome().toLowerCase().contains(text))
                 .collect(Collectors.toList());
 
         if (filteredEventos.isEmpty()) {
@@ -279,7 +278,7 @@ public class EventoForm extends JPanel {
             }
         };
         for (Evento e : getCurrentPageEventos()) {
-            model.addRow(new Object[]{e.getIdEvento(), e.getNome(), e.getDescricao(), e.getVantagem(), new ModelAction<>(e, eventAction)});
+            model.addRow(new Object[]{e.getIdEvento(), e.getNome(), e.getDescricao(), e.getVantagem(), e.getStatus(), new ModelAction<>(e, eventAction)});
         }
     }
 
@@ -366,6 +365,9 @@ public class EventoForm extends JPanel {
         infoPanel.add(Box.createVerticalStrut(5));
         JLabel lblVantagem = new JLabel("Vantagem: " + (Boolean.TRUE.equals(e.getVantagem()) ? "Sim" : "Não"));
         infoPanel.add(lblVantagem);
+        infoPanel.add(Box.createVerticalStrut(5));
+        JLabel lblStatus = new JLabel("Status: " + (e.getStatus() != null ? e.getStatus() : ""));
+        infoPanel.add(lblStatus);
 
         body.add(infoPanel, BorderLayout.CENTER);
         card.add(body, BorderLayout.CENTER);
