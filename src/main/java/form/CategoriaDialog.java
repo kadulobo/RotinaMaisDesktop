@@ -18,6 +18,7 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
 import javax.swing.JTextField;
+import javax.swing.JComboBox;
 
 import model.Categoria;
 import swing.Button;
@@ -37,12 +38,14 @@ public class CategoriaDialog extends JDialog {
     private JTextArea txtDescricao;
     private ImageAvatar avatarPreview;
     private JButton btnEscolherImagem;
+    private JComboBox<String> comboStatus;
 
     public CategoriaDialog(Frame parent, Categoria categoria) {
         super(parent, true);
         this.categoria = categoria != null ? categoria : new Categoria();
         initComponents();
         setLocationRelativeTo(parent);
+        comboStatus.setSelectedIndex(this.categoria.getStatus() != null && this.categoria.getStatus() == 0 ? 1 : 0);
         if (this.categoria.getIdCategoria() != null) {
             txtId.setText(String.valueOf(this.categoria.getIdCategoria()));
             txtNome.setText(this.categoria.getNome());
@@ -77,6 +80,11 @@ public class CategoriaDialog extends JDialog {
         gbc.gridx = 0; gbc.gridy = y; panel.add(lblDescricao, gbc);
         gbc.gridx = 1; panel.add(txtDescricao, gbc); y++;
 
+        JLabel lblStatus = new JLabel("Status");
+        comboStatus = new JComboBox<>(new String[]{"Ativo", "Desativada"});
+        gbc.gridx = 0; gbc.gridy = y; panel.add(lblStatus, gbc);
+        gbc.gridx = 1; panel.add(comboStatus, gbc); y++;
+
         JLabel lblFoto = new JLabel("Foto");
         avatarPreview = new ImageAvatar();
         avatarPreview.setPreferredSize(new Dimension(64,64));
@@ -109,6 +117,7 @@ public class CategoriaDialog extends JDialog {
     private void salvar() {
         categoria.setNome(txtNome.getText());
         categoria.setDescricao(txtDescricao.getText());
+        categoria.setStatus(comboStatus.getSelectedIndex() == 0 ? 1 : 0);
         confirmed = true;
         dispose();
     }

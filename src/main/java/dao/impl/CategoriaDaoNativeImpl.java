@@ -16,6 +16,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
         c.setIdCategoria(rs.getInt("id_categoria"));
         c.setNome(rs.getString("nome"));
         c.setDescricao(rs.getString("descricao"));
+        c.setStatus((Integer) rs.getObject("status"));
         if (withFoto) {
             c.setFoto(rs.getBytes("foto"));
         }
@@ -29,19 +30,24 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public void create(Categoria categoria) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.create - inicio");
-        String sql = "INSERT INTO Categoria (nome, descricao, foto, data_criacao) VALUES (?,?,?,?)";
+        String sql = "INSERT INTO Categoria (status, nome, descricao, foto, data_criacao) VALUES (?,?,?,?,?)";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, categoria.getNome());
-                ps.setString(2, categoria.getDescricao());
-                ps.setBytes(3, categoria.getFoto());
-                if (categoria.getDataCriacao() != null) {
-                    ps.setDate(4, Date.valueOf(categoria.getDataCriacao()));
+                if (categoria.getStatus() != null) {
+                    ps.setInt(1, categoria.getStatus());
                 } else {
-                    ps.setNull(4, Types.DATE);
+                    ps.setNull(1, Types.INTEGER);
+                }
+                ps.setString(2, categoria.getNome());
+                ps.setString(3, categoria.getDescricao());
+                ps.setBytes(4, categoria.getFoto());
+                if (categoria.getDataCriacao() != null) {
+                    ps.setDate(5, Date.valueOf(categoria.getDataCriacao()));
+                } else {
+                    ps.setNull(5, Types.DATE);
                 }
                 ps.executeUpdate();
             }
@@ -63,21 +69,26 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public Categoria update(Categoria categoria) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.update - inicio");
-        String sql = "UPDATE Categoria SET nome=?, descricao=?, foto=?, data_criacao=? WHERE id_categoria=?";
+        String sql = "UPDATE Categoria SET status=?, nome=?, descricao=?, foto=?, data_criacao=? WHERE id_categoria=?";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setString(1, categoria.getNome());
-                ps.setString(2, categoria.getDescricao());
-                ps.setBytes(3, categoria.getFoto());
-                if (categoria.getDataCriacao() != null) {
-                    ps.setDate(4, Date.valueOf(categoria.getDataCriacao()));
+                if (categoria.getStatus() != null) {
+                    ps.setInt(1, categoria.getStatus());
                 } else {
-                    ps.setNull(4, Types.DATE);
+                    ps.setNull(1, Types.INTEGER);
                 }
-                ps.setInt(5, categoria.getIdCategoria());
+                ps.setString(2, categoria.getNome());
+                ps.setString(3, categoria.getDescricao());
+                ps.setBytes(4, categoria.getFoto());
+                if (categoria.getDataCriacao() != null) {
+                    ps.setDate(5, Date.valueOf(categoria.getDataCriacao()));
+                } else {
+                    ps.setNull(5, Types.DATE);
+                }
+                ps.setInt(6, categoria.getIdCategoria());
                 int updated = ps.executeUpdate();
                 if (updated == 0) {
                     throw new CategoriaException("Categoria não encontrada: id=" + categoria.getIdCategoria());
@@ -132,7 +143,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public Categoria findById(Integer id) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.findById - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE id_categoria=?";
+        String sql = "SELECT id_categoria, status, nome, descricao, data_criacao FROM Categoria WHERE id_categoria=?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -152,7 +163,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public Categoria findWithBlobsById(Integer id) throws CategoriaException {
         Logger.info("CategoriaDaoNativeImpl.findWithBlobsById - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE id_categoria=?";
+        String sql = "SELECT id_categoria, status, nome, descricao, foto, data_criacao FROM Categoria WHERE id_categoria=?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -172,7 +183,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> findAll() {
         Logger.info("CategoriaDaoNativeImpl.findAll - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria";
+        String sql = "SELECT id_categoria, status, nome, descricao, data_criacao FROM Categoria";
         List<Categoria> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -190,7 +201,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> findAll(int page, int size) {
         Logger.info("CategoriaDaoNativeImpl.findAll(page) - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria LIMIT ? OFFSET ?";
+        String sql = "SELECT id_categoria, status, nome, descricao, data_criacao FROM Categoria LIMIT ? OFFSET ?";
         List<Categoria> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -211,7 +222,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> findByNome(String nome) {
         Logger.info("CategoriaDaoNativeImpl.findByNome - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE nome=?";
+        String sql = "SELECT id_categoria, status, nome, descricao, data_criacao FROM Categoria WHERE nome=?";
         List<Categoria> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -231,7 +242,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> findByDescricao(String descricao) {
         Logger.info("CategoriaDaoNativeImpl.findByDescricao - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE descricao=?";
+        String sql = "SELECT id_categoria, status, nome, descricao, data_criacao FROM Categoria WHERE descricao=?";
         List<Categoria> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -251,7 +262,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> findByDataCriacao(java.time.LocalDate dataCriacao) {
         Logger.info("CategoriaDaoNativeImpl.findByDataCriacao - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE data_criacao=?";
+        String sql = "SELECT id_categoria, status, nome, descricao, data_criacao FROM Categoria WHERE data_criacao=?";
         List<Categoria> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -271,7 +282,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> findByFoto(byte[] foto) {
         Logger.info("CategoriaDaoNativeImpl.findByFoto - inicio");
-        String sql = "SELECT id_categoria, nome, descricao, foto, data_criacao FROM Categoria WHERE foto=?";
+        String sql = "SELECT id_categoria, status, nome, descricao, foto, data_criacao FROM Categoria WHERE foto=?";
         List<Categoria> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -296,7 +307,7 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
     @Override
     public List<Categoria> search(Categoria filtro, int page, int size) {
         Logger.info("CategoriaDaoNativeImpl.search - inicio");
-        StringBuilder sb = new StringBuilder("SELECT id_categoria, nome, descricao, data_criacao FROM Categoria WHERE 1=1");
+        StringBuilder sb = new StringBuilder("SELECT id_categoria, status, nome, descricao, data_criacao FROM Categoria WHERE 1=1");
         List<Object> params = new ArrayList<>();
         if (filtro.getNome() != null && !filtro.getNome().isEmpty()) {
             sb.append(" AND nome=?");
@@ -305,6 +316,10 @@ public class CategoriaDaoNativeImpl implements CategoriaDao {
         if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
             sb.append(" AND descricao=?");
             params.add(filtro.getDescricao());
+        }
+        if (filtro.getStatus() != null) {
+            sb.append(" AND status=?");
+            params.add(filtro.getStatus());
         }
         if (filtro.getDataCriacao() != null) {
             sb.append(" AND data_criacao=?");

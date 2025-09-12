@@ -1,33 +1,24 @@
 package form;
 
 import controller.EventoController;
+import controller.CategoriaController;
 import dao.impl.EventoDaoNativeImpl;
+import dao.impl.CategoriaDaoNativeImpl;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
-import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Frame;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.swing.ImageIcon;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.JButton;
-import javax.swing.JComponent;
 import javax.swing.JLabel;
-import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
-import javax.swing.ScrollPaneConstants;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.SwingUtilities;
@@ -35,8 +26,9 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 import javax.swing.table.DefaultTableModel;
-
+import javax.swing.table.TableCellRenderer;
 import model.Evento;
+import model.ModelCard;
 import swing.Button;
 import swing.ImageAvatar;
 import swing.icon.GoogleMaterialDesignIcons;
@@ -44,161 +36,136 @@ import swing.icon.IconFontSwing;
 import swing.table.EventAction;
 import swing.table.ModelAction;
 import swing.table.Table;
+import component.Card;
 import util.ImageUtils;
 
 /**
- * Form that lists eventos fetched from the database with card and list views.
+ * Formulário para gerenciamento de Eventos.
  */
 public class EventoForm extends JPanel {
 
     private final EventoController controller;
-    private final String PLACEHOLDER = "Search events...";
-
-    private JTextField txtSearch;
-    private JButton btnToggleView;
-    private Button btnAdd;
-    private JPanel viewContainer;
-    private java.awt.CardLayout viewLayout;
-    private JPanel cardsPanel;
-    private JPanel cardsTopPanel;
-    private JPanel cardsBottomPanel;
+    private Card cardEventos;
+    private Card cardAtivos;
+    private Card cardDesativados;
     private Table table;
-    private JPanel emptyPanel;
+    private JTextField txtBusca;
+    private Button btnAtivo;
+    private Button btnDesativado;
+    private Button btnNovo;
+    private Integer filtroStatus;
+    private List<Evento> eventos;
+    private List<Evento> filtrados;
+    private javax.swing.Icon iconEvento;
+    private javax.swing.Icon iconAtivo;
+    private javax.swing.Icon iconDesativado;
     private JButton btnPrevPage;
     private JButton btnNextPage;
-
-    private List<Evento> allEventos = new ArrayList<>();
-    private List<Evento> filteredEventos = new ArrayList<>();
-    private boolean showingCards = true;
     private int currentPage = 0;
     private static final int PAGE_SIZE = 6;
 
     public EventoForm() {
         controller = new EventoController(new EventoDaoNativeImpl());
         initComponents();
-        loadEventos();
+        carregarEventos();
     }
 
     private void initComponents() {
         setLayout(new BorderLayout());
         setBackground(Color.WHITE);
 
-        // Top bar
-        JPanel topBar = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        topBar.setBackground(Color.WHITE);
-        txtSearch = new JTextField(20);
-        txtSearch.setText(PLACEHOLDER);
-        txtSearch.setForeground(Color.GRAY);
-        txtSearch.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (txtSearch.getText().equals(PLACEHOLDER)) {
-                    txtSearch.setText("");
-                    txtSearch.setForeground(Color.BLACK);
-                }
-            }
+        JPanel top = new JPanel(new BorderLayout());
+        top.setBackground(Color.WHITE);
 
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (txtSearch.getText().isEmpty()) {
-                    txtSearch.setForeground(Color.GRAY);
-                    txtSearch.setText(PLACEHOLDER);
-                }
-            }
+        JPanel cards = new JPanel(new java.awt.GridLayout(1,3,18,0));
+        cards.setBackground(Color.WHITE);
+
+        iconEvento = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.EVENT, 60, Color.WHITE,
+                new Color(255,255,255,15));
+        cardEventos = new Card();
+        cardEventos.setBackground(new Color(33,150,243));
+        cardEventos.setColorGradient(new Color(33,203,243));
+        cardEventos.setData(new ModelCard("Qtd. Eventos",0,0,iconEvento));
+        cards.add(cardEventos);
+
+        iconAtivo = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHECK_CIRCLE, 60, Color.WHITE,
+                new Color(255,255,255,15));
+        cardAtivos = new Card();
+        cardAtivos.setBackground(new Color(76,175,80));
+        cardAtivos.setColorGradient(new Color(129,199,132));
+        cardAtivos.setData(new ModelCard("Ativos",0,0,iconAtivo));
+        cards.add(cardAtivos);
+
+        iconDesativado = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 60, Color.WHITE,
+                new Color(255,255,255,15));
+        cardDesativados = new Card();
+        cardDesativados.setBackground(new Color(244,67,54));
+        cardDesativados.setColorGradient(new Color(229,115,115));
+        cardDesativados.setData(new ModelCard("Desativados",0,0,iconDesativado));
+        cards.add(cardDesativados);
+
+        top.add(cards, BorderLayout.NORTH);
+
+        JPanel filtroWrapper = new JPanel(new BorderLayout());
+        filtroWrapper.setBackground(Color.WHITE);
+
+        JPanel filtro = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        filtro.setBackground(Color.WHITE);
+
+        btnAtivo = new Button();
+        btnAtivo.setText("Ativo");
+        btnAtivo.setBackground(new Color(76,175,80));
+        btnAtivo.setForeground(Color.WHITE);
+        btnAtivo.addActionListener(e -> {filtroStatus = 1; aplicarFiltros();});
+        filtro.add(btnAtivo);
+
+        btnDesativado = new Button();
+        btnDesativado.setText("Desativado");
+        btnDesativado.setBackground(new Color(244,67,54));
+        btnDesativado.setForeground(Color.WHITE);
+        btnDesativado.addActionListener(e -> {filtroStatus = 2; aplicarFiltros();});
+        filtro.add(btnDesativado);
+
+        txtBusca = new JTextField(15);
+        txtBusca.getDocument().addDocumentListener(new DocumentListener() {
+            @Override public void insertUpdate(DocumentEvent e) { aplicarFiltros(); }
+            @Override public void removeUpdate(DocumentEvent e) { aplicarFiltros(); }
+            @Override public void changedUpdate(DocumentEvent e) { aplicarFiltros(); }
         });
-        txtSearch.getDocument().addDocumentListener(new DocumentListener() {
-            @Override
-            public void insertUpdate(DocumentEvent e) { applyFilter(); }
+        filtro.add(new JLabel("Pesquisar:"));
+        filtro.add(txtBusca);
 
-            @Override
-            public void removeUpdate(DocumentEvent e) { applyFilter(); }
+        btnNovo = new Button();
+        btnNovo.setBackground(new Color(33,150,243));
+        btnNovo.setForeground(Color.WHITE);
+        btnNovo.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ADD,20,Color.WHITE));
+        btnNovo.setPreferredSize(new Dimension(30,30));
+        btnNovo.addActionListener(e -> adicionarEvento());
+        filtro.add(btnNovo);
 
-            @Override
-            public void changedUpdate(DocumentEvent e) { applyFilter(); }
-        });
+        filtroWrapper.add(filtro, BorderLayout.CENTER);
+        top.add(filtroWrapper, BorderLayout.CENTER);
+        add(top, BorderLayout.NORTH);
 
-        btnToggleView = new JButton();
-        btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 18, Color.BLACK));
-        btnToggleView.addActionListener(e -> {
-            showingCards = !showingCards;
-            updateView();
-        });
-
-        btnAdd = new Button();
-        btnAdd.setBackground(new Color(75, 134, 253));
-        btnAdd.setForeground(Color.WHITE);
-        btnAdd.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.ADD, 18, Color.WHITE));
-        btnAdd.setText("Adicionar");
-        btnAdd.addActionListener(e -> adicionarEvento());
-
-        topBar.add(txtSearch);
-        topBar.add(btnToggleView);
-        topBar.add(btnAdd);
-
-        add(topBar, BorderLayout.NORTH);
-
-        // View container with CardLayout
-        viewLayout = new java.awt.CardLayout();
-        viewContainer = new JPanel(viewLayout);
-        viewContainer.setBackground(Color.WHITE);
-
-        // Cards view split into two rows of three cards
-        int buttonHeight = btnAdd.getPreferredSize().height;
-        cardsPanel = new JPanel();
-        cardsPanel.setLayout(new BoxLayout(cardsPanel, BoxLayout.Y_AXIS));
-        cardsPanel.setBorder(new EmptyBorder(buttonHeight, 10, 10, 10));
-        cardsPanel.setBackground(Color.WHITE);
-
-        cardsTopPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        cardsBottomPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 10));
-        cardsTopPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardsBottomPanel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        cardsTopPanel.setBackground(Color.WHITE);
-        cardsBottomPanel.setBackground(Color.WHITE);
-        cardsPanel.add(cardsTopPanel);
-        cardsPanel.add(Box.createVerticalStrut(buttonHeight));
-        cardsPanel.add(cardsBottomPanel);
-
-        JScrollPane cardScroll = new JScrollPane(cardsPanel,
-                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
-        cardScroll.getViewport().setBackground(Color.WHITE);
-        viewContainer.add(cardScroll, "cards");
-
-        // List view
         table = new Table();
-        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{"ID", "Nome", "Descrição", "Vantagem", ""}) {
+        table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{
+            "Foto", "Nome", "Descrição", "Status", "Categoria", "Ações"
+        }) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4;
+                return column == 5;
             }
-        });
-        table.addMouseListener(new MouseAdapter() {
             @Override
-            public void mouseClicked(MouseEvent e) {
-                if (e.getClickCount() == 2) {
-                    int row = table.getSelectedRow();
-                    if (row >= 0 && row < filteredEventos.size()) {
-                        editarEvento(filteredEventos.get(row));
-                    }
-                }
+            public Class<?> getColumnClass(int columnIndex) {
+                return columnIndex == 0 ? ImageIcon.class : Object.class;
             }
         });
-        JScrollPane listScroll = new JScrollPane(table);
-        table.fixTable(listScroll);
-        listScroll.getViewport().setBackground(Color.WHITE);
-        viewContainer.add(listScroll, "list");
+        table.setRowHeight(40);
+        JScrollPane scroll = new JScrollPane(table);
+        table.fixTable(scroll);
+        table.setRowSelectionAllowed(false);
+        add(scroll, BorderLayout.CENTER);
 
-        // Empty view
-        emptyPanel = new JPanel(new BorderLayout());
-        emptyPanel.setBackground(Color.WHITE);
-        JLabel lblEmpty = new JLabel("No events found", JLabel.CENTER);
-        emptyPanel.add(lblEmpty, BorderLayout.CENTER);
-        viewContainer.add(emptyPanel, "empty");
-
-        add(viewContainer, BorderLayout.CENTER);
-
-        // Pagination controls
         btnPrevPage = new JButton("Anterior");
         btnNextPage = new JButton("Próximo");
         btnPrevPage.addActionListener(e -> {
@@ -208,168 +175,138 @@ public class EventoForm extends JPanel {
             }
         });
         btnNextPage.addActionListener(e -> {
-            if ((currentPage + 1) * PAGE_SIZE < filteredEventos.size()) {
+            if ((currentPage + 1) * PAGE_SIZE < (filtrados != null ? filtrados.size() : 0)) {
                 currentPage++;
                 updatePage();
             }
         });
         JPanel pagination = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        pagination.setBackground(Color.WHITE);
         pagination.add(btnPrevPage);
         pagination.add(btnNextPage);
         add(pagination, BorderLayout.SOUTH);
     }
 
-    private void loadEventos() {
-        allEventos = controller.listar();
-        applyFilter();
+    private void carregarEventos() {
+        eventos = controller.listar();
+        CategoriaController catController = new CategoriaController(new CategoriaDaoNativeImpl());
+        for (Evento e : eventos) {
+            if (e.getCategoria() != null && e.getCategoria().getIdCategoria() != null) {
+                try {
+                    e.setCategoria(catController.buscarPorId(e.getCategoria().getIdCategoria()));
+                } catch (Exception ex) {
+                    // ignore loading errors
+                }
+            }
+        }
+        aplicarFiltros();
     }
 
-    private void applyFilter() {
-        String text = getFilterText().toLowerCase();
-        filteredEventos = allEventos.stream()
-                .filter(e -> e.getNome().toLowerCase().contains(text)
-                        || (e.getDescricao() != null && e.getDescricao().toLowerCase().contains(text)))
+    private void aplicarFiltros() {
+        if (eventos == null) return;
+        String busca = txtBusca.getText();
+        String filtro = (busca != null && !busca.isEmpty()) ? busca.toLowerCase() : null;
+        filtrados = eventos.stream()
+                .filter(e -> filtroStatus == null || (e.getStatus() != null && filtroStatus.equals(e.getStatus())))
+                .filter(e -> filtro == null || (e.getNome() != null && e.getNome().toLowerCase().contains(filtro)))
                 .collect(Collectors.toList());
+        atualizarCards(filtrados);
+        currentPage = 0;
+        updatePage();
+    }
 
-        if (filteredEventos.isEmpty()) {
-            viewLayout.show(viewContainer, "empty");
-            btnPrevPage.setEnabled(false);
-            btnNextPage.setEnabled(false);
-        } else {
-            currentPage = 0;
-            updatePage();
+    private void atualizarCards(List<Evento> lista) {
+        int total = lista.size();
+        int ativos = 0;
+        int desativados = 0;
+        for (Evento e : lista) {
+            if (e.getStatus() != null && e.getStatus() == 1) {
+                ativos++;
+            } else {
+                desativados++;
+            }
         }
+        cardEventos.setData(new ModelCard("Qtd. Eventos", total, 0, iconEvento));
+        cardAtivos.setData(new ModelCard("Ativos", ativos, 0, iconAtivo));
+        cardDesativados.setData(new ModelCard("Desativados", desativados, 0, iconDesativado));
     }
 
-    private void updateView() {
-        if (showingCards) {
-            viewLayout.show(viewContainer, "cards");
-            btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 18, Color.BLACK));
-        } else {
-            viewLayout.show(viewContainer, "list");
-            btnToggleView.setIcon(IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_MODULE, 18, Color.BLACK));
-        }
-    }
-
-    private void updatePage() {
-        populateCards();
-        populateTable();
-        updatePaginationButtons();
-        updateView();
-    }
-
-    private List<Evento> getCurrentPageEventos() {
-        int start = currentPage * PAGE_SIZE;
-        int end = Math.min(start + PAGE_SIZE, filteredEventos.size());
-        return filteredEventos.subList(start, end);
-    }
-
-    private void populateTable() {
+    private void atualizarTabela(List<Evento> lista) {
         DefaultTableModel model = (DefaultTableModel) table.getModel();
         model.setRowCount(0);
         EventAction<Evento> eventAction = new EventAction<Evento>() {
             @Override
-            public void delete(Evento u) {
-                excluirEvento(u);
+            public void delete(Evento e) {
+                excluirEvento(e);
             }
-
             @Override
-            public void update(Evento u) {
-                editarEvento(u);
+            public void update(Evento e) {
+                editarEvento(e);
             }
         };
-        for (Evento e : getCurrentPageEventos()) {
-            model.addRow(new Object[]{e.getIdEvento(), e.getNome(), e.getDescricao(), e.getVantagem(), new ModelAction<>(e, eventAction)});
+        for (Evento e : lista) {
+            ImageIcon icon = ImageUtils.bytesToImageIcon(e.getFoto());
+            if (icon == null) {
+                icon = new ImageIcon(getClass().getResource("/icon/profile.jpg"));
+            }
+            model.addRow(new Object[]{
+                icon,
+                e.getNome(),
+                e.getDescricao(),
+                statusTexto(e.getStatus()),
+                e.getCategoria() != null ? e.getCategoria().getNome() : "",
+                new ModelAction<>(e, eventAction)
+            });
         }
+        table.getColumnModel().getColumn(0).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                ImageAvatar avatar = new ImageAvatar();
+                avatar.setPreferredSize(new Dimension(40, 40));
+                if (value instanceof ImageIcon) {
+                    avatar.setIcon((ImageIcon) value);
+                }
+                return avatar;
+            }
+        });
+        int statusCol = table.getColumnModel().getColumnCount() - 3;
+        table.getColumnModel().getColumn(statusCol).setCellRenderer(new TableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Button lbl = new Button();
+                lbl.setText(value == null ? "" : value.toString());
+                lbl.setBorder(new EmptyBorder(5,5,5,5));
+                if ("Ativo".equals(value)) {
+                    lbl.setBackground(new Color(76,175,80));
+                    lbl.setForeground(Color.WHITE);
+                } else {
+                    lbl.setBackground(new Color(244,67,54));
+                    lbl.setForeground(Color.WHITE);
+                }
+                return lbl;
+            }
+        });
     }
 
-    private void populateCards() {
-        cardsTopPanel.removeAll();
-        cardsBottomPanel.removeAll();
-        List<Evento> eventos = getCurrentPageEventos();
-        for (int i = 0; i < eventos.size(); i++) {
-            JComponent card = createCard(eventos.get(i));
-            if (i < 3) {
-                cardsTopPanel.add(card);
-            } else {
-                cardsBottomPanel.add(card);
-            }
+    private void updatePage() {
+        List<Evento> page = getCurrentPageEventos();
+        atualizarTabela(page);
+        updatePaginationButtons();
+    }
+
+    private List<Evento> getCurrentPageEventos() {
+        if (filtrados == null) {
+            return Collections.emptyList();
         }
-        cardsTopPanel.revalidate();
-        cardsTopPanel.repaint();
-        cardsBottomPanel.revalidate();
-        cardsBottomPanel.repaint();
-        cardsPanel.revalidate();
-        cardsPanel.repaint();
+        int start = currentPage * PAGE_SIZE;
+        int end = Math.min(start + PAGE_SIZE, filtrados.size());
+        return filtrados.subList(start, end);
     }
 
     private void updatePaginationButtons() {
+        int size = filtrados != null ? filtrados.size() : 0;
         btnPrevPage.setEnabled(currentPage > 0);
-        btnNextPage.setEnabled((currentPage + 1) * PAGE_SIZE < filteredEventos.size());
-    }
-
-    private JComponent createCard(Evento e) {
-        JPanel card = new JPanel(new BorderLayout());
-        card.setPreferredSize(new Dimension(260, 180));
-        card.setBackground(Color.WHITE);
-        card.setBorder(new javax.swing.border.LineBorder(new Color(230, 230, 230), 1, true));
-
-        // Header
-        JPanel header = new JPanel(new BorderLayout());
-        header.setBackground(new Color(0x15, 0x65, 0xC0));
-        JLabel lblName = new JLabel(e.getNome());
-        lblName.setForeground(Color.WHITE);
-        lblName.setBorder(new EmptyBorder(5, 5, 5, 5));
-        JLabel lblMenu = new JLabel(new ImageIcon(getClass().getResource("/icon/menu.png")));
-        lblMenu.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-        lblMenu.setBorder(new EmptyBorder(0, 0, 0, 5));
-
-        JPopupMenu popup = new JPopupMenu();
-        JMenuItem miEdit = new JMenuItem("Editar");
-        miEdit.addActionListener(evt -> editarEvento(e));
-        JMenuItem miDelete = new JMenuItem("Excluir");
-        miDelete.addActionListener(evt -> excluirEvento(e));
-        popup.add(miEdit);
-        popup.add(miDelete);
-        lblMenu.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mousePressed(MouseEvent e) {
-                popup.show(lblMenu, e.getX(), e.getY());
-            }
-        });
-
-        header.add(lblName, BorderLayout.WEST);
-        header.add(lblMenu, BorderLayout.EAST);
-        card.add(header, BorderLayout.NORTH);
-
-        // Body
-        JPanel body = new JPanel(new BorderLayout());
-        body.setOpaque(false);
-        body.setBorder(new EmptyBorder(10, 10, 10, 10));
-
-        ImageAvatar avatar = new ImageAvatar();
-        avatar.setPreferredSize(new Dimension(90, 90));
-        ImageIcon icon = ImageUtils.bytesToImageIcon(e.getFoto());
-        if (icon != null) {
-            avatar.setIcon(icon);
-        } else {
-            avatar.setIcon(new ImageIcon(getClass().getResource("/icon/profile.jpg")));
-        }
-        body.add(avatar, BorderLayout.WEST);
-
-        JPanel infoPanel = new JPanel();
-        infoPanel.setOpaque(false);
-        infoPanel.setLayout(new BoxLayout(infoPanel, BoxLayout.Y_AXIS));
-
-        JLabel lblDescricao = new JLabel(e.getDescricao() != null ? e.getDescricao() : "");
-        infoPanel.add(lblDescricao);
-        infoPanel.add(Box.createVerticalStrut(5));
-        JLabel lblVantagem = new JLabel("Vantagem: " + (Boolean.TRUE.equals(e.getVantagem()) ? "Sim" : "Não"));
-        infoPanel.add(lblVantagem);
-
-        body.add(infoPanel, BorderLayout.CENTER);
-        card.add(body, BorderLayout.CENTER);
-        return card;
+        btnNextPage.setEnabled((currentPage + 1) * PAGE_SIZE < size);
     }
 
     private void adicionarEvento() {
@@ -379,7 +316,7 @@ public class EventoForm extends JPanel {
         if (dialog.isConfirmed()) {
             try {
                 controller.criar(dialog.getEvento());
-                loadEventos();
+                carregarEventos();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
@@ -395,7 +332,7 @@ public class EventoForm extends JPanel {
             if (dialog.isConfirmed()) {
                 try {
                     controller.atualizar(dialog.getEvento());
-                    loadEventos();
+                    carregarEventos();
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
                 }
@@ -409,30 +346,15 @@ public class EventoForm extends JPanel {
         int opt = JOptionPane.showConfirmDialog(this, "Excluir evento?", "Confirmação", JOptionPane.YES_NO_OPTION);
         if (opt == JOptionPane.YES_OPTION) {
             try {
-                // Obter sempre o ID da linha atualmente editada/selecionada
-                int row = table.getEditingRow();
-                if (row < 0) {
-                    row = table.getSelectedRow();
-                }
-                int id = e.getIdEvento();
-                if (row >= 0) {
-                    Object val = table.getValueAt(row, 0);
-                    if (val instanceof Integer) {
-                        id = (Integer) val;
-                    }
-                }
-                controller.remover(id);
-                loadEventos();
-                table.clearSelection();
+                controller.remover(e.getIdEvento());
+                carregarEventos();
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, ex.getMessage(), "Erro", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
 
-    private String getFilterText() {
-        String text = txtSearch.getText();
-        return PLACEHOLDER.equals(text) ? "" : text;
+    private String statusTexto(Integer s) {
+        return s != null && s == 1 ? "Ativo" : "Desativado";
     }
 }
-
