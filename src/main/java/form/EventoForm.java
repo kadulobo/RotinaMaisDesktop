@@ -1,7 +1,9 @@
 package form;
 
 import controller.EventoController;
+import controller.CategoriaController;
 import dao.impl.EventoDaoNativeImpl;
+import dao.impl.CategoriaDaoNativeImpl;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
@@ -44,19 +46,19 @@ public class EventoForm extends JPanel {
 
     private final EventoController controller;
     private Card cardEventos;
-    private Card cardVantagens;
-    private Card cardSemVantagem;
+    private Card cardAtivos;
+    private Card cardDesativados;
     private Table table;
     private JTextField txtBusca;
-    private Button btnVantagem;
-    private Button btnSemVantagem;
+    private Button btnAtivo;
+    private Button btnDesativado;
     private Button btnNovo;
-    private Boolean filtroVantagem;
+    private Integer filtroStatus;
     private List<Evento> eventos;
     private List<Evento> filtrados;
     private javax.swing.Icon iconEvento;
-    private javax.swing.Icon iconVantagem;
-    private javax.swing.Icon iconSemVantagem;
+    private javax.swing.Icon iconAtivo;
+    private javax.swing.Icon iconDesativado;
     private JButton btnPrevPage;
     private JButton btnNextPage;
     private int currentPage = 0;
@@ -83,24 +85,24 @@ public class EventoForm extends JPanel {
         cardEventos = new Card();
         cardEventos.setBackground(new Color(33,150,243));
         cardEventos.setColorGradient(new Color(33,203,243));
-        cardEventos.setData(new ModelCard("Eventos",0,0,iconEvento));
+        cardEventos.setData(new ModelCard("Qtd. Eventos",0,0,iconEvento));
         cards.add(cardEventos);
 
-        iconVantagem = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.THUMB_UP, 60, Color.WHITE,
+        iconAtivo = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHECK_CIRCLE, 60, Color.WHITE,
                 new Color(255,255,255,15));
-        cardVantagens = new Card();
-        cardVantagens.setBackground(new Color(76,175,80));
-        cardVantagens.setColorGradient(new Color(129,199,132));
-        cardVantagens.setData(new ModelCard("Vantagens",0,0,iconVantagem));
-        cards.add(cardVantagens);
+        cardAtivos = new Card();
+        cardAtivos.setBackground(new Color(76,175,80));
+        cardAtivos.setColorGradient(new Color(129,199,132));
+        cardAtivos.setData(new ModelCard("Ativos",0,0,iconAtivo));
+        cards.add(cardAtivos);
 
-        iconSemVantagem = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.THUMB_DOWN, 60, Color.WHITE,
+        iconDesativado = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 60, Color.WHITE,
                 new Color(255,255,255,15));
-        cardSemVantagem = new Card();
-        cardSemVantagem.setBackground(new Color(255,152,0));
-        cardSemVantagem.setColorGradient(new Color(255,203,107));
-        cardSemVantagem.setData(new ModelCard("Sem Vantagem",0,0,iconSemVantagem));
-        cards.add(cardSemVantagem);
+        cardDesativados = new Card();
+        cardDesativados.setBackground(new Color(244,67,54));
+        cardDesativados.setColorGradient(new Color(229,115,115));
+        cardDesativados.setData(new ModelCard("Desativados",0,0,iconDesativado));
+        cards.add(cardDesativados);
 
         top.add(cards, BorderLayout.NORTH);
 
@@ -110,19 +112,19 @@ public class EventoForm extends JPanel {
         JPanel filtro = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filtro.setBackground(Color.WHITE);
 
-        btnVantagem = new Button();
-        btnVantagem.setText("Vantagem");
-        btnVantagem.setBackground(new Color(76,175,80));
-        btnVantagem.setForeground(Color.WHITE);
-        btnVantagem.addActionListener(e -> {filtroVantagem = Boolean.TRUE; aplicarFiltros();});
-        filtro.add(btnVantagem);
+        btnAtivo = new Button();
+        btnAtivo.setText("Ativo");
+        btnAtivo.setBackground(new Color(76,175,80));
+        btnAtivo.setForeground(Color.WHITE);
+        btnAtivo.addActionListener(e -> {filtroStatus = 1; aplicarFiltros();});
+        filtro.add(btnAtivo);
 
-        btnSemVantagem = new Button();
-        btnSemVantagem.setText("Sem Vantagem");
-        btnSemVantagem.setBackground(new Color(255,152,0));
-        btnSemVantagem.setForeground(Color.BLACK);
-        btnSemVantagem.addActionListener(e -> {filtroVantagem = Boolean.FALSE; aplicarFiltros();});
-        filtro.add(btnSemVantagem);
+        btnDesativado = new Button();
+        btnDesativado.setText("Desativado");
+        btnDesativado.setBackground(new Color(244,67,54));
+        btnDesativado.setForeground(Color.WHITE);
+        btnDesativado.addActionListener(e -> {filtroStatus = 2; aplicarFiltros();});
+        filtro.add(btnDesativado);
 
         txtBusca = new JTextField(15);
         txtBusca.getDocument().addDocumentListener(new DocumentListener() {
@@ -147,7 +149,7 @@ public class EventoForm extends JPanel {
 
         table = new Table();
         table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{
-            "Foto", "Nome", "Descrição", "Vantagem", "Categoria", "Ações"
+            "Foto", "Nome", "Descrição", "Status", "Categoria", "Ações"
         }) {
             @Override
             public boolean isCellEditable(int row, int column) {
@@ -187,6 +189,16 @@ public class EventoForm extends JPanel {
 
     private void carregarEventos() {
         eventos = controller.listar();
+        CategoriaController catController = new CategoriaController(new CategoriaDaoNativeImpl());
+        for (Evento e : eventos) {
+            if (e.getCategoria() != null && e.getCategoria().getIdCategoria() != null) {
+                try {
+                    e.setCategoria(catController.buscarPorId(e.getCategoria().getIdCategoria()));
+                } catch (Exception ex) {
+                    // ignore loading errors
+                }
+            }
+        }
         aplicarFiltros();
     }
 
@@ -195,7 +207,7 @@ public class EventoForm extends JPanel {
         String busca = txtBusca.getText();
         String filtro = (busca != null && !busca.isEmpty()) ? busca.toLowerCase() : null;
         filtrados = eventos.stream()
-                .filter(e -> filtroVantagem == null || (e.getVantagem() != null && filtroVantagem.equals(e.getVantagem())))
+                .filter(e -> filtroStatus == null || (e.getStatus() != null && filtroStatus.equals(e.getStatus())))
                 .filter(e -> filtro == null || (e.getNome() != null && e.getNome().toLowerCase().contains(filtro)))
                 .collect(Collectors.toList());
         atualizarCards(filtrados);
@@ -205,18 +217,18 @@ public class EventoForm extends JPanel {
 
     private void atualizarCards(List<Evento> lista) {
         int total = lista.size();
-        int vantagens = 0;
-        int sem = 0;
+        int ativos = 0;
+        int desativados = 0;
         for (Evento e : lista) {
-            if (Boolean.TRUE.equals(e.getVantagem())) {
-                vantagens++;
+            if (e.getStatus() != null && e.getStatus() == 1) {
+                ativos++;
             } else {
-                sem++;
+                desativados++;
             }
         }
-        cardEventos.setData(new ModelCard("Eventos", total, 0, iconEvento));
-        cardVantagens.setData(new ModelCard("Vantagens", vantagens, 0, iconVantagem));
-        cardSemVantagem.setData(new ModelCard("Sem Vantagem", sem, 0, iconSemVantagem));
+        cardEventos.setData(new ModelCard("Qtd. Eventos", total, 0, iconEvento));
+        cardAtivos.setData(new ModelCard("Ativos", ativos, 0, iconAtivo));
+        cardDesativados.setData(new ModelCard("Desativados", desativados, 0, iconDesativado));
     }
 
     private void atualizarTabela(List<Evento> lista) {
@@ -241,7 +253,7 @@ public class EventoForm extends JPanel {
                 icon,
                 e.getNome(),
                 e.getDescricao(),
-                vantagemTexto(e.getVantagem()),
+                statusTexto(e.getStatus()),
                 e.getCategoria() != null ? e.getCategoria().getNome() : "",
                 new ModelAction<>(e, eventAction)
             });
@@ -257,19 +269,19 @@ public class EventoForm extends JPanel {
                 return avatar;
             }
         });
-        int vantCol = table.getColumnModel().getColumnCount() - 3;
-        table.getColumnModel().getColumn(vantCol).setCellRenderer(new TableCellRenderer() {
+        int statusCol = table.getColumnModel().getColumnCount() - 3;
+        table.getColumnModel().getColumn(statusCol).setCellRenderer(new TableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable tbl, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Button lbl = new Button();
                 lbl.setText(value == null ? "" : value.toString());
                 lbl.setBorder(new EmptyBorder(5,5,5,5));
-                if ("Sim".equals(value)) {
+                if ("Ativo".equals(value)) {
                     lbl.setBackground(new Color(76,175,80));
                     lbl.setForeground(Color.WHITE);
                 } else {
-                    lbl.setBackground(new Color(255,152,0));
-                    lbl.setForeground(Color.BLACK);
+                    lbl.setBackground(new Color(244,67,54));
+                    lbl.setForeground(Color.WHITE);
                 }
                 return lbl;
             }
@@ -342,7 +354,7 @@ public class EventoForm extends JPanel {
         }
     }
 
-    private String vantagemTexto(Boolean v) {
-        return Boolean.TRUE.equals(v) ? "Sim" : "Não";
+    private String statusTexto(Integer s) {
+        return s != null && s == 1 ? "Ativo" : "Desativado";
     }
 }
