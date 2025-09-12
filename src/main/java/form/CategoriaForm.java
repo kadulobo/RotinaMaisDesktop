@@ -44,19 +44,19 @@ public class CategoriaForm extends JPanel {
 
     private final CategoriaController controller;
     private Card cardTotal;
-    private Card cardAtivas;
-    private Card cardInativas;
+    private Card cardAtivo;
+    private Card cardDesativada;
     private Table table;
     private JTextField txtBusca;
-    private Button btnAtiva;
-    private Button btnInativa;
+    private Button btnAtivo;
+    private Button btnPendente;
     private Button btnNovo;
     private Integer filtroStatus;
     private List<Categoria> categorias;
     private List<Categoria> filtradas;
     private javax.swing.Icon iconTotal;
-    private javax.swing.Icon iconAtiva;
-    private javax.swing.Icon iconInativa;
+    private javax.swing.Icon iconAtivo;
+    private javax.swing.Icon iconDesativada;
     private JButton btnPrevPage;
     private JButton btnNextPage;
     private int currentPage = 0;
@@ -83,24 +83,24 @@ public class CategoriaForm extends JPanel {
         cardTotal = new Card();
         cardTotal.setBackground(new Color(33,150,243));
         cardTotal.setColorGradient(new Color(33,203,243));
-        cardTotal.setData(new ModelCard("Categorias",0,0,iconTotal));
+        cardTotal.setData(new ModelCard("Qtd. Categoria",0,0,iconTotal));
         cards.add(cardTotal);
 
-        iconAtiva = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHECK_CIRCLE, 60, Color.WHITE,
+        iconAtivo = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CHECK_CIRCLE, 60, Color.WHITE,
                 new Color(255,255,255,15));
-        cardAtivas = new Card();
-        cardAtivas.setBackground(new Color(76,175,80));
-        cardAtivas.setColorGradient(new Color(129,199,132));
-        cardAtivas.setData(new ModelCard("Ativas",0,0,iconAtiva));
-        cards.add(cardAtivas);
+        cardAtivo = new Card();
+        cardAtivo.setBackground(new Color(76,175,80));
+        cardAtivo.setColorGradient(new Color(129,199,132));
+        cardAtivo.setData(new ModelCard("Ativo",0,0,iconAtivo));
+        cards.add(cardAtivo);
 
-        iconInativa = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 60, Color.WHITE,
+        iconDesativada = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 60, Color.WHITE,
                 new Color(255,255,255,15));
-        cardInativas = new Card();
-        cardInativas.setBackground(new Color(255,152,0));
-        cardInativas.setColorGradient(new Color(255,203,107));
-        cardInativas.setData(new ModelCard("Inativas",0,0,iconInativa));
-        cards.add(cardInativas);
+        cardDesativada = new Card();
+        cardDesativada.setBackground(new Color(255,152,0));
+        cardDesativada.setColorGradient(new Color(255,203,107));
+        cardDesativada.setData(new ModelCard("Desativada",0,0,iconDesativada));
+        cards.add(cardDesativada);
 
         top.add(cards, BorderLayout.NORTH);
 
@@ -110,19 +110,19 @@ public class CategoriaForm extends JPanel {
         JPanel filtro = new JPanel(new FlowLayout(FlowLayout.LEFT));
         filtro.setBackground(Color.WHITE);
 
-        btnAtiva = new Button();
-        btnAtiva.setText("Ativa");
-        btnAtiva.setBackground(new Color(76,175,80));
-        btnAtiva.setForeground(Color.WHITE);
-        btnAtiva.addActionListener(e -> {filtroStatus = 1; aplicarFiltros();});
-        filtro.add(btnAtiva);
+        btnAtivo = new Button();
+        btnAtivo.setText("Ativo");
+        btnAtivo.setBackground(new Color(76,175,80));
+        btnAtivo.setForeground(Color.WHITE);
+        btnAtivo.addActionListener(e -> {filtroStatus = 1; aplicarFiltros();});
+        filtro.add(btnAtivo);
 
-        btnInativa = new Button();
-        btnInativa.setText("Inativa");
-        btnInativa.setBackground(new Color(255,152,0));
-        btnInativa.setForeground(Color.BLACK);
-        btnInativa.addActionListener(e -> {filtroStatus = 0; aplicarFiltros();});
-        filtro.add(btnInativa);
+        btnPendente = new Button();
+        btnPendente.setText("Pendente");
+        btnPendente.setBackground(new Color(255,152,0));
+        btnPendente.setForeground(Color.BLACK);
+        btnPendente.addActionListener(e -> {filtroStatus = 0; aplicarFiltros();});
+        filtro.add(btnPendente);
 
         txtBusca = new JTextField(15);
         txtBusca.getDocument().addDocumentListener(new DocumentListener() {
@@ -147,11 +147,11 @@ public class CategoriaForm extends JPanel {
 
         table = new Table();
         table.setModel(new DefaultTableModel(new Object[][]{}, new String[]{
-            "Foto", "Nome", "Descrição", "Status", "Ações"
+            "Foto", "Nome", "Descrição", "Data Criação", "Status", "Ações"
         }) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4;
+                return column == 5;
             }
             @Override
             public Class<?> getColumnClass(int columnIndex) {
@@ -198,25 +198,27 @@ public class CategoriaForm extends JPanel {
                 .filter(c -> filtroStatus == null || (c.getStatus() != null && filtroStatus.equals(c.getStatus())))
                 .filter(c -> filtro == null || (c.getNome() != null && c.getNome().toLowerCase().contains(filtro)))
                 .collect(Collectors.toList());
-        atualizarCards(filtradas);
+        atualizarCards();
         currentPage = 0;
         updatePage();
     }
 
-    private void atualizarCards(List<Categoria> lista) {
-        int total = lista.size();
-        int ativas = 0;
-        int inativas = 0;
-        for (Categoria c : lista) {
-            if (c.getStatus() != null && c.getStatus() == 1) {
-                ativas++;
-            } else {
-                inativas++;
+    private void atualizarCards() {
+        int total = categorias != null ? categorias.size() : 0;
+        int ativos = 0;
+        int desativadas = 0;
+        if (categorias != null) {
+            for (Categoria c : categorias) {
+                if (c.getStatus() != null && c.getStatus() == 1) {
+                    ativos++;
+                } else {
+                    desativadas++;
+                }
             }
         }
-        cardTotal.setData(new ModelCard("Categorias", total, 0, iconTotal));
-        cardAtivas.setData(new ModelCard("Ativas", ativas, 0, iconAtiva));
-        cardInativas.setData(new ModelCard("Inativas", inativas, 0, iconInativa));
+        cardTotal.setData(new ModelCard("Qtd. Categoria", total, 0, iconTotal));
+        cardAtivo.setData(new ModelCard("Ativo", ativos, 0, iconAtivo));
+        cardDesativada.setData(new ModelCard("Desativada", desativadas, 0, iconDesativada));
     }
 
     private void atualizarTabela(List<Categoria> lista) {
@@ -241,6 +243,7 @@ public class CategoriaForm extends JPanel {
                 icon,
                 c.getNome(),
                 c.getDescricao(),
+                c.getDataCriacao(),
                 statusTexto(c.getStatus()),
                 new ModelAction<>(c, eventAction)
             });
@@ -263,7 +266,7 @@ public class CategoriaForm extends JPanel {
                 Button lbl = new Button();
                 lbl.setText(value == null ? "" : value.toString());
                 lbl.setBorder(new EmptyBorder(5,5,5,5));
-                if ("Ativa".equals(value)) {
+                if ("Ativo".equals(value)) {
                     lbl.setBackground(new Color(76,175,80));
                     lbl.setForeground(Color.WHITE);
                 } else {
@@ -342,6 +345,6 @@ public class CategoriaForm extends JPanel {
     }
 
     private String statusTexto(Integer status) {
-        return status != null && status == 1 ? "Ativa" : "Inativa";
+        return status != null && status == 1 ? "Ativo" : "Pendente";
     }
 }
