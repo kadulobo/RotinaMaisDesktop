@@ -16,6 +16,7 @@ public class EventoDaoNativeImpl implements EventoDao {
         Evento e = new Evento();
         e.setIdEvento(rs.getInt("id_evento"));
         e.setVantagem((Boolean) rs.getObject("vantagem"));
+        e.setStatus((Integer) rs.getObject("status"));
         if (withFoto) {
             e.setFoto(rs.getBytes("foto"));
         }
@@ -37,29 +38,34 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public void create(Evento evento) throws EventoException {
         Logger.info("EventoDaoNativeImpl.create - inicio");
-        String sql = "INSERT INTO Evento (vantagem, foto, nome, descricao, data_criacao, id_categoria) VALUES (?,?,?,?,?,?)";
+        String sql = "INSERT INTO Evento (status, vantagem, foto, nome, descricao, data_criacao, id_categoria) VALUES (?,?,?,?,?,?,?)";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                if (evento.getVantagem() != null) {
-                    ps.setBoolean(1, evento.getVantagem());
+                if (evento.getStatus() != null) {
+                    ps.setInt(1, evento.getStatus());
                 } else {
-                    ps.setNull(1, Types.BOOLEAN);
+                    ps.setNull(1, Types.INTEGER);
                 }
-                ps.setBytes(2, evento.getFoto());
-                ps.setString(3, evento.getNome());
-                ps.setString(4, evento.getDescricao());
-                if (evento.getDataCriacao() != null) {
-                    ps.setDate(5, Date.valueOf(evento.getDataCriacao()));
+                if (evento.getVantagem() != null) {
+                    ps.setBoolean(2, evento.getVantagem());
                 } else {
-                    ps.setNull(5, Types.DATE);
+                    ps.setNull(2, Types.BOOLEAN);
+                }
+                ps.setBytes(3, evento.getFoto());
+                ps.setString(4, evento.getNome());
+                ps.setString(5, evento.getDescricao());
+                if (evento.getDataCriacao() != null) {
+                    ps.setDate(6, Date.valueOf(evento.getDataCriacao()));
+                } else {
+                    ps.setNull(6, Types.DATE);
                 }
                 if (evento.getCategoria() != null && evento.getCategoria().getIdCategoria() != null) {
-                    ps.setInt(6, evento.getCategoria().getIdCategoria());
+                    ps.setInt(7, evento.getCategoria().getIdCategoria());
                 } else {
-                    ps.setNull(6, Types.INTEGER);
+                    ps.setNull(7, Types.INTEGER);
                 }
                 ps.executeUpdate();
             }
@@ -81,31 +87,36 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public Evento update(Evento evento) throws EventoException {
         Logger.info("EventoDaoNativeImpl.update - inicio");
-        String sql = "UPDATE Evento SET vantagem=?, foto=?, nome=?, descricao=?, data_criacao=?, id_categoria=? WHERE id_evento=?";
+        String sql = "UPDATE Evento SET status=?, vantagem=?, foto=?, nome=?, descricao=?, data_criacao=?, id_categoria=? WHERE id_evento=?";
         Connection conn = null;
         try {
             conn = ConnectionFactory.getConnection();
             conn.setAutoCommit(false);
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                if (evento.getVantagem() != null) {
-                    ps.setBoolean(1, evento.getVantagem());
+                if (evento.getStatus() != null) {
+                    ps.setInt(1, evento.getStatus());
                 } else {
-                    ps.setNull(1, Types.BOOLEAN);
+                    ps.setNull(1, Types.INTEGER);
                 }
-                ps.setBytes(2, evento.getFoto());
-                ps.setString(3, evento.getNome());
-                ps.setString(4, evento.getDescricao());
-                if (evento.getDataCriacao() != null) {
-                    ps.setDate(5, Date.valueOf(evento.getDataCriacao()));
+                if (evento.getVantagem() != null) {
+                    ps.setBoolean(2, evento.getVantagem());
                 } else {
-                    ps.setNull(5, Types.DATE);
+                    ps.setNull(2, Types.BOOLEAN);
+                }
+                ps.setBytes(3, evento.getFoto());
+                ps.setString(4, evento.getNome());
+                ps.setString(5, evento.getDescricao());
+                if (evento.getDataCriacao() != null) {
+                    ps.setDate(6, Date.valueOf(evento.getDataCriacao()));
+                } else {
+                    ps.setNull(6, Types.DATE);
                 }
                 if (evento.getCategoria() != null && evento.getCategoria().getIdCategoria() != null) {
-                    ps.setInt(6, evento.getCategoria().getIdCategoria());
+                    ps.setInt(7, evento.getCategoria().getIdCategoria());
                 } else {
-                    ps.setNull(6, Types.INTEGER);
+                    ps.setNull(7, Types.INTEGER);
                 }
-                ps.setInt(7, evento.getIdEvento());
+                ps.setInt(8, evento.getIdEvento());
                 int updated = ps.executeUpdate();
                 if (updated == 0) {
                     throw new EventoException("Evento não encontrado: id=" + evento.getIdEvento());
@@ -160,7 +171,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public Evento findById(Integer id) throws EventoException {
         Logger.info("EventoDaoNativeImpl.findById - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=?";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -180,7 +191,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public Evento findWithBlobsById(Integer id) throws EventoException {
         Logger.info("EventoDaoNativeImpl.findWithBlobsById - inicio");
-        String sql = "SELECT id_evento, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=?";
+        String sql = "SELECT id_evento, status, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_evento=?";
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -200,7 +211,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findAll() {
         Logger.info("EventoDaoNativeImpl.findAll - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
@@ -218,7 +229,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findAll(int page, int size) {
         Logger.info("EventoDaoNativeImpl.findAll(page) - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento LIMIT ? OFFSET ?";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento LIMIT ? OFFSET ?";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -239,7 +250,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findByVantagem(Boolean vantagem) {
         Logger.info("EventoDaoNativeImpl.findByVantagem - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE vantagem=?";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE vantagem=?";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -263,7 +274,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findByFoto(byte[] foto) {
         Logger.info("EventoDaoNativeImpl.findByFoto - inicio");
-        String sql = "SELECT id_evento, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE foto=?";
+        String sql = "SELECT id_evento, status, vantagem, foto, nome, descricao, data_criacao, id_categoria FROM Evento WHERE foto=?";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -283,7 +294,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findByNome(String nome) {
         Logger.info("EventoDaoNativeImpl.findByNome - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE nome=?";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE nome=?";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -303,7 +314,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findByDescricao(String descricao) {
         Logger.info("EventoDaoNativeImpl.findByDescricao - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE descricao=?";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE descricao=?";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -323,7 +334,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findByDataCriacao(java.time.LocalDate dataCriacao) {
         Logger.info("EventoDaoNativeImpl.findByDataCriacao - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE data_criacao=?";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE data_criacao=?";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -343,7 +354,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> findByIdCategoria(Integer idCategoria) {
         Logger.info("EventoDaoNativeImpl.findByIdCategoria - inicio");
-        String sql = "SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_categoria=?";
+        String sql = "SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE id_categoria=?";
         List<Evento> list = new ArrayList<>();
         try (Connection conn = ConnectionFactory.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -368,7 +379,7 @@ public class EventoDaoNativeImpl implements EventoDao {
     @Override
     public List<Evento> search(Evento filtro, int page, int size) {
         Logger.info("EventoDaoNativeImpl.search - inicio");
-        StringBuilder sb = new StringBuilder("SELECT id_evento, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE 1=1");
+        StringBuilder sb = new StringBuilder("SELECT id_evento, status, vantagem, nome, descricao, data_criacao, id_categoria FROM Evento WHERE 1=1");
         List<Object> params = new ArrayList<>();
         if (filtro.getVantagem() != null) {
             sb.append(" AND vantagem=?");
@@ -381,6 +392,10 @@ public class EventoDaoNativeImpl implements EventoDao {
         if (filtro.getDescricao() != null && !filtro.getDescricao().isEmpty()) {
             sb.append(" AND descricao=?");
             params.add(filtro.getDescricao());
+        }
+        if (filtro.getStatus() != null) {
+            sb.append(" AND status=?");
+            params.add(filtro.getStatus());
         }
         if (filtro.getDataCriacao() != null) {
             sb.append(" AND data_criacao=?");
