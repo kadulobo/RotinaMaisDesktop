@@ -49,7 +49,7 @@ public class CategoriaForm extends JPanel {
     private Table table;
     private JTextField txtBusca;
     private Button btnAtivo;
-    private Button btnPendente;
+    private Button btnDesativada;
     private Button btnNovo;
     private Integer filtroStatus;
     private List<Categoria> categorias;
@@ -97,8 +97,8 @@ public class CategoriaForm extends JPanel {
         iconDesativada = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CANCEL, 60, Color.WHITE,
                 new Color(255,255,255,15));
         cardDesativada = new Card();
-        cardDesativada.setBackground(new Color(255,152,0));
-        cardDesativada.setColorGradient(new Color(255,203,107));
+        cardDesativada.setBackground(new Color(244,67,54));
+        cardDesativada.setColorGradient(new Color(229,115,115));
         cardDesativada.setData(new ModelCard("Desativada",0,0,iconDesativada));
         cards.add(cardDesativada);
 
@@ -117,12 +117,12 @@ public class CategoriaForm extends JPanel {
         btnAtivo.addActionListener(e -> {filtroStatus = 1; aplicarFiltros();});
         filtro.add(btnAtivo);
 
-        btnPendente = new Button();
-        btnPendente.setText("Pendente");
-        btnPendente.setBackground(new Color(255,152,0));
-        btnPendente.setForeground(Color.BLACK);
-        btnPendente.addActionListener(e -> {filtroStatus = 0; aplicarFiltros();});
-        filtro.add(btnPendente);
+        btnDesativada = new Button();
+        btnDesativada.setText("Desativada");
+        btnDesativada.setBackground(new Color(244,67,54));
+        btnDesativada.setForeground(Color.WHITE);
+        btnDesativada.addActionListener(e -> {filtroStatus = 0; aplicarFiltros();});
+        filtro.add(btnDesativada);
 
         txtBusca = new JTextField(15);
         txtBusca.getDocument().addDocumentListener(new DocumentListener() {
@@ -270,8 +270,8 @@ public class CategoriaForm extends JPanel {
                     lbl.setBackground(new Color(76,175,80));
                     lbl.setForeground(Color.WHITE);
                 } else {
-                    lbl.setBackground(new Color(255,152,0));
-                    lbl.setForeground(Color.BLACK);
+                    lbl.setBackground(new Color(244,67,54));
+                    lbl.setForeground(Color.WHITE);
                 }
                 return lbl;
             }
@@ -345,6 +345,6 @@ public class CategoriaForm extends JPanel {
     }
 
     private String statusTexto(Integer status) {
-        return status != null && status == 1 ? "Ativo" : "Pendente";
+        return status != null && status == 1 ? "Ativo" : "Desativada";
     }
 }

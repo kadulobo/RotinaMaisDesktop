@@ -81,7 +81,7 @@ public class CategoriaDialog extends JDialog {
         gbc.gridx = 1; panel.add(txtDescricao, gbc); y++;
 
         JLabel lblStatus = new JLabel("Status");
-        comboStatus = new JComboBox<>(new String[]{"Ativo", "Pendente"});
+        comboStatus = new JComboBox<>(new String[]{"Ativo", "Desativada"});
         gbc.gridx = 0; gbc.gridy = y; panel.add(lblStatus, gbc);
         gbc.gridx = 1; panel.add(comboStatus, gbc); y++;
 
