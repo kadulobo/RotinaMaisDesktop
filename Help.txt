@@ -1,0 +1,14 @@
+Para executar o aplicativo com o PostgreSQL embutido:
+
+1. Certifique-se de possuir o Java 8 instalado.
+2. Execute `mvn clean package` para compilar o projeto.
+3. Inicie o aplicativo pela classe `main.Main` ou pelo jar gerado. O
+   servidor PostgreSQL será iniciado automaticamente utilizando a
+   biblioteca Zonky Embedded Postgres.
+4. O arquivo `database.properties` contém as configurações de conexão. Ele
+   é criado automaticamente na primeira execução caso não exista.
+5. As migrações do banco de dados são executadas pelo Flyway na inicialização.
+   Se o schema ainda não existir, o script `V1__init.sql` será aplicado para
+   criar toda a estrutura necessária.
+
+Após esses passos o programa estará pronto para uso.
