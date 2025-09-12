@@ -18,6 +18,8 @@
     <selenium.version>3.141.59</selenium.version>
     <!-- WebDriverManager 4.4.3 ainda suporta Java 8 -->
     <webdrivermanager.version>4.4.3</webdrivermanager.version>
+    <!-- Flyway 7.15.0 é a última versão que suporta Java 8 -->
+    <flyway.version>7.15.0</flyway.version>
 </properties>
 
 
@@ -78,7 +80,7 @@
   <dependency>
     <groupId>org.flywaydb</groupId>
     <artifactId>flyway-core</artifactId>
-    <version>10.16.0</version>
+    <version>${flyway.version}</version>
   </dependency>
 
     
