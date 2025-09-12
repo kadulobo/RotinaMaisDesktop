@@ -10,6 +10,7 @@ import form.EventoForm;
 import form.Form_Home;
 import form.MainForm;
 import form.MovimentacaoForm;
+import form.CaixaForm;
 import form.CofreForm;
 import swing.MenuItem;
 import swing.PopupMenu;
@@ -74,8 +75,10 @@ public class Main extends javax.swing.JFrame {
                     } else if (subMenuIndex == 3) {
                         main.showForm(new EventoForm());
                     } else if (subMenuIndex == 4) {
-                        main.showForm(new MovimentacaoForm());
+                        main.showForm(new CaixaForm());
                     } else if (subMenuIndex == 5) {
+                        main.showForm(new MovimentacaoForm());
+                    } else if (subMenuIndex == 6) {
                         main.showForm(new CofreForm());
                     }
                 } else if (menuIndex == 1) {
