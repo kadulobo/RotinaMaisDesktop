@@ -13,7 +13,9 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Código refatorado em PT-BR (component, swing, evento, model, dialog, form, main).
 - Utilitário de ícones: swing.icon.Icones (PNG/JPG em /resources/icon + fallback Material Icons).
 - Coloque seus PNGs/JPGs de ícones em: src/main/resources/icon/
-- Coloque TimingFramework-0.55.jar em: libs/TimingFramework-0.55.jar (ou ajuste o pom.xml).
+- A dependência TimingFramework é gerenciada pelo Maven e incluída automaticamente no JAR.
+- Gere um executável com todas as dependências usando `mvn package`.
+- O arquivo resultante estará em `target/rotinamais-desktop-*-jar-with-dependencies.jar` e pode ser executado com `java -jar`.
 
 - Exemplos de entidades JPA e DAOs nativos adicionados para Meta, Cofre,
   TreinoExercicio, RotinaPeriodo, AlimentacaoIngrediente, IngredienteFornecedor,
