@@ -1,0 +1,92 @@
+name: PR para desenvolvimento → roda classe (Maven, com debug e detecção de main)
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+    branches: [ desenvolvimento ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: pr-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  run-class:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+
+    env:
+      # use um PAT no secret GH_PAT ou troque por ${{ github.token }} se servir
+      GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+      # nome do arquivo de classe (sem pacote); ajuste se mudar o nome da sua classe
+      CLASS_FILE_NAME: ExemploAprovadorPullRequests.class
+
+    steps:
+      - name: Checkout código do HEAD do PR
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'          # ajuste conforme o seu projeto
+          cache: maven
+
+      # ---------- DEBUG 1: ver cabeçalho do arquivo ----------
+      - name: Mostrar cabeçalho da classe (package)
+        run: |
+          echo "Fonte esperado: src/main/java/tarefas/ExemploAprovadorPullRequests.java"
+          if [ -f src/main/java/tarefas/ExemploAprovadorPullRequests.java ]; then
+            sed -n '1,20p' src/main/java/tarefas/ExemploAprovadorPullRequests.java
+          else
+            echo "❌ Não achei em tarefas/. Listando .java para ajudar:"
+            find src/main/java -maxdepth 4 -type f -name "*.java" -print | sort || true
+          fi
+
+      # ---------- COMPILAÇÃO ----------
+      - name: Build (clean + compile)
+        run: |
+          if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
+          $MVN -B -ntp -U -DskipTests clean compile
+
+      # ---------- DEBUG 2: listar .class ----------
+      - name: Listar classes compiladas
+        run: |
+          echo ">> .class em target/classes:"
+          find target/classes -maxdepth 10 -type f -name "*.class" -print | sort || true
+
+      # ---------- DETECTAR FQN DA MAIN ----------
+      - name: Detectar main class compilada
+        id: detect
+        shell: bash
+        run: |
+          set -e
+          # acha o primeiro .class com o nome especificado
+          CLASS_PATH=$(find target/classes -type f -name "${CLASS_FILE_NAME}" -print -quit || true)
+          if [ -z "$CLASS_PATH" ]; then
+            echo "❌ Não encontrei ${CLASS_FILE_NAME} em target/classes. Compile falhou?"
+            exit 1
+          fi
+          # converte caminho do .class para FQN (pacote.classe)
+          FQN=${CLASS_PATH#target/classes/}
+          FQN=${FQN%.class}
+          FQN=${FQN//\//.}
+          echo "Detectado FQN: $FQN"
+          echo "MAIN_CLASS_DETECTED=$FQN" >> $GITHUB_ENV
+
+      # ---------- EXECUÇÃO ----------
+      - name: Executar classe via Maven (usa FQN detectado)
+        run: |
+          echo "Executando main: ${MAIN_CLASS_DETECTED}"
+          if [ -f ./mvnw ]; then MVN=./mvnw; else MVN=mvn; fi
+          $MVN -B -ntp -U -DskipTests \
+            exec:java \
+            -Dexec.classpathScope=runtime \
+            -Dexec.mainClass="${MAIN_CLASS_DETECTED}"
