@@ -1,1 +1,0 @@
-C:/Users/User/AppData/Local/Temp/embedded-pg/PG-e3f11bbc9b95dbfed294e77104de3b5e/bin/postgres.exe "-D" "embedded-pg-data" "-p" "5432" "-F" "-c" "synchronous_commit=off" "-c" "max_connections=300" "-c" "timezone=UTC"
