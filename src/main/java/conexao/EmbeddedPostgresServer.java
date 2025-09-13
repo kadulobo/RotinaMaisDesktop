@@ -33,6 +33,8 @@ public final class EmbeddedPostgresServer {
             POSTGRES = EmbeddedPostgres.builder()
                     .setPort(cfg.getPort())
                     .setDataDirectory(dataDir)
+                    // desabilita limpeza para persistir dados entre reinicializações
+                    .setCleanDataDirectory(false)
                     .start();
             createUserAndDatabase(cfg);
         } catch (IOException | SQLException e) {
