@@ -75,11 +75,11 @@
       <version>1.26.1</version>
     </dependency>
 
-    <!-- Evita NoSuchMethodError para IOUtils.byteArray -->
+    <!-- Atualiza para evitar NoSuchMethodError em IOUtils.skip ao usar commons-compress 1.26+ -->
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
-      <version>2.11.0</version>
+      <version>2.16.1</version>
     </dependency>
 
       <!-- PostgreSQL real embutido -->
