@@ -49,7 +49,7 @@ carga_leve integer,
 carga_media integer,
 carga_maxima integer,
 foto bytea,
-video bytea,
+video bytea
 );
 
 CREATE TABLE IF NOT EXISTS Documento (
@@ -180,6 +180,21 @@ email text,
 cpf text
 );
 
+CREATE TABLE IF NOT EXISTS Caderno (
+id_caderno serial PRIMARY KEY,
+nome_ia text,
+titulo text,
+objetivo text,
+comando text,
+resultado text,
+data date,
+resultado_imagem bytea,
+resultado_video bytea,
+id_usuario integer,
+id_categoria integer,
+FOREIGN KEY(id_usuario) REFERENCES Usuario (id_usuario),
+FOREIGN KEY(id_categoria) REFERENCES Categoria (id_categoria)
+);
 
 
 CREATE TABLE IF NOT EXISTS Cofre (
@@ -300,31 +315,31 @@ ALTER TABLE Rotina ADD FOREIGN KEY(id_usuario) REFERENCES Usuario (id_usuario);
 ALTER TABLE Monitoramento ADD FOREIGN KEY(id_periodo) REFERENCES Periodo (id_periodo);
 ALTER TABLE Caixa ADD FOREIGN KEY(id_usuario) REFERENCES Usuario (id_usuario);
 
-CREATE INDEX idx_evento_id_categoria ON Evento(id_categoria);
-CREATE INDEX idx_lancamento_id_evento ON Lancamento(id_evento);
-CREATE INDEX idx_lancamento_id_movimentacao ON Lancamento(id_movimentacao);
-CREATE INDEX idx_mov_id_usuario ON Movimentacao(id_usuario);
-CREATE INDEX idx_mov_id_caixa ON Movimentacao(id_caixa);
-CREATE INDEX idx_mov_id_periodo ON Movimentacao(id_periodo);
-CREATE INDEX idx_rotina_id_usuario ON Rotina(id_usuario);
-CREATE INDEX idx_alim_id_rotina ON Alimentacao(id_rotina);
-CREATE INDEX idx_treino_id_rotina ON Treino(id_rotina);
-CREATE INDEX idx_cofre_id_usuario ON Cofre(id_usuario);
-CREATE INDEX idx_meta_id_periodo ON Meta(id_periodo);
-CREATE INDEX idx_monitoramento_id_periodo ON Monitoramento(id_periodo);
-CREATE INDEX idx_doc_id_usuario ON Documento(id_usuario);
-CREATE INDEX idx_caixa_id_usuario ON Caixa(id_usuario);
-CREATE INDEX idx_te_id_treino ON Treino_Exercicio(id_treino);
-CREATE INDEX idx_te_id_exercicio ON Treino_Exercicio(id_exercicio);
-CREATE INDEX idx_rp_id_rotina ON Rotina_Periodo(id_rotina);
-CREATE INDEX idx_rp_id_periodo ON Rotina_Periodo(id_periodo);
-CREATE INDEX idx_ai_id_alimentacao ON Alimentacao_Ingrediente(id_alimentacao);
-CREATE INDEX idx_ai_id_ingrediente ON Alimentacao_Ingrediente(id_ingrediente);
-CREATE INDEX idx_if_id_fornecedor ON Ingrediente_fornecedor(id_fornecedor);
-CREATE INDEX idx_if_id_ingrediente ON Ingrediente_fornecedor(id_ingrediente);
-CREATE INDEX idx_so_id_site ON Site_Objeto(id_site);
-CREATE INDEX idx_so_id_objeto ON Site_Objeto(id_objeto);
-CREATE INDEX idx_mo_id_monitoramento ON Monitoramento_Objeto(id_monitoramento);
-CREATE INDEX idx_mo_id_objeto ON Monitoramento_Objeto(id_objeto);
+CREATE INDEX if not exists idx_evento_id_categoria ON Evento(id_categoria);
+CREATE INDEX if not exists  idx_lancamento_id_evento ON Lancamento(id_evento);
+CREATE INDEX if not exists  idx_lancamento_id_movimentacao ON Lancamento(id_movimentacao);
+CREATE INDEX if not exists  idx_mov_id_usuario ON Movimentacao(id_usuario);
+CREATE INDEX if not exists  idx_mov_id_caixa ON Movimentacao(id_caixa);
+CREATE INDEX if not exists  idx_mov_id_periodo ON Movimentacao(id_periodo);
+CREATE INDEX if not exists  idx_rotina_id_usuario ON Rotina(id_usuario);
+CREATE INDEX if not exists  idx_alim_id_rotina ON Alimentacao(id_rotina);
+CREATE INDEX if not exists  idx_treino_id_rotina ON Treino(id_rotina);
+CREATE INDEX if not exists  idx_cofre_id_usuario ON Cofre(id_usuario);
+CREATE INDEX if not exists  idx_meta_id_periodo ON Meta(id_periodo);
+CREATE INDEX if not exists  idx_monitoramento_id_periodo ON Monitoramento(id_periodo);
+CREATE INDEX if not exists  idx_doc_id_usuario ON Documento(id_usuario);
+CREATE INDEX if not exists  idx_caixa_id_usuario ON Caixa(id_usuario);
+CREATE INDEX if not exists  idx_te_id_treino ON Treino_Exercicio(id_treino);
+CREATE INDEX if not exists  idx_te_id_exercicio ON Treino_Exercicio(id_exercicio);
+CREATE INDEX if not exists  idx_rp_id_rotina ON Rotina_Periodo(id_rotina);
+CREATE INDEX if not exists  idx_rp_id_periodo ON Rotina_Periodo(id_periodo);
+CREATE INDEX if not exists  idx_ai_id_alimentacao ON Alimentacao_Ingrediente(id_alimentacao);
+CREATE INDEX if not exists  idx_ai_id_ingrediente ON Alimentacao_Ingrediente(id_ingrediente);
+CREATE INDEX if not exists  idx_if_id_fornecedor ON Ingrediente_fornecedor(id_fornecedor);
+CREATE INDEX if not exists  idx_if_id_ingrediente ON Ingrediente_fornecedor(id_ingrediente);
+CREATE INDEX if not exists  idx_so_id_site ON Site_Objeto(id_site);
+CREATE INDEX if not exists  idx_so_id_objeto ON Site_Objeto(id_objeto);
+CREATE INDEX if not exists  idx_mo_id_monitoramento ON Monitoramento_Objeto(id_monitoramento);
+CREATE INDEX if not exists  idx_mo_id_objeto ON Monitoramento_Objeto(id_objeto);
 
 commit;
