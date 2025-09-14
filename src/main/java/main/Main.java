@@ -12,6 +12,7 @@ import form.MainForm;
 import form.MovimentacaoForm;
 import form.CaixaForm;
 import form.CofreForm;
+import form.BackupForm;
 import swing.MenuItem;
 import swing.PopupMenu;
 import swing.icon.GoogleMaterialDesignIcons;
@@ -82,6 +83,10 @@ public class Main extends javax.swing.JFrame {
                         main.showForm(new CofreForm());
                     }
                 } else if (menuIndex == 1) {
+                    if (subMenuIndex == 0) {
+                        main.showForm(new BackupForm());
+                    }
+                } else if (menuIndex == 2) {
                     System.exit(0);
                 }
             }
