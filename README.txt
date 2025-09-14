@@ -13,7 +13,24 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Código refatorado em PT-BR (component, swing, evento, model, dialog, form, main).
 - Utilitário de ícones: swing.icon.Icones (PNG/JPG em /resources/icon + fallback Material Icons).
 - Coloque seus PNGs/JPGs de ícones em: src/main/resources/icon/
-- Coloque TimingFramework-0.55.jar em: libs/TimingFramework-0.55.jar (ou ajuste o pom.xml).
+- A dependência TimingFramework é gerenciada pelo Maven e incluída automaticamente no JAR.
+- Gere um executável com todas as dependências usando `mvn package`.
+- O arquivo resultante estará em `target/rotinamais-desktop-*-jar-with-dependencies.jar` e pode ser executado com `java -jar`.
+
+Configuração do PostgreSQL
+------------------------------
+O arquivo `database.properties` define as credenciais de conexão do banco e
+deve estar presente na mesma pasta em que o aplicativo é executado. Caso o
+arquivo não seja encontrado, a aplicação será encerrada. Ele permite escolher
+entre usar um PostgreSQL embutido ou um servidor externo:
+
+- `db.embedded=true`: o aplicativo iniciará um servidor PostgreSQL embutido e
+  utilizará a porta definida em `db.port.embedded` (padrão `15432`).
+- `db.embedded=false`: utiliza um servidor PostgreSQL já instalado na máquina
+  ou em outra máquina acessível usando a porta `db.port` (padrão `5432`).
+
+Altere também as demais propriedades (`db.port`, `db.port.embedded`, `db.name`,
+`db.user`, etc.) de acordo com o ambiente utilizado.
 
 - Exemplos de entidades JPA e DAOs nativos adicionados para Meta, Cofre,
   TreinoExercicio, RotinaPeriodo, AlimentacaoIngrediente, IngredienteFornecedor,

@@ -1,0 +1,25 @@
+Para executar o aplicativo é possível utilizar um PostgreSQL embutido ou um
+servidor PostgreSQL externo instalado na sua máquina. Esta escolha é feita no
+arquivo `database.properties` através da propriedade `db.embedded`:
+
+- `db.embedded=true`: inicia um PostgreSQL embutido utilizando a biblioteca
+  Zonky Embedded Postgres e utiliza a porta definida em `db.port.embedded`
+  (padrão `15432`).
+- `db.embedded=false`: utiliza um servidor PostgreSQL externo conforme as
+  configurações definidas no próprio arquivo, usando a porta `db.port` (padrão
+  `5432`).
+
+Passos gerais para executar o aplicativo:
+
+1. Certifique-se de possuir o Java 8 instalado.
+2. Execute `mvn clean package` para compilar o projeto.
+3. Inicie o aplicativo pela classe `main.Main` ou pelo jar gerado. Se
+   `db.embedded=true`, o servidor PostgreSQL será iniciado automaticamente.
+4. O arquivo `database.properties` contém as configurações de conexão e deve
+   existir antes da primeira execução. Se não for encontrado, o aplicativo
+   será encerrado.
+5. As migrações do banco de dados são executadas pelo Flyway na inicialização.
+   Se o schema ainda não existir, o script `V1__init.sql` será aplicado para
+   criar toda a estrutura necessária.
+
+Após esses passos o programa estará pronto para uso.
