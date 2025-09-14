@@ -1,1 +1,89 @@
 
+name: Auto PR para branches codex/*
+on:
+  push:
+    branches:
+      - "codex/**"         # dispara quando qualquer branch codex/* recebe push
+
+permissions:
+  contents: read
+  pull-requests: write     # necessário para criar/editar PR
+
+concurrency:
+  group: pr-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  open-pr:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Abrir (ou reaproveitar) PR para desenvolvimento
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}     # use um PAT em secrets se precisar de mais permissão
+          script: |
+            const base = 'desenvolvimento';                     // branch de destino
+            const head = context.ref.replace('refs/heads/',''); // branch codex/*
+            const { owner, repo } = context.repo;
+
+            // Já existe PR aberto desta head para a base?
+            const { data: prs } = await github.rest.pulls.list({
+              owner, repo, state: 'open', head: `${owner}:${head}`, base
+            });
+
+            if (prs.length) {
+              core.notice(`PR já existe: #${prs[0].number}`);
+              core.setOutput('number', prs[0].number);
+              return;
+            }
+
+            const title = `Codex: ${head}`;
+            const body  = `PR automático criado pelo fluxo Codex para **${head}** → **${base}**.`;
+
+            const { data: pr } = await github.rest.pulls.create({
+              owner, repo, title, head, base, body, draft: false
+            });
+
+            core.notice(`PR criado: #${pr.number}`);
+            core.setOutput('number', pr.number);
+
+      # (opcional) Aprovar automaticamente o PR
+      # ⚠️ pode não cumprir regras de proteção se exigir reviewers humanos/owners.
+      - name: Aprovar PR automaticamente (opcional)
+        if: steps.pr.outputs.number
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}       # troque para secrets.GH_PAT se o repo exigir
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = Number(${{ steps.pr.outputs.number }});
+            try {
+              await github.rest.pulls.createReview({
+                owner, repo, pull_number,
+                event: 'APPROVE',
+                body: 'Auto-approve pelo workflow Codex.'
+              });
+              core.notice(`PR #${pull_number} aprovado pelo bot.`);
+            } catch (e) {
+              core.warning(`Não foi possível aprovar automaticamente: ${e.message}`);
+            }
+
+      # (opcional) Ligar auto-merge (requer Auto-merge habilitado no repo e checks verdes)
+      - name: Habilitar Auto-merge (opcional)
+        if: steps.pr.outputs.number
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const { owner, repo } = context.repo;
+            const pull_number = Number(${{ steps.pr.outputs.number }});
+            try {
+              await github.request('PUT /repos/{owner}/{repo}/pulls/{pull_number}/auto-merge', {
+                owner, repo, pull_number,
+                merge_method: 'SQUASH'   // MERGE | SQUASH | REBASE
+              });
+              core.notice(`Auto-merge habilitado para PR #${pull_number}.`);
+            } catch (e) {
+              core.warning(`Não deu para habilitar auto-merge agora: ${e.message}`);
+            }
