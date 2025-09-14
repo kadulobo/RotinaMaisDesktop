@@ -55,6 +55,7 @@ public class Menu extends javax.swing.JPanel {
 
     public void initMenuItem() {
         addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/1.png")), "Dashboard", "Home", "Usuario", "Categoria", "Evento", "Caixa", "Movimentacao", "Cofre"));
+        addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/3.png")), "Configuração", "Backup"));
         addMenu(new ModelMenu(new ImageIcon(getClass().getResource("/icon/2.png")), "Sair"));
     }
 
