@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Comparator;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -29,35 +28,16 @@ public final class EmbeddedPostgresServer {
             return;
         }
         try {
-            // Usa um caminho absoluto para garantir que a limpeza ocorra no
-            // mesmo diretório que será utilizado pelo processo do PostgreSQL
-            // embutido. A biblioteca `EmbeddedPostgres` interpreta caminhos
-            // relativos em relação ao diretório interno onde extrai os
-            // binários, o que pode diferir do diretório de trabalho da
-            // aplicação. Isso fazia com que a limpeza ocorresse em um local
-            // diferente daquele passado ao `initdb`, ocasionando o erro
-            // "directory exists but is not empty". Ao resolver o caminho para
-            // absoluto, garantimos que tanto a limpeza quanto a inicialização
-            // utilizem o mesmo diretório.
+            // Usa um caminho absoluto para garantir que o diretório de dados
+            // seja o mesmo em todas as execuções do PostgreSQL embutido. A
+            // biblioteca `EmbeddedPostgres` interpreta caminhos relativos em
+            // relação ao diretório interno onde extrai os binários, o que pode
+            // diferir do diretório de trabalho da aplicação.
             Path dataDir = Paths.get("embedded-pg-data").toAbsolutePath();
 
-            // A biblioteca embutida falha ao executar o initdb quando o
-            // diretório de dados já existe e contém arquivos de uma
-            // inicialização anterior. Para evitar o erro "directory exists but
-            // is not empty" limpamos o diretório manualmente antes de iniciar
-            // um novo banco.
-            if (Files.exists(dataDir)) {
-                try (java.util.stream.Stream<Path> walk = Files.walk(dataDir)) {
-                    walk.sorted(Comparator.reverseOrder()).forEach(p -> {
-                        try {
-                            Files.delete(p);
-                        } catch (IOException ex) {
-                            throw new IllegalStateException("Falha ao limpar diretório de dados", ex);
-                        }
-                    });
-                }
-            }
-
+            // Cria o diretório se ainda não existir. Não removemos arquivos
+            // existentes para permitir que os dados sejam persistidos entre as
+            // reinicializações da aplicação.
             Files.createDirectories(dataDir);
             POSTGRES = EmbeddedPostgres.builder()
                     .setPort(cfg.getPort())
