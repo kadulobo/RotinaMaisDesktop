@@ -24,12 +24,13 @@ deve estar presente na mesma pasta em que o aplicativo é executado. Caso o
 arquivo não seja encontrado, a aplicação será encerrada. Ele permite escolher
 entre usar um PostgreSQL embutido ou um servidor externo:
 
-- `db.embedded=true`: o aplicativo iniciará um servidor PostgreSQL embutido.
+- `db.embedded=true`: o aplicativo iniciará um servidor PostgreSQL embutido e
+  utilizará a porta definida em `db.port.embedded` (padrão `15432`).
 - `db.embedded=false`: utiliza um servidor PostgreSQL já instalado na máquina
-  ou em outra máquina acessível.
+  ou em outra máquina acessível usando a porta `db.port` (padrão `5432`).
 
-Altere também as demais propriedades (`db.port`, `db.name`, `db.user`, etc.) de
-acordo com o ambiente utilizado.
+Altere também as demais propriedades (`db.port`, `db.port.embedded`, `db.name`,
+`db.user`, etc.) de acordo com o ambiente utilizado.
 
 - Exemplos de entidades JPA e DAOs nativos adicionados para Meta, Cofre,
   TreinoExercicio, RotinaPeriodo, AlimentacaoIngrediente, IngredienteFornecedor,

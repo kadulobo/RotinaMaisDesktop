@@ -45,7 +45,8 @@ public final class DatabaseConfig {
     }
 
     public int getPort() {
-        return Integer.parseInt(props.getProperty("db.port"));
+        String key = isEmbedded() ? "db.port.embedded" : "db.port";
+        return Integer.parseInt(props.getProperty(key));
     }
 
     public String getSchema() {
