@@ -24,7 +24,10 @@ public final class EmbeddedPostgresServer {
      * Inicia o servidor PostgreSQL se ainda não estiver em execução.
      */
     public static synchronized void start(DatabaseConfig cfg) {
-        if (POSTGRES != null) {
+        // Se o uso do PostgreSQL embutido estiver desabilitado nas configurações,
+        // apenas retorna sem iniciar nada. Isso evita tentativas de inicialização
+        // indevidas caso o método seja chamado inadvertidamente.
+        if (!cfg.isEmbedded() || POSTGRES != null) {
             return;
         }
         try {
