@@ -2,8 +2,8 @@ package agendamento.service;
 
 import Agendamento.JobContext;
 import Agendamento.JobTask;
-import agendamento.dao.JobDao;
-import agendamento.model.*;
+import dao.JobDao;
+import model.*;
 
 import java.io.File;
 import java.io.PrintWriter;

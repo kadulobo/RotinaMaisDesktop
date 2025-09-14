@@ -1,4 +1,4 @@
-package agendamento.model;
+package model;
 
 /**
  * How the scheduler should behave when a job is triggered while another run is

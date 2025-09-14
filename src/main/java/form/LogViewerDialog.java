@@ -1,4 +1,4 @@
-package agendamento.ui;
+package form;
 
 import javax.swing.*;
 import java.awt.*;

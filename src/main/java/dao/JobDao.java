@@ -1,6 +1,6 @@
-package agendamento.dao;
+package dao;
 
-import agendamento.model.*;
+import model.*;
 
 import java.sql.*;
 import java.time.Instant;
