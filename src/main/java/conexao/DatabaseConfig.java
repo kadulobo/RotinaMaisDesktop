@@ -33,6 +33,7 @@ public final class DatabaseConfig {
                         props.setProperty("db.schema", "rotinamais");
                         props.setProperty("db.user", "kadu");
                         props.setProperty("db.password", "123");
+                        props.setProperty("db.embedded", "true");
                         try (OutputStream out = Files.newOutputStream(path)) {
                             props.store(out, "Database configuration");
                         }
@@ -69,6 +70,10 @@ public final class DatabaseConfig {
 
     public String getSchema() {
         return props.getProperty("db.schema");
+    }
+
+    public boolean isEmbedded() {
+        return Boolean.parseBoolean(props.getProperty("db.embedded", "true"));
     }
 
     /**

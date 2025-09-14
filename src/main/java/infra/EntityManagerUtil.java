@@ -14,9 +14,11 @@ public class EntityManagerUtil {
     private static final EntityManagerFactory emf;
 
     static {
-        // Carrega configurações e inicia o PostgreSQL embutido
+        // Carrega configurações e inicia o PostgreSQL embutido, se habilitado
         DatabaseConfig cfg = DatabaseConfig.get();
-        EmbeddedPostgresServer.start(cfg);
+        if (cfg.isEmbedded()) {
+            EmbeddedPostgresServer.start(cfg);
+        }
         // Executa migrações do banco
         FlywayMigration.migrate(cfg);
 
