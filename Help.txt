@@ -13,8 +13,9 @@ Passos gerais para executar o aplicativo:
 2. Execute `mvn clean package` para compilar o projeto.
 3. Inicie o aplicativo pela classe `main.Main` ou pelo jar gerado. Se
    `db.embedded=true`, o servidor PostgreSQL será iniciado automaticamente.
-4. O arquivo `database.properties` contém as configurações de conexão. Ele
-   é criado automaticamente na primeira execução caso não exista.
+4. O arquivo `database.properties` contém as configurações de conexão e deve
+   existir antes da primeira execução. Se não for encontrado, o aplicativo
+   será encerrado.
 5. As migrações do banco de dados são executadas pelo Flyway na inicialização.
    Se o schema ainda não existir, o script `V1__init.sql` será aplicado para
    criar toda a estrutura necessária.

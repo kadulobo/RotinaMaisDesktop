@@ -20,7 +20,9 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
 Configuração do PostgreSQL
 ------------------------------
 O arquivo `database.properties` define as credenciais de conexão do banco e
-permite escolher entre usar um PostgreSQL embutido ou um servidor externo:
+deve estar presente na mesma pasta em que o aplicativo é executado. Caso o
+arquivo não seja encontrado, a aplicação será encerrada. Ele permite escolher
+entre usar um PostgreSQL embutido ou um servidor externo:
 
 - `db.embedded=true`: o aplicativo iniciará um servidor PostgreSQL embutido.
 - `db.embedded=false`: utiliza um servidor PostgreSQL já instalado na máquina
