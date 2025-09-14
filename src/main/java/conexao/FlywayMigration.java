@@ -11,10 +11,13 @@ public final class FlywayMigration {
     }
 
     public static void migrate(DatabaseConfig cfg) {
-        Flyway flyway = Flyway.configure()
-                .locations("classpath:db/migration")
-                .dataSource(cfg.getJdbcUrl(), cfg.getUser(), cfg.getPassword())
-                .load();
-        flyway.migrate();
+    	if(cfg.isEmbedded()) {
+            Flyway flyway = Flyway.configure()
+                    .locations("classpath:db/migration")
+                    .dataSource(cfg.getJdbcUrl(), cfg.getUser(), cfg.getPassword())
+                    .load();
+            flyway.migrate();
+    	}
+
     }
 }
