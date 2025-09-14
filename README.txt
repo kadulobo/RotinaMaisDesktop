@@ -17,6 +17,18 @@ dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Gere um executável com todas as dependências usando `mvn package`.
 - O arquivo resultante estará em `target/rotinamais-desktop-*-jar-with-dependencies.jar` e pode ser executado com `java -jar`.
 
+Configuração do PostgreSQL
+------------------------------
+O arquivo `database.properties` define as credenciais de conexão do banco e
+permite escolher entre usar um PostgreSQL embutido ou um servidor externo:
+
+- `db.embedded=true`: o aplicativo iniciará um servidor PostgreSQL embutido.
+- `db.embedded=false`: utiliza um servidor PostgreSQL já instalado na máquina
+  ou em outra máquina acessível.
+
+Altere também as demais propriedades (`db.port`, `db.name`, `db.user`, etc.) de
+acordo com o ambiente utilizado.
+
 - Exemplos de entidades JPA e DAOs nativos adicionados para Meta, Cofre,
   TreinoExercicio, RotinaPeriodo, AlimentacaoIngrediente, IngredienteFornecedor,
   SiteObjeto, MonitoramentoObjeto, Papel, Carteira e Operacao.
