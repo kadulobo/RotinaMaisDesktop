@@ -1,4 +1,4 @@
-package agendamento.model;
+package model;
 
 /**
  * Possible statuses for a job or step run.

@@ -1,7 +1,7 @@
-package agendamento.controller;
+package controller;
 
-import agendamento.dao.JobDao;
-import agendamento.model.*;
+import dao.JobDao;
+import model.*;
 import agendamento.service.JobRunnerService;
 
 import java.io.IOException;

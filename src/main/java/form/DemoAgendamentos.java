@@ -1,7 +1,7 @@
-package agendamento.ui;
+package form;
 
-import agendamento.controller.AgendamentosController;
-import agendamento.dao.JobDao;
+import controller.AgendamentosController;
+import dao.JobDao;
 import agendamento.service.JobRunnerService;
 
 import javax.swing.*;

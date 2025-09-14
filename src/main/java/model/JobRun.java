@@ -1,4 +1,4 @@
-package agendamento.model;
+package model;
 
 import java.time.Instant;
 

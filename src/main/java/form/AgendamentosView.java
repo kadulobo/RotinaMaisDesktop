@@ -1,7 +1,7 @@
-package agendamento.ui;
+package form;
 
-import agendamento.controller.AgendamentosController;
-import agendamento.model.*;
+import controller.AgendamentosController;
+import model.*;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.sql.SQLException;
 
 /**
  * Swing panel showing jobs and their executions in a Jenkins-like stage view.
