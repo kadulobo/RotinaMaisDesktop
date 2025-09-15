@@ -13,10 +13,6 @@ import form.MovimentacaoForm;
 import form.CaixaForm;
 import form.CofreForm;
 import form.BackupForm;
-import form.AgendamentosView;
-import controller.AgendamentosController;
-import dao.JobDao;
-import agendamento.service.JobRunnerService;
 import swing.MenuItem;
 import swing.PopupMenu;
 import swing.icon.GoogleMaterialDesignIcons;
@@ -91,13 +87,6 @@ public class Main extends javax.swing.JFrame {
                         main.showForm(new BackupForm());
                     }
                 } else if (menuIndex == 2) {
-                    if (subMenuIndex == 0) {
-                        JobDao dao = new JobDao();
-                        JobRunnerService service = new JobRunnerService(dao);
-                        AgendamentosController controller = new AgendamentosController(dao, service);
-                        main.showForm(new AgendamentosView(controller));
-                    }
-                } else if (menuIndex == 3) {
                     System.exit(0);
                 }
             }
