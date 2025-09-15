@@ -7,20 +7,25 @@ public final class DurationUtil {
     private DurationUtil() {}
 
     /**
-     * Formats the given duration in milliseconds as "735ms/2m 12s" style.
+     * Formats the given duration in milliseconds using a short human readable
+     * representation such as "2m 5s" or "734ms".
      */
     public static String format(long ms) {
+        if (ms < 1000) {
+            return ms + "ms";
+        }
         Duration d = Duration.ofMillis(ms);
         long minutes = d.toMinutes();
         long seconds = d.minusMinutes(minutes).getSeconds();
-        long millis = d.minusMinutes(minutes).minusSeconds(seconds).toMillis();
         StringBuilder sb = new StringBuilder();
         if (minutes > 0) {
-            sb.append(minutes).append("m ");
-        }
-        if (seconds > 0) {
+            sb.append(minutes).append("m");
+            if (seconds > 0) {
+                sb.append(' ').append(seconds).append("s");
+            }
+        } else {
             sb.append(seconds).append("s");
         }
-        return ms + "ms/" + sb.toString().trim();
+        return sb.toString();
     }
 }
