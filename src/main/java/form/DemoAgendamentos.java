@@ -2,7 +2,7 @@ package form;
 
 import controller.AgendamentosController;
 import dao.JobDao;
-import Agendamento.service.JobRunnerService;
+import agendamento.service.JobRunnerService;
 
 import javax.swing.*;
 import java.awt.*;
