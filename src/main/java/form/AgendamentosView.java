@@ -9,6 +9,9 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -146,8 +149,9 @@ public class AgendamentosView extends JPanel {
         public Object getValueAt(int rowIndex, int columnIndex) {
             JobRun run = runs.get(rowIndex);
             if (columnIndex == 0) {
-                return "#" + run.getId() + " " + DateTimeFormatter.ISO_LOCAL_TIME
-                        .format(run.getIniciouEm() != null ? run.getIniciouEm() : run.getFilaEm());
+                Instant instant = run.getIniciouEm() != null ? run.getIniciouEm() : run.getFilaEm();
+                LocalTime time = instant.atZone(ZoneId.systemDefault()).toLocalTime();
+                return "#" + run.getId() + " " + DateTimeFormatter.ISO_LOCAL_TIME.format(time);
             }
             StepRun sr = mapStepRuns.get(rowIndex).get(steps.get(columnIndex - 1).getId());
             return sr != null ? sr.getStatus() : RunStatus.QUEUED;
