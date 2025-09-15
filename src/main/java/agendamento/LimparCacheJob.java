@@ -1,4 +1,4 @@
-package Agendamento;
+package agendamento;
 
 import java.io.File;
 import java.util.Map;

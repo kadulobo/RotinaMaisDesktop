@@ -1,4 +1,4 @@
-package Agendamento;
+package agendamento;
 
 import java.util.Map;
 import java.util.Random;

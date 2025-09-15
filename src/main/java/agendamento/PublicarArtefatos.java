@@ -1,14 +1,14 @@
-package Agendamento;
+package agendamento;
 
 import java.util.Map;
 
 /**
- * Step example that just logs a compilation message.
+ * Final step that logs publication of artifacts.
  */
-public class BuildProjeto implements JobTask {
+public class PublicarArtefatos implements JobTask {
     @Override
     public void execute(Map<String, Object> params, JobContext ctx) throws Exception {
-        ctx.log("Compilando projeto...");
+        ctx.log("Publicando artefatos...");
         Thread.sleep(500);
     }
 }

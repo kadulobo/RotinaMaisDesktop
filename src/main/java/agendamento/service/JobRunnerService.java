@@ -1,7 +1,7 @@
-package Agendamento.service;
+package agendamento.service;
 
-import Agendamento.JobContext;
-import Agendamento.JobTask;
+import agendamento.JobContext;
+import agendamento.JobTask;
 import dao.JobDao;
 import model.*;
 
