@@ -24,13 +24,13 @@ public class JobDao {
             "insert into job_run(id_job, fila_em, status) values(?, now(), ?::job_status) returning id_run";
 
     private static final String SQL_UPDATE_RUN_STATUS =
-            "update job_run set iniciou_em=?, terminou_em=?, status=?::job_status, erro_msg=?, pid_subprocess=?, duration_ms=? where id_run=?";
+            "update job_run set iniciou_em=?, terminou_em=?, status=?::job_status, erro_msg=?, pid_subprocess=? where id_run=?";
 
     private static final String SQL_INSERT_STEP_RUN =
             "insert into step_run(id_run, id_step, ordem_cache, iniciou_em, status) values(?,?,?,?,?::job_status) returning id_step_run";
 
     private static final String SQL_UPDATE_STEP_RUN =
-            "update step_run set iniciou_em=?, terminou_em=?, status=?::job_status, erro_msg=?, log_path=?, duration_ms=? where id_step_run=?";
+            "update step_run set iniciou_em=?, terminou_em=?, status=?::job_status, erro_msg=?, log_path=? where id_step_run=?";
 
     /** Lists active jobs. */
     public List<Job> listJobsAtivos() throws SQLException {
@@ -181,8 +181,7 @@ public class JobDao {
             } else {
                 ps.setNull(5, Types.BIGINT);
             }
-            ps.setLong(6, run.getDurationMs());
-            ps.setLong(7, run.getId());
+            ps.setLong(6, run.getId());
             ps.executeUpdate();
         }
     }
@@ -223,8 +222,7 @@ public class JobDao {
             ps.setString(3, sr.getStatus().name());
             ps.setString(4, sr.getErroMsg());
             ps.setString(5, sr.getLogPath());
-            ps.setLong(6, sr.getDurationMs());
-            ps.setLong(7, sr.getId());
+            ps.setLong(6, sr.getId());
             ps.executeUpdate();
         }
     }
