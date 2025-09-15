@@ -1,4 +1,4 @@
-package agendamento.service;
+package Agendamento.service;
 
 import Agendamento.JobContext;
 import Agendamento.JobTask;

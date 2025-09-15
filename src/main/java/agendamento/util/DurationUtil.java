@@ -1,4 +1,4 @@
-package agendamento.util;
+package Agendamento.util;
 
 import java.time.Duration;
 
