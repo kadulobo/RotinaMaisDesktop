@@ -2,6 +2,7 @@ package form;
 
 import controller.AgendamentosController;
 import model.*;
+import agendamento.util.DurationUtil;
 
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
@@ -9,10 +10,8 @@ import javax.swing.table.DefaultTableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +53,7 @@ public class AgendamentosView extends JPanel {
 
     private void initCenter() {
         table.setDefaultRenderer(Object.class, new StageCellRenderer());
+        table.setRowHeight(40);
         table.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -149,36 +149,49 @@ public class AgendamentosView extends JPanel {
         public Object getValueAt(int rowIndex, int columnIndex) {
             JobRun run = runs.get(rowIndex);
             if (columnIndex == 0) {
-                Instant instant = run.getIniciouEm() != null ? run.getIniciouEm() : run.getFilaEm();
-                LocalTime time = instant.atZone(ZoneId.systemDefault()).toLocalTime();
-                return "#" + run.getId() + " " + DateTimeFormatter.ISO_LOCAL_TIME.format(time);
+                return DurationUtil.format(run.getDurationMs());
             }
             StepRun sr = mapStepRuns.get(rowIndex).get(steps.get(columnIndex - 1).getId());
-            return sr != null ? sr.getStatus() : RunStatus.QUEUED;
+            return sr;
         }
     }
 
-    /** Cell renderer coloring background based on status. */
+    /** Cell renderer coloring background and showing duration. */
     private static class StageCellRenderer extends DefaultTableCellRenderer {
         @Override
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected,
                                                        boolean hasFocus, int row, int column) {
-            Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+            JLabel label = (JLabel) super.getTableCellRendererComponent(table, "", isSelected, hasFocus, row, column);
+            label.setHorizontalAlignment(SwingConstants.CENTER);
             if (column == 0) {
-                c.setBackground(Color.WHITE);
-                return c;
+                label.setBackground(Color.WHITE);
+                label.setText(value != null ? value.toString() : "");
+                return label;
             }
-            RunStatus status = (RunStatus) value;
+            StepRun sr = (StepRun) value;
+            RunStatus status = sr != null ? sr.getStatus() : RunStatus.QUEUED;
+            long ms = 0;
+            if (sr != null) {
+                ms = sr.getDurationMs();
+                if (status == RunStatus.RUNNING && sr.getIniciouEm() != null) {
+                    ms = Duration.between(sr.getIniciouEm(), Instant.now()).toMillis();
+                }
+            }
+            String text = sr != null ? DurationUtil.format(ms) : "";
             Color bg;
             switch (status) {
-                case SUCCESS: bg = Color.GREEN; break;
                 case FAILED:
-                case ABORTED: bg = Color.RED; break;
-                case RUNNING: bg = Color.YELLOW; break;
-                default: bg = Color.LIGHT_GRAY; break;
+                case ABORTED:
+                    bg = Color.RED; break;
+                case RUNNING:
+                case SUCCESS:
+                    bg = Color.GREEN; break;
+                default:
+                    bg = Color.LIGHT_GRAY; break;
             }
-            c.setBackground(bg);
-            return c;
+            label.setBackground(bg);
+            label.setText(text);
+            return label;
         }
     }
 }

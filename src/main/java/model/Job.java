@@ -53,4 +53,9 @@ public class Job {
     public void setTimeout(int timeout) { this.timeout = timeout; }
     public Instant getCreatedAt() { return createdAt; }
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
+
+    @Override
+    public String toString() {
+        return nome;
+    }
 }
