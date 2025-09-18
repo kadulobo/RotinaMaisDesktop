@@ -12,6 +12,7 @@ import form.MainForm;
 import form.MovimentacaoForm;
 import form.CaixaForm;
 import form.CofreForm;
+import form.PapelForm;
 import form.BackupForm;
 import form.AgendamentosView;
 import controller.AgendamentosController;
@@ -85,6 +86,8 @@ public class Main extends javax.swing.JFrame {
                         main.showForm(new MovimentacaoForm());
                     } else if (subMenuIndex == 6) {
                         main.showForm(new CofreForm());
+                    } else if (subMenuIndex == 7) {
+                        main.showForm(new PapelForm());
                     }
                 } else if (menuIndex == 1) {
                     if (subMenuIndex == 0) {
