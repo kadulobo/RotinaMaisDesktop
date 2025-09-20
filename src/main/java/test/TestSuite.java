@@ -4,6 +4,7 @@ public class TestSuite {
     public static void main(String[] args) {
         UsuarioControllerTest.main(args);
         CarteiraControllerTest.main(args);
+        CadernoControllerTest.main(args);
         CategoriaControllerTest.main(args);
         PapelControllerTest.main(args);
         CaixaControllerTest.main(args);
