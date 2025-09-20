@@ -93,7 +93,7 @@ public class ObjetoForm extends JPanel {
         cardObjetos.setData(new ModelCard("Objetos",0,0,iconObjetos));
         cards.add(cardObjetos);
 
-        iconTipos = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CATEGORY, 60, Color.WHITE,
+        iconTipos = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 60, Color.WHITE,
                 new Color(255,255,255,15));
         cardTipos = new Card();
         cardTipos.setBackground(new Color(156,39,176));

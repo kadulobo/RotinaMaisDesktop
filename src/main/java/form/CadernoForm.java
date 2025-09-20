@@ -99,7 +99,7 @@ public class CadernoForm extends JPanel {
         cardIas.setData(new ModelCard("Assistentes",0,0,iconIas));
         cards.add(cardIas);
 
-        iconCategorias = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.CATEGORY, 60, Color.WHITE,
+        iconCategorias = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.VIEW_LIST, 60, Color.WHITE,
                 new Color(255,255,255,15));
         cardCategorias = new Card();
         cardCategorias.setBackground(new Color(0,150,136));
