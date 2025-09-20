@@ -12,6 +12,11 @@ import form.MainForm;
 import form.MovimentacaoForm;
 import form.CaixaForm;
 import form.CofreForm;
+import form.ExercicioForm;
+import form.RotinaForm;
+import form.FornecedorForm;
+import form.IngredienteForm;
+import form.MonitoramentoForm;
 import form.CarteiraForm;
 import form.CadernoForm;
 import form.MetaForm;
@@ -92,16 +97,26 @@ public class Main extends javax.swing.JFrame {
                     } else if (subMenuIndex == 6) {
                         main.showForm(new CofreForm());
                     } else if (subMenuIndex == 7) {
-                        main.showForm(new CarteiraForm());
+                        main.showForm(new ExercicioForm());
                     } else if (subMenuIndex == 8) {
-                        main.showForm(new CadernoForm());
+                        main.showForm(new RotinaForm());
                     } else if (subMenuIndex == 9) {
-                        main.showForm(new MetaForm());
+                        main.showForm(new FornecedorForm());
                     } else if (subMenuIndex == 10) {
-                        main.showForm(new SiteForm());
+                        main.showForm(new IngredienteForm());
                     } else if (subMenuIndex == 11) {
-                        main.showForm(new ObjetoForm());
+                        main.showForm(new MonitoramentoForm());
                     } else if (subMenuIndex == 12) {
+                        main.showForm(new CarteiraForm());
+                    } else if (subMenuIndex == 13) {
+                        main.showForm(new CadernoForm());
+                    } else if (subMenuIndex == 14) {
+                        main.showForm(new MetaForm());
+                    } else if (subMenuIndex == 15) {
+                        main.showForm(new SiteForm());
+                    } else if (subMenuIndex == 16) {
+                        main.showForm(new ObjetoForm());
+                    } else if (subMenuIndex == 17) {
                         main.showForm(new PapelForm());
                     }
                 } else if (menuIndex == 1) {
