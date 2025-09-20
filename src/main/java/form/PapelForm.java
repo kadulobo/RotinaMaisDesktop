@@ -198,7 +198,7 @@ public class PapelForm extends JPanel {
         }
         Map<String, String> unique = papeis.stream()
                 .map(Papel::getTipo)
-                .filter(t -> t != null && !t.isBlank())
+                .filter(t -> t != null && !t.isEmpty())
                 .collect(Collectors.toMap(t -> t.toLowerCase(), t -> t, (existing, replacement) -> existing, LinkedHashMap::new));
         List<String> values = new ArrayList<>();
         values.add("Todos");
@@ -240,7 +240,7 @@ public class PapelForm extends JPanel {
         if (lista != null) {
             Map<String, String> unique = lista.stream()
                     .map(Papel::getTipo)
-                    .filter(t -> t != null && !t.isBlank())
+                    .filter(t -> t != null && !t.isEmpty())
                     .collect(Collectors.toMap(t -> t.toLowerCase(), t -> t, (existing, replacement) -> existing));
             tipos = unique.size();
             LocalDate hoje = LocalDate.now();
