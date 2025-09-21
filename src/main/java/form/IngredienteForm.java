@@ -94,7 +94,7 @@ public class IngredienteForm extends JPanel {
         cardComFoto.setData(new ModelCard("Com foto", 0, 0, iconComFoto));
         cards.add(cardComFoto);
 
-        iconSemFoto = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.IMAGE_NOT_SUPPORTED, 60, Color.WHITE,
+        iconSemFoto = IconFontSwing.buildIcon(GoogleMaterialDesignIcons.BROKEN_IMAGE, 60, Color.WHITE,
                 new Color(255, 255, 255, 15));
         cardSemFoto = new Card();
         cardSemFoto.setBackground(new Color(255, 152, 0));
