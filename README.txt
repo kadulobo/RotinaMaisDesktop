@@ -1,5 +1,6 @@
 RotinaMaisDesktop (estrutura completa)
 =====================================
+Atualizado em 12/11/2025.
 Requer **Java 17** ou superior para compilar e executar, devido às
 dependências Jakarta Persistence 3.x e Hibernate 6.x.
 - Versão do projeto definida no pom.xml: 1.0.0-SNAPSHOT.
