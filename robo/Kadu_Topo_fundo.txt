@@ -17,6 +17,8 @@ ContratoMaiior(5);
 RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
+KeltnerPeriodo(20);
+KeltnerMultiplicador(2.0);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
   fundoAnterior,TopoAnterior : float;
@@ -29,6 +31,8 @@ Var
   i,iguais                                                                : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
+  keltnerSuperior, keltnerInferior, keltnerMedia, keltnerRange, precoTipico, faixaAtual : float;
+  keltnerOk                                                               : boolean;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -79,8 +83,16 @@ Begin
   Y := low;
 
   VLow := Lowest(low,Niveis);
-  VHigh := Highest(high,Niveis);                   
+  VHigh := Highest(high,Niveis);
   MediaCentral := Media(Niveis,close);
+
+  precoTipico := (High + Low + Close) / 3;
+  faixaAtual := High - Low;
+  keltnerMedia := Media(KeltnerPeriodo, precoTipico);
+  keltnerRange := Media(KeltnerPeriodo, faixaAtual);
+  keltnerSuperior := keltnerMedia + (keltnerRange * KeltnerMultiplicador);
+  keltnerInferior := keltnerMedia - (keltnerRange * KeltnerMultiplicador);
+  keltnerOk := (Close <= keltnerSuperior) e (Close >= keltnerInferior);
   Begin
     If Topo_Fundo = True then
       Begin
@@ -179,7 +191,7 @@ Begin
   // Verifica se está posicionado. Se não estiver Envia as ordens conforme sinais de Compra / Venda        
   if not HasPosition then
     Begin
-      If TimeOk e VolOk and bolComprar and Compra and (horarioTravado=false) 
+      If TimeOk e VolOk and bolComprar and Compra and (horarioTravado=false) e keltnerOk
       and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40)then BuyAtMarket(ContratosTotal);
       If TimeOk e VolOk and bolVender and Venda and (horarioTravado=false) then SellShortLimit(Low,ContratosTotal);
     End;
