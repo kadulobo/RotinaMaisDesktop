@@ -19,6 +19,8 @@ StopFixo(true);
 UltimosXCandles(8);
 KeltnerPeriodo(30);
 KeltnerMultiplicador(2.0);
+ADXPeriodo(14);
+ADXMinimo(20.0);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
   fundoAnterior,TopoAnterior : float;
@@ -33,6 +35,8 @@ Var
   dAtual                                                                  : integer;
   keltnerSuperior, keltnerInferior, keltnerMedia, keltnerRange, precoTipico, faixaAtual : float;
   keltnerOk                                                               : boolean;
+  adxValor                                                                : float;
+  adxOk                                                                   : boolean;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -93,6 +97,8 @@ Begin
   keltnerSuperior := keltnerMedia + (keltnerRange * KeltnerMultiplicador);
   keltnerInferior := keltnerMedia - (keltnerRange * KeltnerMultiplicador);
   keltnerOk := (Close <= keltnerSuperior) e (Close >= keltnerInferior);
+  adxValor := ADX(ADXPeriodo);
+  adxOk := adxValor >= ADXMinimo;
   Begin
     If Topo_Fundo = True then
       Begin
@@ -191,7 +197,7 @@ Begin
   // Verifica se está posicionado. Se não estiver Envia as ordens conforme sinais de Compra / Venda        
   if not HasPosition then
     Begin
-      If TimeOk e VolOk and bolComprar and Compra and (horarioTravado=false) e keltnerOk
+      If TimeOk e VolOk and bolComprar and Compra and (horarioTravado=false) e keltnerOk e adxOk
       and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40)then BuyAtMarket(ContratosTotal);
       If TimeOk e VolOk and bolVender and Venda and (horarioTravado=false) then SellShortLimit(Low,ContratosTotal);
     End;
