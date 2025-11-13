@@ -219,7 +219,9 @@ If isSold then
          
 End;
 
-  if (stoFast - stoSlow) >= DiferencaMinimaStoch then
+  if (stoFast = 100) or (stoSlow = 100) or (stoFast = 0) or (stoSlow = 0) then
+    PaintBar(clYellow)
+  else if (stoFast - stoSlow) >= DiferencaMinimaStoch then
     PaintBar(corVerdeEscuro)
   else if (stoSlow - stoFast) >= DiferencaMinimaStoch then
     PaintBar(corVermelhoEscuro);
