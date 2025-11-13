@@ -18,6 +18,7 @@ ContratoMaiior(10);
 RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
+DiferencaMinimaStoch(5);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
   Compra, Venda, timeok, volok : boolean;
@@ -29,6 +30,8 @@ Var
   i,iguais                                                                : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
+  stoRaw, stoFast, stoSlow, stoRange                                      : float;
+  corVerdeEscuro, corVermelhoEscuro                                       : integer;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -36,6 +39,18 @@ Begin
 
   TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
   VolOk := Volume > 10000;
+
+  corVerdeEscuro := RGB(0,100,0);
+  corVermelhoEscuro := RGB(139,0,0);
+
+  stoRange := Highest(high,14) - Lowest(low,14);
+  if stoRange > 0 then
+    stoRaw := ((Close - Lowest(low,14)) / stoRange) * 100
+  else
+    stoRaw := 0;
+
+  stoFast := Media(3,stoRaw);
+  stoSlow := Media(14,stoRaw);
 
   se(RenkoTrueTempoFalse)entao
   begin
@@ -132,7 +147,6 @@ Begin
         end;
     end;
 
-        
   If Compra and not HasPosition then
     Begin                          
      paintbar(cllime);
@@ -204,4 +218,9 @@ If isSold then
   BuyToCoverStop(vStop,vStop+50,ContratoMaiior);
          
 End;
+
+  if (stoFast - stoSlow) >= DiferencaMinimaStoch then
+    PaintBar(corVerdeEscuro)
+  else if (stoSlow - stoFast) >= DiferencaMinimaStoch then
+    PaintBar(corVermelhoEscuro);
 end;
