@@ -9,21 +9,17 @@ PlotMedia(false);
 ConsiderarHorario(true);
 HorarioInicio(0900);
 HorarioFinal(1700);
-bolComprar(true);
-bolVender(false);
-ContratosTotal(5);
+bolComprar(false);
+bolVender(true);
+bolAmbos(true);
+ContratosTotal(10);
 ContratoParcial(5);
-ContratoMaiior(5);
+ContratoMaiior(10);
 RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
-KeltnerPeriodo(30);
-KeltnerMultiplicador(2.0);
-ADXPeriodo(14);
-ADXMinimo(20.0);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
-  fundoAnterior,TopoAnterior : float;
   Compra, Venda, timeok, volok : boolean;
   Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
   amp, t, f : Real;
@@ -33,19 +29,10 @@ Var
   i,iguais                                                                : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
-  keltnerSuperior, keltnerInferior, keltnerMedia, keltnerRange, precoTipico, faixaAtual : float;
-  keltnerOk                                                               : boolean;
-  adxValor                                                                : float;
-  adxOk                                                                   : boolean;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
 
-  If time >= 1740 then
-  begin
-  fundoAnterior:=0;
-  TopoAnterior:=0;
-  end;
 
   TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
   VolOk := Volume > 10000;
@@ -87,18 +74,8 @@ Begin
   Y := low;
 
   VLow := Lowest(low,Niveis);
-  VHigh := Highest(high,Niveis);
+  VHigh := Highest(high,Niveis);                   
   MediaCentral := Media(Niveis,close);
-
-  precoTipico := (High + Low + Close) / 3;
-  faixaAtual := High - Low;
-  keltnerMedia := Media(KeltnerPeriodo, precoTipico);
-  keltnerRange := Media(KeltnerPeriodo, faixaAtual);
-  keltnerSuperior := keltnerMedia + (keltnerRange * KeltnerMultiplicador);
-  keltnerInferior := keltnerMedia - (keltnerRange * KeltnerMultiplicador);
-  keltnerOk := (Close <= keltnerSuperior) e (Close >= keltnerInferior);
-  adxValor := ADX(ADXPeriodo);
-  adxOk := adxValor >= ADXMinimo;
   Begin
     If Topo_Fundo = True then
       Begin
@@ -117,10 +94,6 @@ Begin
             SetPlotColor(4,(RGB(0,255,0)));
             SetPlotWidth(4,3);
            //PlotText(Y,clblue);;
-           if fundoAnterior = 0 then fundoAnterior:=Y;
-
-           if (Y > fundoAnterior) and (fechamento > abertura) then
-           PaintBar(clGreen);
           end;
       End;
     If PlotMedia = True then Plot(MediaCentral);
@@ -128,13 +101,13 @@ Begin
 
   If ConsiderarHorario then
     Begin
-      Compra := (Low < lowest(low,Niveis)[1]) e (Close > Open) e TimeOk e VolOk;
-      Venda := (High > highest(high,Niveis)[1]) e (Close < Open) e TimeOk e VolOk;
+      Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk;
+      Venda := (High > VHigh[1]) e (Close < Open) e TimeOk e VolOk;
     End
   Else If not ConsiderarHorario then
     Begin
-      Compra := (Low < lowest(low,Niveis)[1]) e (Close > Open) e VolOk;
-      Venda := (High > highest(high,Niveis)[1]) e (Close < Open) e VolOk;
+      Compra := (Low < VLow[1]) e (Close > Open) e VolOk;
+      Venda := (High > VHigh[1]) e (Close < Open) e VolOk;
     End;
 
 
@@ -167,7 +140,7 @@ Begin
   se(RenkoTrueTempoFalse)entao
   begin
   vAlvo := (t+(amp*1));
-  vParcial := (t+(amp*1));
+  vParcial := (t);
   VStopParcial:= (f-(amp*1));
   vStop:= (f);
   end;
@@ -176,72 +149,59 @@ Begin
   se(RenkoTrueTempoFalse=false)entao
   begin
   vAlvo := (t+(amp*1));
-  vParcial := (t+(amp*0.5));
-  VStopParcial:= (f-(amp*1));
   vStop:= (f-(amp*1));
-  PlotText(t,clblue);
   end;
 
 
   End
-  Else If Venda and not HasPendingOrders then
-    Begin
-     // paintbar(255);
-      Entrada := Close;
-      Risco := vStop - Entrada;
-      vAlvo := (Entrada - (Risco * 2));
+  Else If Venda and not HasPosition then
+  Begin
+   paintbar(clRed);
+  se(RenkoTrueTempoFalse)entao
+  begin
+  vAlvo := (f-(amp*1));
+  vStop:= (t);
+  end;
+   
+  //CODIGO PARA TEMPO NAO MEXE
+  se(RenkoTrueTempoFalse=false)entao
+  begin
+  vAlvo := (f-(amp*1));
+  vStop:= (t);
+  end;
     End;
 
-
-// Execução
-  // Verifica se está posicionado. Se não estiver Envia as ordens conforme sinais de Compra / Venda        
+    
   if not HasPosition then
     Begin
-      If TimeOk e VolOk and bolComprar and Compra and (horarioTravado=false) e keltnerOk e adxOk
-      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40)then BuyAtMarket(ContratosTotal);
-      If TimeOk e VolOk and bolVender and Venda and (horarioTravado=false) then SellShortLimit(Low,ContratosTotal);
+      If TimeOk e VolOk and (bolComprar or bolAmbos) and Compra and (horarioTravado=false) 
+      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) then BuyAtMarket(ContratosTotal);
+      If TimeOk e VolOk and (bolVender or bolAmbos) and Venda and (horarioTravado=false) 
+       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) then SellShortAtMarket(ContratosTotal);
     End;
 
  if not HasPosition  then
  bolStopCadastrado :=false;
 
- if IsBought and bolStopCadastrado = false and StopFixo Entao
- begin
-
- valorStopFixo:= vStop;
- valorStopParcial:= VStopParcial;
- bolStopCadastrado:=true;
- end;
-
 // Se Comprado ou Vendido faça Saídas de acordo com as instruções abaixo
 If IsBought then
   Begin
-  //Plot(Price);
- // Plot2(Position);
     SellToCoverLimit(vAlvo,ContratoMaiior);
-    //SellToCoverLimit(vParcial,ContratoParcial);
-
-    se(RenkoTrueTempoFalse)entao
+    se(fechamento[1]>abertura[1]) and (RenkoTrueTempoFalse)entao
     begin
-    se(fechamento[1]>abertura[1])entao
-    begin
-      VStopParcial:= (f-(amp*1));
       vStop:= (f);
     end;
-    end;
-
     SellToCoverStop(vStop,vStop-50,ContratoMaiior); 
-  //  SellToCoverStop(VStopParcial,VStopParcial-50,ContratoParcial);  
-     
-     
   End;
 
 If isSold then
   Begin
-  //Plot(Price);
- // Plot2(Position);
-  BuyToCoverLimit(Y);
-  BuyToCoverStop(X,X);
+  BuyToCoverLimit(vAlvo,ContratoMaiior);
+    se(fechamento[1] < abertura[1]) and (RenkoTrueTempoFalse)entao
+    begin
+      vStop:= (t);
+    end;
+  BuyToCoverStop(vStop,vStop+50,ContratoMaiior);
          
 End;
 end;
