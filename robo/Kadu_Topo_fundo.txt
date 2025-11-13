@@ -22,13 +22,14 @@ KeltnerMultiplicador(2.0);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
   fundoAnterior,TopoAnterior : float;
-  Compra, Venda, timeok, volok : boolean;
+  Compra, Venda, timeok, volok, foraJanelaProibida : boolean;
   Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
   amp, t, f : Real;
   valorStopParcial,valorStopFixo : float;
   bolStopCadastrado : boolean;
   horarioTravado                                                          : boolean;
   i,iguais                                                                : integer;
+  horaAtual, minutoAtual                                                  : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
   keltnerSuperior, keltnerInferior, keltnerMedia, keltnerRange, precoTipico, faixaAtual : float;
@@ -43,7 +44,18 @@ Begin
   TopoAnterior:=0;
   end;
 
-  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
+  horaAtual := IntPortion(Time / 100);
+  minutoAtual := Time - (horaAtual * 100);
+
+  foraJanelaProibida := true;
+
+  if (horaAtual >= 9) and (horaAtual <= 16) then
+    begin
+      if (minutoAtual >= 55) or (minutoAtual <= 5) then
+        foraJanelaProibida := false;
+    end;
+
+  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal) e foraJanelaProibida;
   VolOk := Volume > 10000;
 
   se(RenkoTrueTempoFalse)entao
