@@ -32,6 +32,7 @@ Var
   dAtual                                                                  : integer;
   stoRaw, stoFast, stoSlow, stoRange                                      : float;
   corVerdeEscuro, corVermelhoEscuro                                       : integer;
+  stochLimiteSuperior, stochLimiteInferior                                : float;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -42,6 +43,8 @@ Begin
 
   corVerdeEscuro := RGB(0,100,0);
   corVermelhoEscuro := RGB(139,0,0);
+  stochLimiteSuperior := 99.9;
+  stochLimiteInferior := 0.1;
 
   stoRange := Highest(high,14) - Lowest(low,14);
   if stoRange > 0 then
@@ -219,7 +222,8 @@ If isSold then
          
 End;
 
-  if (stoFast = 100) or (stoSlow = 100) or (stoFast = 0) or (stoSlow = 0) then
+  if ((stoFast >= stochLimiteSuperior) and (stoSlow >= stochLimiteSuperior)) or
+     ((stoFast <= stochLimiteInferior) and (stoSlow <= stochLimiteInferior)) then
     PaintBar(clYellow)
   else if (stoFast - stoSlow) >= DiferencaMinimaStoch then
     PaintBar(corVerdeEscuro)
