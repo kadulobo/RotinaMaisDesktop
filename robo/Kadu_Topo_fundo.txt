@@ -1,0 +1,173 @@
+//1 - pausar as 17:40
+//100 reais de gain por contrato
+//100 reais de stop por contrato
+Input
+Niveis(6);
+Topo_Fundo(true);
+Levels(false);
+PlotMedia(true);
+ConsiderarHorario(true);
+HorarioInicio(910);
+HorarioFinal(1755);
+bolComprar(true);
+ContratosTotal(6);
+ContratoParcial(3);
+ContratoMaiior(3);
+RenkoTrueTempoFalse(true);
+StopFixo(true);
+Var
+  x,Y,z,vLow,vHigh, MediaCentral : float;
+  fundoAnterior,TopoAnterior : float;
+  Compra, Venda, timeok, volok : boolean;
+  Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
+  amp, t, f : Real;
+  valorStopParcial,valorStopFixo : float;
+  bolStopCadastrado : boolean;
+Begin
+
+  If time >= HorarioFinal then ClosePosition;
+
+  If time >= 1740 then
+  begin
+  fundoAnterior:=0;
+  TopoAnterior:=0;
+  end;
+
+  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
+  VolOk := Volume > 10000;
+
+  se(RenkoTrueTempoFalse)entao
+  begin
+  amp := Round(Abs(Abertura[1] - Fechamento[1]));
+
+  Se Abertura[1] > Fechamento[1] então
+  inicio
+    t := Abertura[1] + amp;
+    f := Fechamento[1] - amp;
+  fim
+  Senao
+  inicio
+    f := Abertura[1] - amp;
+    t := Fechamento[1] + amp;
+  fim;
+  end;
+
+  se(RenkoTrueTempoFalse=false)entao
+  begin
+  amp := Round(Abs(Maxima[0] - Minima[0]));
+
+  Se Abertura[0] > Fechamento[0] então
+  inicio
+    t := Abertura[0] ;
+    f := Fechamento[0] ;
+  fim
+  Senao
+  inicio
+    f := Abertura[0] ;
+    t := Fechamento[0] ;
+  fim;
+  end;
+
+
+  X := high;
+  Y := low;
+
+  VLow := Lowest(low,Niveis);
+  VHigh := Highest(high,Niveis);                   
+  MediaCentral := Media(Niveis,close);
+  Begin
+    If Topo_Fundo = True then
+      Begin
+        if vHigh <= vHigh[1] then
+          begin
+            X := X[1];
+            PLOT3(x);
+            SetPlotColor(3,(RGB(255,0,0)));
+            SetPlotWidth(3,3);
+
+          end;
+        if vLow >= vLow[1] then
+          begin
+            Y := y[1];
+            PLOT4(y);
+            SetPlotColor(4,(RGB(0,255,0)));
+            SetPlotWidth(4,3);
+           //PlotText(Y,clblue);;
+           if fundoAnterior = 0 then fundoAnterior:=Y;
+
+           if (Y > fundoAnterior) and (fechamento > abertura) then
+           PaintBar(clGreen);
+          end;
+      End;
+    If PlotMedia = True then Plot(MediaCentral);
+  End;
+
+  If ConsiderarHorario then
+    Begin
+      Compra := (Low < lowest(low,Niveis)[1]) e (Close > Open) e TimeOk e VolOk;
+    End
+  Else If not ConsiderarHorario then
+    Begin
+      Compra := (Low < lowest(low,Niveis)[1]) e (Close > Open) e VolOk;
+    End;
+        
+  If Compra and not HasPosition then
+    Begin                          
+     paintbar(cllime);
+
+  se(RenkoTrueTempoFalse)entao
+  begin
+  vAlvo := (t+(amp*4));
+  vParcial := (t+(amp*1.5));
+  VStopParcial:= (f-(amp*2));
+  vStop:= (f-(amp*2));
+  end;
+   
+  se(RenkoTrueTempoFalse=false)entao
+  begin
+  vAlvo := (t+(amp*1));
+  vParcial := (t+(amp*0.5));
+  VStopParcial:= (f-(amp*1));
+  vStop:= (f-(amp*1));
+  PlotText(t,clblue);
+  end;
+end;
+    
+  if not HasPosition then
+    Begin
+      If TimeOk e VolOk and bolComprar and Compra then BuyAtMarket(ContratosTotal); 
+    End;
+
+ if not HasPosition  then
+ bolStopCadastrado :=false;
+
+ if IsBought and bolStopCadastrado = false and StopFixo Entao
+ begin
+
+ valorStopFixo:= vStop;
+ valorStopParcial:= VStopParcial;
+ bolStopCadastrado:=true;
+ end;
+
+If IsBought then
+  Begin
+
+    SellToCoverLimit(vAlvo,ContratoMaiior);
+    SellToCoverLimit(vParcial,ContratoParcial);
+
+    se(RenkoTrueTempoFalse)entao
+    begin
+    se(fechamento[1]>abertura[1])entao
+    begin
+      VStopParcial:= (f-(amp*1));
+      vStop:= (f-(amp*2));
+    end;
+    end;
+
+    SellToCoverStop(vStop,vStop-50,ContratoMaiior); 
+    SellToCoverStop(VStopParcial,VStopParcial-50,ContratoParcial);  
+     
+     
+  End;
+
+end;
