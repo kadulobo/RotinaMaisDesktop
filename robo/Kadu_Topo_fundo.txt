@@ -1,20 +1,22 @@
-//1 - pausar as 17:40
-//100 reais de gain por contrato
-//100 reais de stop por contrato
+//Robo estudo para scaper de 1 renko fechado apos a reversão de nivel de preço 6
+//Analisando anual de 2025 , scaper de 45 pontos , gain diario de (lucro)*6 gain 
+//Stop financeiro seria de 3 entradas avaliar pelo backtest , então para 10c - stop 700 / gain 540 
 Input
 Niveis(6);
 Topo_Fundo(true);
 Levels(false);
-PlotMedia(true);
+PlotMedia(false);
 ConsiderarHorario(true);
-HorarioInicio(910);
-HorarioFinal(1755);
+HorarioInicio(0900);
+HorarioFinal(1700);
 bolComprar(true);
-ContratosTotal(6);
-ContratoParcial(3);
-ContratoMaiior(3);
+bolVender(false);
+ContratosTotal(5);
+ContratoParcial(5);
+ContratoMaiior(5);
 RenkoTrueTempoFalse(true);
 StopFixo(true);
+UltimosXCandles(8);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
   fundoAnterior,TopoAnterior : float;
@@ -23,6 +25,10 @@ Var
   amp, t, f : Real;
   valorStopParcial,valorStopFixo : float;
   bolStopCadastrado : boolean;
+  horarioTravado                                                          : boolean;
+  i,iguais                                                                : integer;
+  tAtual                                                                  : float;
+  dAtual                                                                  : integer;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -105,11 +111,36 @@ Begin
   If ConsiderarHorario then
     Begin
       Compra := (Low < lowest(low,Niveis)[1]) e (Close > Open) e TimeOk e VolOk;
+      Venda := (High > highest(high,Niveis)[1]) e (Close < Open) e TimeOk e VolOk;
     End
   Else If not ConsiderarHorario then
     Begin
       Compra := (Low < lowest(low,Niveis)[1]) e (Close > Open) e VolOk;
+      Venda := (High > highest(high,Niveis)[1]) e (Close < Open) e VolOk;
     End;
+
+
+    // ---- calcula se o horário da barra atual repetiu nos últimos X candles
+  horarioTravado := false;
+    begin
+      // Só faz a checagem se há histórico suficiente
+      if CurrentBar() >= (UltimosXCandles + 1) then
+        // usa API oficial, não BarNumber
+        begin
+          tAtual := Time;
+          // hora/min do candle sendo processado
+          dAtual := CurrentDate;
+          // garante mesma data
+          iguais := 0;
+          for i := 1 to UltimosXCandles do
+            if (Time[i] = tAtual) and (CurrentDate[i] = dAtual) then
+              iguais := iguais + 1;
+          // Se TODAS as últimas X barras têm o MESMO horário → trava
+          if (iguais = UltimosXCandles) then
+            horarioTravado := true;
+        end;
+    end;
+
         
   If Compra and not HasPosition then
     Begin                          
@@ -117,12 +148,13 @@ Begin
 
   se(RenkoTrueTempoFalse)entao
   begin
-  vAlvo := (t+(amp*4));
-  vParcial := (t+(amp*1.5));
-  VStopParcial:= (f-(amp*2));
-  vStop:= (f-(amp*2));
+  vAlvo := (t+(amp*1));
+  vParcial := (t+(amp*1));
+  VStopParcial:= (f-(amp*1));
+  vStop:= (f);
   end;
    
+  //CODIGO PARA TEMPO NAO MEXE
   se(RenkoTrueTempoFalse=false)entao
   begin
   vAlvo := (t+(amp*1));
@@ -131,11 +163,25 @@ Begin
   vStop:= (f-(amp*1));
   PlotText(t,clblue);
   end;
-end;
-    
+
+
+  End
+  Else If Venda and not HasPendingOrders then
+    Begin
+     // paintbar(255);
+      Entrada := Close;
+      Risco := vStop - Entrada;
+      vAlvo := (Entrada - (Risco * 2));
+    End;
+
+
+// Execução
+  // Verifica se está posicionado. Se não estiver Envia as ordens conforme sinais de Compra / Venda        
   if not HasPosition then
     Begin
-      If TimeOk e VolOk and bolComprar and Compra then BuyAtMarket(ContratosTotal); 
+      If TimeOk e VolOk and bolComprar and Compra and (horarioTravado=false) 
+      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40)then BuyAtMarket(ContratosTotal);
+      If TimeOk e VolOk and bolVender and Venda and (horarioTravado=false) then SellShortLimit(Low,ContratosTotal);
     End;
 
  if not HasPosition  then
@@ -149,25 +195,35 @@ end;
  bolStopCadastrado:=true;
  end;
 
+// Se Comprado ou Vendido faça Saídas de acordo com as instruções abaixo
 If IsBought then
   Begin
-
+  //Plot(Price);
+ // Plot2(Position);
     SellToCoverLimit(vAlvo,ContratoMaiior);
-    SellToCoverLimit(vParcial,ContratoParcial);
+    //SellToCoverLimit(vParcial,ContratoParcial);
 
     se(RenkoTrueTempoFalse)entao
     begin
     se(fechamento[1]>abertura[1])entao
     begin
       VStopParcial:= (f-(amp*1));
-      vStop:= (f-(amp*2));
+      vStop:= (f);
     end;
     end;
 
     SellToCoverStop(vStop,vStop-50,ContratoMaiior); 
-    SellToCoverStop(VStopParcial,VStopParcial-50,ContratoParcial);  
+  //  SellToCoverStop(VStopParcial,VStopParcial-50,ContratoParcial);  
      
      
   End;
 
+If isSold then
+  Begin
+  //Plot(Price);
+ // Plot2(Position);
+  BuyToCoverLimit(Y);
+  BuyToCoverStop(X,X);
+         
+End;
 end;
