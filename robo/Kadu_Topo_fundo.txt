@@ -18,21 +18,35 @@ ContratoMaiior(10);
 RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
+KeltnerPeriodo(20);
+KeltnerDesvio(2.0);
+KeltnerTipo(1);
+QtdRenkosBloqueio(4);
 Var
-  x,Y,z,vLow,vHigh, MediaCentral : float;
-  Compra, Venda, timeok, volok : boolean;
+  x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
+  Compra, Venda, timeok, volok, compraKeltnerValida, vendaKeltnerValida : boolean;
   Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
   amp, t, f : Real;
   valorStopParcial,valorStopFixo : float;
-  bolStopCadastrado : boolean;
+  bolStopCadastrado, bloqueiaCompras, bloqueiaVendas, renkoAcimaBanda, renkoAbaixoBanda : boolean;
   horarioTravado                                                          : boolean;
-  i,iguais                                                                : integer;
+  i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
 
+
+  upperKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|0|;
+  lowerKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|1|;
+
+  Plot1(upperKeltner);
+  SetPlotColor(1,(RGB(0,128,255)));
+  SetPlotWidth(1,2);
+  Plot2(lowerKeltner);
+  SetPlotColor(2,(RGB(255,128,0)));
+  SetPlotWidth(2,2);
 
   TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
   VolOk := Volume > 10000;
@@ -73,8 +87,27 @@ Begin
   X := high;
   Y := low;
 
+  renkoAcimaBanda := (Low > upperKeltner);
+  renkoAbaixoBanda := (High < lowerKeltner);
+
+  if renkoAcimaBanda then
+    consecutivosAcima := consecutivosAcima + 1
+  else
+    consecutivosAcima := 0;
+
+  if renkoAbaixoBanda then
+    consecutivosAbaixo := consecutivosAbaixo + 1
+  else
+    consecutivosAbaixo := 0;
+
+  if consecutivosAcima >= QtdRenkosBloqueio then
+    bloqueiaVendas := true;
+
+  if consecutivosAbaixo >= QtdRenkosBloqueio then
+    bloqueiaCompras := true;
+
   VLow := Lowest(low,Niveis);
-  VHigh := Highest(high,Niveis);                   
+  VHigh := Highest(high,Niveis);
   MediaCentral := Media(Niveis,close);
   Begin
     If Topo_Fundo = True then
@@ -111,6 +144,10 @@ Begin
     End;
 
 
+  compraKeltnerValida := Compra e (Low[1] < lowerKeltner[1]) e (not bloqueiaCompras);
+  vendaKeltnerValida := Venda e (High[1] > upperKeltner[1]) e (not bloqueiaVendas);
+
+
     // ---- calcula se o horário da barra atual repetiu nos últimos X candles
   horarioTravado := false;
     begin
@@ -132,9 +169,9 @@ Begin
         end;
     end;
 
-        
-  If Compra and not HasPosition then
-    Begin                          
+
+  If compraKeltnerValida and not HasPosition then
+    Begin
      paintbar(cllime);
 
   se(RenkoTrueTempoFalse)entao
@@ -154,7 +191,7 @@ Begin
 
 
   End
-  Else If Venda and not HasPosition then
+  Else If vendaKeltnerValida and not HasPosition then
   Begin
    paintbar(clRed);
   se(RenkoTrueTempoFalse)entao
@@ -174,10 +211,20 @@ Begin
     
   if not HasPosition then
     Begin
-      If TimeOk e VolOk and (bolComprar or bolAmbos) and Compra and (horarioTravado=false) 
-      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) then BuyAtMarket(ContratosTotal);
-      If TimeOk e VolOk and (bolVender or bolAmbos) and Venda and (horarioTravado=false) 
-       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) then SellShortAtMarket(ContratosTotal);
+      If (bolComprar or bolAmbos) and compraKeltnerValida and (horarioTravado=false)
+      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) then
+        begin
+          BuyAtMarket(ContratosTotal);
+          bloqueiaVendas := false;
+          consecutivosAcima := 0;
+        end;
+      If (bolVender or bolAmbos) and vendaKeltnerValida and (horarioTravado=false)
+       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) then
+        begin
+          SellShortAtMarket(ContratosTotal);
+          bloqueiaCompras := false;
+          consecutivosAbaixo := 0;
+        end;
     End;
 
  if not HasPosition  then
