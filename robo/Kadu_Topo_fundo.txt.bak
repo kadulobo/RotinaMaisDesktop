@@ -18,6 +18,9 @@ ContratoMaiior(10);
 RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
+KeltnerPeriodo(20);
+KeltnerDesvio(0.80);
+LimiteRenkoBandas(4);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
   Compra, Venda, timeok, volok : boolean;
@@ -29,6 +32,10 @@ Var
   i,iguais                                                                : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
+  keltnerCentro, keltnerSuperior, keltnerInferior                         : float;
+  renkosAcimaBanda, renkosAbaixoBanda                                     : integer;
+  podeBuscarVendas, podeBuscarCompras                                     : boolean;
+  condicaoKeltnerCompra, condicaoKeltnerVenda                             : boolean;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -73,8 +80,43 @@ Begin
   X := high;
   Y := low;
 
+  if CurrentBar() = 0 then
+    begin
+      renkosAcimaBanda := 0;
+      renkosAbaixoBanda := 0;
+      podeBuscarVendas := true;
+      podeBuscarCompras := true;
+    end;
+
+  keltnerCentro := MediaExp(KeltnerPeriodo, close);
+  keltnerSuperior := keltnerCentro + (ATR(KeltnerPeriodo) * KeltnerDesvio);
+  keltnerInferior := keltnerCentro - (ATR(KeltnerPeriodo) * KeltnerDesvio);
+
+  Plot5(keltnerSuperior);
+  SetPlotColor(5,(RGB(255,165,0)));
+  SetPlotWidth(5,2);
+  Plot6(keltnerInferior);
+  SetPlotColor(6,(RGB(30,144,255)));
+  SetPlotWidth(6,2);
+
+  if Close > keltnerSuperior then
+    renkosAcimaBanda := renkosAcimaBanda + 1
+  else
+    renkosAcimaBanda := 0;
+
+  if Close < keltnerInferior then
+    renkosAbaixoBanda := renkosAbaixoBanda + 1
+  else
+    renkosAbaixoBanda := 0;
+
+  if renkosAcimaBanda >= LimiteRenkoBandas then
+    podeBuscarVendas := false;
+
+  if renkosAbaixoBanda >= LimiteRenkoBandas then
+    podeBuscarCompras := false;
+
   VLow := Lowest(low,Niveis);
-  VHigh := Highest(high,Niveis);                   
+  VHigh := Highest(high,Niveis);
   MediaCentral := Media(Niveis,close);
   Begin
     If Topo_Fundo = True then
@@ -101,14 +143,32 @@ Begin
 
   If ConsiderarHorario then
     Begin
-      Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk;
-      Venda := (High > VHigh[1]) e (Close < Open) e TimeOk e VolOk;
+      condicaoKeltnerCompra := (Minima[1] < keltnerInferior[1]);
+      condicaoKeltnerVenda := (Maxima[1] > keltnerSuperior[1]);
+
+      Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk e condicaoKeltnerCompra e podeBuscarCompras;
+      Venda := (High > VHigh[1]) e (Close < Open) e TimeOk e VolOk e condicaoKeltnerVenda e podeBuscarVendas;
     End
   Else If not ConsiderarHorario then
     Begin
-      Compra := (Low < VLow[1]) e (Close > Open) e VolOk;
-      Venda := (High > VHigh[1]) e (Close < Open) e VolOk;
+      condicaoKeltnerCompra := (Minima[1] < keltnerInferior[1]);
+      condicaoKeltnerVenda := (Maxima[1] > keltnerSuperior[1]);
+
+      Compra := (Low < VLow[1]) e (Close > Open) e VolOk e condicaoKeltnerCompra e podeBuscarCompras;
+      Venda := (High > VHigh[1]) e (Close < Open) e VolOk e condicaoKeltnerVenda e podeBuscarVendas;
     End;
+
+  if Compra then
+    begin
+      podeBuscarVendas := true;
+      renkosAcimaBanda := 0;
+    end;
+
+  if Venda then
+    begin
+      podeBuscarCompras := true;
+      renkosAbaixoBanda := 0;
+    end;
 
 
     // ---- calcula se o horário da barra atual repetiu nos últimos X candles
