@@ -22,6 +22,7 @@ DiferencaMinimaStoch(5);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
   Compra, Venda, timeok, volok : boolean;
+  VolumeDirecionalCompra, VolumeDirecionalVenda : boolean;
   Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
   amp, t, f : Real;
   valorStopParcial,valorStopFixo : float;
@@ -117,6 +118,9 @@ Begin
     If PlotMedia = True then Plot(MediaCentral);
   End;
 
+  VolumeDirecionalCompra := (Volume > Volume[1]) e (Close > Open);
+  VolumeDirecionalVenda := (Volume > Volume[1]) e (Close < Open);
+
   If ConsiderarHorario then
     Begin
       Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk;
@@ -127,6 +131,9 @@ Begin
       Compra := (Low < VLow[1]) e (Close > Open) e VolOk;
       Venda := (High > VHigh[1]) e (Close < Open) e VolOk;
     End;
+
+  Compra := Compra e VolumeDirecionalCompra;
+  Venda := Venda e VolumeDirecionalVenda;
 
 
     // ---- calcula se o horário da barra atual repetiu nos últimos X candles
