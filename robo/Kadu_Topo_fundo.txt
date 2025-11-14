@@ -21,7 +21,7 @@ UltimosXCandles(8);
 DiferencaMinimaStoch(5);
 Var
   x,Y,z,vLow,vHigh, MediaCentral : float;
-  Compra, Venda, timeok, volok : boolean;
+  Compra, Venda, timeok, volok, bloquearCompra, bloquearVenda : boolean;
   VolumeDirecionalCompra, VolumeDirecionalVenda : boolean;
   Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
   amp, t, f : Real;
@@ -31,7 +31,7 @@ Var
   i,iguais                                                                : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
-  stoRaw, stoFast, stoSlow, stoRange                                      : float;
+  stoRaw, stoFast, stoSlow, stoRange, stoSlowFiltroAtual, stoSlowFiltroAnterior : float;
   corVerdeEscuro, corVermelhoEscuro                                       : integer;
   stochLimiteSuperior, stochLimiteInferior                                : float;
 Begin
@@ -55,6 +55,15 @@ Begin
 
   stoFast := Media(3,stoRaw);
   stoSlow := Media(14,stoRaw);
+
+  stoSlowFiltroAtual := SlowStochastic(14,3,1);
+  if CurrentBar() > 1 then
+    stoSlowFiltroAnterior := SlowStochastic(14,3,1)[1]
+  else
+    stoSlowFiltroAnterior := stoSlowFiltroAtual;
+
+  bloquearVenda := (stoSlowFiltroAtual > 70) e (stoSlowFiltroAtual > stoSlowFiltroAnterior);
+  bloquearCompra := (stoSlowFiltroAtual < 30) e (stoSlowFiltroAtual < stoSlowFiltroAnterior);
 
   se(RenkoTrueTempoFalse)entao
   begin
@@ -198,10 +207,10 @@ Begin
     
   if not HasPosition then
     Begin
-      If TimeOk e VolOk and (bolComprar or bolAmbos) and Compra and (horarioTravado=false) 
-      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) then BuyAtMarket(ContratosTotal);
-      If TimeOk e VolOk and (bolVender or bolAmbos) and Venda and (horarioTravado=false) 
-       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) then SellShortAtMarket(ContratosTotal);
+      If TimeOk e VolOk and (bolComprar or bolAmbos) and Compra and (horarioTravado=false)
+      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) and (not bloquearCompra) then BuyAtMarket(ContratosTotal);
+      If TimeOk e VolOk and (bolVender or bolAmbos) and Venda and (horarioTravado=false)
+       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) and (not bloquearVenda) then SellShortAtMarket(ContratosTotal);
     End;
 
  if not HasPosition  then
