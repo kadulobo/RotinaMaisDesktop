@@ -2,7 +2,7 @@
 //Analisando anual de 2025 , scaper de 45 pontos , gain diario de (lucro)*6 gain 
 //Stop financeiro seria de 3 entradas avaliar pelo backtest , então para 10c - stop 700 / gain 540 
 Input
-Niveis(12);
+Niveis(6);
 Topo_Fundo(true);
 Levels(false);
 PlotMedia(false);
@@ -138,8 +138,7 @@ Begin
   if(renkoAbaixoBanda)entao  
   PlotText(consecutivosAbaixo,clblue);
 
-  if((Low < VLow[1]) and compraKeltnerValida) and (consecutivosAbaixo < 3)  entao
-  PaintBar(clgreen);
+ 
 
   If ConsiderarHorario then
     Begin
@@ -181,7 +180,7 @@ Begin
 
   If compraKeltnerValida and not HasPosition then
     Begin
-     paintbar(cllime);
+     
 
   se(RenkoTrueTempoFalse)entao
   begin
@@ -202,7 +201,7 @@ Begin
   End
   Else If vendaKeltnerValida and not HasPosition then
   Begin
-   paintbar(clRed);
+
   se(RenkoTrueTempoFalse)entao
   begin
   vAlvo := (f-(amp*1));
@@ -220,15 +219,18 @@ Begin
     
   if not HasPosition then
     Begin
-      If (bolComprar or bolAmbos) and compraKeltnerValida and (horarioTravado=false) then
+      If (bolComprar or bolAmbos) and compraKeltnerValida  then
         begin
-          BuyAtMarket(ContratosTotal);
+         BuyAtMarket(ContratosTotal);
+         // BuyLimit(f);
           bloqueiaVendas := false;
          // consecutivosAcima := 0;
         end;
-      If (bolVender or bolAmbos) and vendaKeltnerValida and (horarioTravado=false) then
+      If (bolVender or bolAmbos) and vendaKeltnerValida  then
         begin
+           paintbar(clRed);
           SellShortAtMarket(ContratosTotal);
+          //SellShortLimit(t);
           bloqueiaCompras := false;
          // consecutivosAbaixo := 0;
         end;
