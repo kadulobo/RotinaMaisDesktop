@@ -29,6 +29,8 @@ Var
   bolStopCadastrado : boolean;
   horarioTravado                                                          : boolean;
   i,iguais                                                                : integer;
+  contRenkosAlta, contRenkosBaixa, mudancasCorRenko, filtroQtdRenko, minimoMesmaCor, corAtualRenko, corAnteriorRenko : integer;
+  bloqueioContextoCompra, bloqueioContextoVenda, bloqueioContextoGeral                                         : boolean;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
   stoRaw, stoFast, stoSlow, stoRange, stoSlowFiltroAtual, stoSlowFiltroAnterior : float;
@@ -130,6 +132,54 @@ Begin
   VolumeDirecionalCompra := (Volume > Volume[1]) e (Close > Open);
   VolumeDirecionalVenda := (Volume > Volume[1]) e (Close < Open);
 
+  filtroQtdRenko := 8;
+  if filtroQtdRenko < 1 then
+    filtroQtdRenko := 1;
+  minimoMesmaCor := (filtroQtdRenko * 3) / 4;
+  if minimoMesmaCor < 1 then
+    minimoMesmaCor := 1;
+
+  bloqueioContextoCompra := false;
+  bloqueioContextoVenda := false;
+  bloqueioContextoGeral := false;
+  contRenkosAlta := 0;
+  contRenkosBaixa := 0;
+  mudancasCorRenko := 0;
+  corAnteriorRenko := 0;
+
+  if CurrentBar() >= filtroQtdRenko then
+    begin
+      for i := 0 to (filtroQtdRenko - 1) do
+        begin
+          corAtualRenko := 0;
+          if Fechamento[i] > Abertura[i] then
+            begin
+              contRenkosAlta := contRenkosAlta + 1;
+              corAtualRenko := 1;
+            end
+          else if Fechamento[i] < Abertura[i] then
+            begin
+              contRenkosBaixa := contRenkosBaixa + 1;
+              corAtualRenko := -1;
+            end;
+
+          if (i > 0) and (corAtualRenko <> 0) and (corAnteriorRenko <> 0) and (corAtualRenko <> corAnteriorRenko) then
+            mudancasCorRenko := mudancasCorRenko + 1;
+
+          if corAtualRenko <> 0 then
+            corAnteriorRenko := corAtualRenko;
+        end;
+
+      if contRenkosAlta >= minimoMesmaCor then
+        bloqueioContextoVenda := true;
+
+      if contRenkosBaixa >= minimoMesmaCor then
+        bloqueioContextoCompra := true;
+
+      if mudancasCorRenko <= 1 then
+        bloqueioContextoGeral := true;
+    end;
+
   If ConsiderarHorario then
     Begin
       Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk;
@@ -208,9 +258,9 @@ Begin
   if not HasPosition then
     Begin
       If TimeOk e VolOk and (bolComprar or bolAmbos) and Compra and (horarioTravado=false)
-      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) and (not bloquearCompra) then BuyAtMarket(ContratosTotal);
+      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) and (not bloquearCompra) and (not bloqueioContextoCompra) and (not bloqueioContextoGeral) then BuyAtMarket(ContratosTotal);
       If TimeOk e VolOk and (bolVender or bolAmbos) and Venda and (horarioTravado=false)
-       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) and (not bloquearVenda) then SellShortAtMarket(ContratosTotal);
+       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) and (not bloquearVenda) and (not bloqueioContextoVenda) and (not bloqueioContextoGeral) then SellShortAtMarket(ContratosTotal);
     End;
 
  if not HasPosition  then
