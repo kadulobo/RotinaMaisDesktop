@@ -2,12 +2,12 @@
 //Analisando anual de 2025 , scaper de 45 pontos , gain diario de (lucro)*6 gain 
 //Stop financeiro seria de 3 entradas avaliar pelo backtest , então para 10c - stop 700 / gain 540 
 Input
-Niveis(6);
+Niveis(12);
 Topo_Fundo(true);
 Levels(false);
 PlotMedia(false);
 ConsiderarHorario(true);
-HorarioInicio(0900);
+HorarioInicio(0905);
 HorarioFinal(1700);
 bolComprar(false);
 bolVender(true);
@@ -19,27 +19,34 @@ RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
 KeltnerPeriodo(20);
-KeltnerDesvio(0.80);
-LimiteRenkoBandas(4);
+KeltnerDesvio(0.5);
+KeltnerTipo(1);
+QtdRenkosBloqueio(6);
 Var
-  x,Y,z,vLow,vHigh, MediaCentral : float;
-  Compra, Venda, timeok, volok : boolean;
+  x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
+  Compra, Venda, timeok, volok, compraKeltnerValida, vendaKeltnerValida : boolean;
   Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
   amp, t, f : Real;
   valorStopParcial,valorStopFixo : float;
-  bolStopCadastrado : boolean;
+  bolStopCadastrado, bloqueiaCompras, bloqueiaVendas, renkoAcimaBanda, renkoAbaixoBanda : boolean;
   horarioTravado                                                          : boolean;
-  i,iguais                                                                : integer;
+  i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
-  keltnerCentro, keltnerSuperior, keltnerInferior                         : float;
-  renkosAcimaBanda, renkosAbaixoBanda                                     : integer;
-  podeBuscarVendas, podeBuscarCompras                                     : boolean;
-  condicaoKeltnerCompra, condicaoKeltnerVenda                             : boolean;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
 
+
+  upperKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|0|;
+  lowerKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|1|;
+
+  Plot(upperKeltner);
+  SetPlotColor(1,(RGB(0,128,255)));
+  SetPlotWidth(1,2);
+  Plot2(lowerKeltner);
+  SetPlotColor(2,(RGB(255,128,0)));
+  SetPlotWidth(2,2);
 
   TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
   VolOk := Volume > 10000;
@@ -80,40 +87,24 @@ Begin
   X := high;
   Y := low;
 
-  if CurrentBar() = 0 then
-    begin
-      renkosAcimaBanda := 0;
-      renkosAbaixoBanda := 0;
-      podeBuscarVendas := true;
-      podeBuscarCompras := true;
-    end;
+  renkoAcimaBanda := (Low > upperKeltner) and (abertura[1]<fechamento[1]);
+  renkoAbaixoBanda := (High < lowerKeltner) and (abertura[1]>fechamento[1]);
 
-  keltnerCentro := MediaExp(KeltnerPeriodo, close);
-  keltnerSuperior := keltnerCentro + (ATR(KeltnerPeriodo) * KeltnerDesvio);
-  keltnerInferior := keltnerCentro - (ATR(KeltnerPeriodo) * KeltnerDesvio);
-
-  Plot5(keltnerSuperior);
-  SetPlotColor(5,(RGB(255,165,0)));
-  SetPlotWidth(5,2);
-  Plot6(keltnerInferior);
-  SetPlotColor(6,(RGB(30,144,255)));
-  SetPlotWidth(6,2);
-
-  if Close > keltnerSuperior then
-    renkosAcimaBanda := renkosAcimaBanda + 1
+  if renkoAcimaBanda then
+    consecutivosAcima := consecutivosAcima + 1
   else
-    renkosAcimaBanda := 0;
+    consecutivosAcima := 0;
 
-  if Close < keltnerInferior then
-    renkosAbaixoBanda := renkosAbaixoBanda + 1
+  if renkoAbaixoBanda then
+    consecutivosAbaixo := consecutivosAbaixo + 1
   else
-    renkosAbaixoBanda := 0;
+    consecutivosAbaixo := 0;
 
-  if renkosAcimaBanda >= LimiteRenkoBandas then
-    podeBuscarVendas := false;
+  if consecutivosAcima >= QtdRenkosBloqueio then
+    bloqueiaVendas := true;
 
-  if renkosAbaixoBanda >= LimiteRenkoBandas then
-    podeBuscarCompras := false;
+  if consecutivosAbaixo >= QtdRenkosBloqueio then
+    bloqueiaCompras := true;
 
   VLow := Lowest(low,Niveis);
   VHigh := Highest(high,Niveis);
@@ -140,35 +131,30 @@ Begin
       End;
     If PlotMedia = True then Plot(MediaCentral);
   End;
+  
+  if(renkoAcimaBanda)entao
+    PlotText(consecutivosAcima,clblue);
+ 
+  if(renkoAbaixoBanda)entao  
+  PlotText(consecutivosAbaixo,clblue);
+
+  if((Low < VLow[1]) and compraKeltnerValida) and (consecutivosAbaixo < 3)  entao
+  PaintBar(clgreen);
 
   If ConsiderarHorario then
     Begin
-      condicaoKeltnerCompra := (Minima[1] < keltnerInferior[1]);
-      condicaoKeltnerVenda := (Maxima[1] > keltnerSuperior[1]);
-
-      Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk e condicaoKeltnerCompra e podeBuscarCompras;
-      Venda := (High > VHigh[1]) e (Close < Open) e TimeOk e VolOk e condicaoKeltnerVenda e podeBuscarVendas;
+      Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk;
+      Venda := (High > VHigh[1]) e (Close < Open) e TimeOk e VolOk;
     End
   Else If not ConsiderarHorario then
     Begin
-      condicaoKeltnerCompra := (Minima[1] < keltnerInferior[1]);
-      condicaoKeltnerVenda := (Maxima[1] > keltnerSuperior[1]);
-
-      Compra := (Low < VLow[1]) e (Close > Open) e VolOk e condicaoKeltnerCompra e podeBuscarCompras;
-      Venda := (High > VHigh[1]) e (Close < Open) e VolOk e condicaoKeltnerVenda e podeBuscarVendas;
+      Compra := (Low < VLow[1]) e (Close > Open) e VolOk;
+      Venda := (High > VHigh[1]) e (Close < Open) e VolOk;
     End;
 
-  if Compra then
-    begin
-      podeBuscarVendas := true;
-      renkosAcimaBanda := 0;
-    end;
 
-  if Venda then
-    begin
-      podeBuscarCompras := true;
-      renkosAbaixoBanda := 0;
-    end;
+  compraKeltnerValida := Compra e (Low[1] < lowerKeltner[1]) and (consecutivosAbaixo < 3)  ;
+  vendaKeltnerValida := Venda e (High[1] > upperKeltner[1]) and (consecutivosAcima < 3);
 
 
     // ---- calcula se o horário da barra atual repetiu nos últimos X candles
@@ -192,9 +178,9 @@ Begin
         end;
     end;
 
-        
-  If Compra and not HasPosition then
-    Begin                          
+
+  If compraKeltnerValida and not HasPosition then
+    Begin
      paintbar(cllime);
 
   se(RenkoTrueTempoFalse)entao
@@ -214,7 +200,7 @@ Begin
 
 
   End
-  Else If Venda and not HasPosition then
+  Else If vendaKeltnerValida and not HasPosition then
   Begin
    paintbar(clRed);
   se(RenkoTrueTempoFalse)entao
@@ -234,10 +220,18 @@ Begin
     
   if not HasPosition then
     Begin
-      If TimeOk e VolOk and (bolComprar or bolAmbos) and Compra and (horarioTravado=false) 
-      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) then BuyAtMarket(ContratosTotal);
-      If TimeOk e VolOk and (bolVender or bolAmbos) and Venda and (horarioTravado=false) 
-       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) then SellShortAtMarket(ContratosTotal);
+      If (bolComprar or bolAmbos) and compraKeltnerValida and (horarioTravado=false) then
+        begin
+          BuyAtMarket(ContratosTotal);
+          bloqueiaVendas := false;
+         // consecutivosAcima := 0;
+        end;
+      If (bolVender or bolAmbos) and vendaKeltnerValida and (horarioTravado=false) then
+        begin
+          SellShortAtMarket(ContratosTotal);
+          bloqueiaCompras := false;
+         // consecutivosAbaixo := 0;
+        end;
     End;
 
  if not HasPosition  then
