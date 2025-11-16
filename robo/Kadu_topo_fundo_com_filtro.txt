@@ -184,9 +184,9 @@ Begin
 
   se(RenkoTrueTempoFalse)entao
   begin
-  vAlvo := (t+(amp*1));
-  vParcial := (t);
-  VStopParcial:= (f-(amp*1));
+  vAlvo := (t+(amp*1)-MinPriceIncrement);
+  vParcial := (t-MinPriceIncrement);
+  VStopParcial:= (f);
   vStop:= (f);
   end;
    
@@ -204,7 +204,9 @@ Begin
 
   se(RenkoTrueTempoFalse)entao
   begin
-  vAlvo := (f-(amp*1));
+  vAlvo := (f-(amp*1)+MinPriceIncrement);
+  vParcial := (f+MinPriceIncrement);
+  VStopParcial:= (t);
   vStop:= (t);
   end;
    
@@ -212,6 +214,8 @@ Begin
   se(RenkoTrueTempoFalse=false)entao
   begin
   vAlvo := (f-(amp*1));
+  vParcial := (f);
+  VStopParcial:= (t);
   vStop:= (t);
   end;
     End;
@@ -242,22 +246,24 @@ Begin
 // Se Comprado ou Vendido faça Saídas de acordo com as instruções abaixo
 If IsBought then
   Begin
-    SellToCoverLimit(vAlvo,ContratoMaiior);
+    SellToCoverLimit(vAlvo,ContratoParcial);
+      SellToCoverLimit(vParcial,ContratoParcial);
     se(fechamento[1]>abertura[1]) and (RenkoTrueTempoFalse)entao
     begin
       vStop:= (f);
     end;
-    SellToCoverStop(vStop,vStop-50,ContratoMaiior); 
+    SellToCoverStop(vStop,vStop-150,ContratoMaiior); 
   End;
 
 If isSold then
   Begin
-  BuyToCoverLimit(vAlvo,ContratoMaiior);
+    BuyToCoverLimit(vAlvo,ContratoParcial);
+    BuyToCoverLimit(vParcial,ContratoParcial);
     se(fechamento[1] < abertura[1]) and (RenkoTrueTempoFalse)entao
     begin
       vStop:= (t);
     end;
-  BuyToCoverStop(vStop,vStop+50,ContratoMaiior);
+  BuyToCoverStop(vStop,vStop+150,ContratoMaiior);
          
 End;
 end;
