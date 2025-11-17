@@ -7,8 +7,8 @@ Topo_Fundo(true);
 Levels(false);
 PlotMedia(false);
 ConsiderarHorario(true);
-HorarioInicio(0900);
-HorarioFinal(1700);
+HorarioInicio(0905);
+HorarioFinal(1200);
 bolComprar(false);
 bolVender(true);
 bolAmbos(true);
@@ -19,9 +19,9 @@ RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
 KeltnerPeriodo(20);
-KeltnerDesvio(2.0);
+KeltnerDesvio(0.5);
 KeltnerTipo(1);
-QtdRenkosBloqueio(4);
+QtdRenkosBloqueio(6);
 Var
   x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
   Compra, Venda, timeok, volok, compraKeltnerValida, vendaKeltnerValida : boolean;
@@ -41,7 +41,7 @@ Begin
   upperKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|0|;
   lowerKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|1|;
 
-  Plot1(upperKeltner);
+  Plot(upperKeltner);
   SetPlotColor(1,(RGB(0,128,255)));
   SetPlotWidth(1,2);
   Plot2(lowerKeltner);
@@ -87,8 +87,8 @@ Begin
   X := high;
   Y := low;
 
-  renkoAcimaBanda := (Low > upperKeltner);
-  renkoAbaixoBanda := (High < lowerKeltner);
+  renkoAcimaBanda := (Low > upperKeltner) and (abertura[1]<fechamento[1]);
+  renkoAbaixoBanda := (High < lowerKeltner) and (abertura[1]>fechamento[1]);
 
   if renkoAcimaBanda then
     consecutivosAcima := consecutivosAcima + 1
@@ -131,11 +131,19 @@ Begin
       End;
     If PlotMedia = True then Plot(MediaCentral);
   End;
+  
+  if(renkoAcimaBanda)entao
+    PlotText(consecutivosAcima,clblue);
+ 
+  if(renkoAbaixoBanda)entao  
+  PlotText(consecutivosAbaixo,clblue);
+
+ 
 
   If ConsiderarHorario then
     Begin
-      Compra := (Low < VLow[1]) e (Close > Open) e TimeOk e VolOk;
-      Venda := (High > VHigh[1]) e (Close < Open) e TimeOk e VolOk;
+      Compra := (Low < VLow[1])  e (Close >= Open)  e TimeOk e VolOk;
+      Venda := (High > VHigh[1]) e (Close <= Open) e TimeOk e VolOk;
     End
   Else If not ConsiderarHorario then
     Begin
@@ -144,8 +152,8 @@ Begin
     End;
 
 
-  compraKeltnerValida := Compra e (Low[1] < lowerKeltner[1]) e (not bloqueiaCompras);
-  vendaKeltnerValida := Venda e (High[1] > upperKeltner[1]) e (not bloqueiaVendas);
+  compraKeltnerValida := Compra e (Low[1] < lowerKeltner[1])  ;
+  vendaKeltnerValida := Venda e (High[1] > upperKeltner[1]) ;
 
 
     // ---- calcula se o horário da barra atual repetiu nos últimos X candles
@@ -172,13 +180,13 @@ Begin
 
   If compraKeltnerValida and not HasPosition then
     Begin
-     paintbar(cllime);
+     
 
   se(RenkoTrueTempoFalse)entao
   begin
-  vAlvo := (t+(amp*1));
-  vParcial := (t);
-  VStopParcial:= (f-(amp*1));
+  vAlvo := (t+(amp*1)-MinPriceIncrement);
+  vParcial := (t-MinPriceIncrement);
+  VStopParcial:= (f);
   vStop:= (f);
   end;
    
@@ -193,10 +201,12 @@ Begin
   End
   Else If vendaKeltnerValida and not HasPosition then
   Begin
-   paintbar(clRed);
+
   se(RenkoTrueTempoFalse)entao
   begin
-  vAlvo := (f-(amp*1));
+  vAlvo := (f-(amp*1)+MinPriceIncrement);
+  vParcial := (f+MinPriceIncrement);
+  VStopParcial:= (t);
   vStop:= (t);
   end;
    
@@ -204,6 +214,8 @@ Begin
   se(RenkoTrueTempoFalse=false)entao
   begin
   vAlvo := (f-(amp*1));
+  vParcial := (f);
+  VStopParcial:= (t);
   vStop:= (t);
   end;
     End;
@@ -211,19 +223,20 @@ Begin
     
   if not HasPosition then
     Begin
-      If (bolComprar or bolAmbos) and compraKeltnerValida and (horarioTravado=false)
-      and (SlowStochastic(14,3,1) >=10) and (SlowStochastic(14,3,1) <= 40) then
+      If (bolComprar or bolAmbos) and compraKeltnerValida  then
         begin
-          BuyAtMarket(ContratosTotal);
+         BuyAtMarket(ContratosTotal);
+         // BuyLimit(f);
           bloqueiaVendas := false;
-          consecutivosAcima := 0;
+         // consecutivosAcima := 0;
         end;
-      If (bolVender or bolAmbos) and vendaKeltnerValida and (horarioTravado=false)
-       and (SlowStochastic(14,3,1) >=50)  and (SlowStochastic(14,3,1) <= 95) then
+      If (bolVender or bolAmbos) and vendaKeltnerValida  then
         begin
+           paintbar(clRed);
           SellShortAtMarket(ContratosTotal);
+          //SellShortLimit(t);
           bloqueiaCompras := false;
-          consecutivosAbaixo := 0;
+         // consecutivosAbaixo := 0;
         end;
     End;
 
@@ -234,21 +247,23 @@ Begin
 If IsBought then
   Begin
     SellToCoverLimit(vAlvo,ContratoMaiior);
+
     se(fechamento[1]>abertura[1]) and (RenkoTrueTempoFalse)entao
     begin
       vStop:= (f);
     end;
-    SellToCoverStop(vStop,vStop-50,ContratoMaiior); 
+    SellToCoverStop(vStop,vStop-150,ContratoMaiior); 
   End;
 
 If isSold then
   Begin
-  BuyToCoverLimit(vAlvo,ContratoMaiior);
+    BuyToCoverLimit(vAlvo,ContratoMaiior);
+
     se(fechamento[1] < abertura[1]) and (RenkoTrueTempoFalse)entao
     begin
       vStop:= (t);
     end;
-  BuyToCoverStop(vStop,vStop+50,ContratoMaiior);
+  BuyToCoverStop(vStop,vStop+150,ContratoMaiior);
          
 End;
 end;
