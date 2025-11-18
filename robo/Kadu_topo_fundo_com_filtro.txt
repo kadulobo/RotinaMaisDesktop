@@ -29,10 +29,14 @@ Var
   amp, t, f : Real;
   valorStopParcial,valorStopFixo : float;
   bolStopCadastrado, bloqueiaCompras, bloqueiaVendas, renkoAcimaBanda, renkoAbaixoBanda : boolean;
+  renkoDentroKeltner, entradaCanalCompra, entradaCanalVenda               : boolean;
   horarioTravado                                                          : boolean;
   i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
+  renkosParaUpper, renkosParaLower                                        : integer;
   tAtual                                                                  : float;
   dAtual                                                                  : integer;
+  distanciaUpper, distanciaLower, precoFechamentoAcimaBanda,
+  precoFechamentoAbaixoBanda                                              : float;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -89,6 +93,37 @@ Begin
 
   renkoAcimaBanda := (Low > upperKeltner) and (abertura[1]<fechamento[1]);
   renkoAbaixoBanda := (High < lowerKeltner) and (abertura[1]>fechamento[1]);
+  renkoDentroKeltner := (High < upperKeltner) and (Low > lowerKeltner);
+
+  renkosParaUpper := 0;
+  renkosParaLower := 0;
+  precoFechamentoAcimaBanda := 0;
+  precoFechamentoAbaixoBanda := 0;
+  distanciaUpper := upperKeltner - Fechamento;
+  distanciaLower := Fechamento - lowerKeltner;
+
+  if (amp > 0) and renkoDentroKeltner then
+    begin
+      if distanciaUpper > 0 then
+        begin
+          precoFechamentoAcimaBanda := Fechamento;
+          while precoFechamentoAcimaBanda < upperKeltner do
+            begin
+              renkosParaUpper := renkosParaUpper + 1;
+              precoFechamentoAcimaBanda := precoFechamentoAcimaBanda + amp;
+            end;
+        end;
+
+      if distanciaLower > 0 then
+        begin
+          precoFechamentoAbaixoBanda := Fechamento;
+          while precoFechamentoAbaixoBanda > lowerKeltner do
+            begin
+              renkosParaLower := renkosParaLower + 1;
+              precoFechamentoAbaixoBanda := precoFechamentoAbaixoBanda - amp;
+            end;
+        end;
+    end;
 
   if renkoAcimaBanda then
     consecutivosAcima := consecutivosAcima + 1
@@ -220,7 +255,31 @@ Begin
   end;
     End;
 
-    
+  if renkoDentroKeltner and not HasPosition then
+    begin
+      if renkosParaUpper > 0 then
+        begin
+          BuyLimit(precoFechamentoAcimaBanda,ContratosTotal);
+          entradaCanalCompra := true;
+        end
+      else
+        entradaCanalCompra := false;
+
+      if renkosParaLower > 0 then
+        begin
+          SellShortLimit(precoFechamentoAbaixoBanda,ContratosTotal);
+          entradaCanalVenda := true;
+        end
+      else
+        entradaCanalVenda := false;
+    end
+  else
+    begin
+      entradaCanalCompra := false;
+      entradaCanalVenda := false;
+    end;
+
+
   if not HasPosition then
     Begin
       If (bolComprar or bolAmbos) and compraKeltnerValida  then
@@ -243,27 +302,51 @@ Begin
  if not HasPosition  then
  bolStopCadastrado :=false;
 
+if not HasPosition then
+  begin
+    precoFechamentoAcimaBanda := 0;
+    precoFechamentoAbaixoBanda := 0;
+  end;
+
 // Se Comprado ou Vendido faça Saídas de acordo com as instruções abaixo
 If IsBought then
   Begin
+    if entradaCanalCompra then
+      begin
+        vAlvo := precoFechamentoAcimaBanda + 90;
+        vStop := precoFechamentoAcimaBanda - 45;
+      end;
+
     SellToCoverLimit(vAlvo,ContratoParcial);
       SellToCoverLimit(vParcial,ContratoParcial);
-    se(fechamento[1]>abertura[1]) and (RenkoTrueTempoFalse)entao
+    se(fechamento[1]>abertura[1]) and (RenkoTrueTempoFalse) and (not entradaCanalCompra)entao
     begin
       vStop:= (f);
     end;
-    SellToCoverStop(vStop,vStop-150,ContratoMaiior); 
+    if entradaCanalCompra then
+      SellToCoverStop(vStop,vStop-150,ContratosTotal)
+    else
+      SellToCoverStop(vStop,vStop-150,ContratoMaiior);
   End;
 
 If isSold then
   Begin
+    if entradaCanalVenda then
+      begin
+        vAlvo := precoFechamentoAbaixoBanda - 90;
+        vStop := precoFechamentoAbaixoBanda + 45;
+      end;
+
     BuyToCoverLimit(vAlvo,ContratoParcial);
     BuyToCoverLimit(vParcial,ContratoParcial);
-    se(fechamento[1] < abertura[1]) and (RenkoTrueTempoFalse)entao
+    se(fechamento[1] < abertura[1]) and (RenkoTrueTempoFalse) and (not entradaCanalVenda)entao
     begin
       vStop:= (t);
     end;
-  BuyToCoverStop(vStop,vStop+150,ContratoMaiior);
-         
+  if entradaCanalVenda then
+    BuyToCoverStop(vStop,vStop+150,ContratosTotal)
+  else
+    BuyToCoverStop(vStop,vStop+150,ContratoMaiior);
+
 End;
 end;
