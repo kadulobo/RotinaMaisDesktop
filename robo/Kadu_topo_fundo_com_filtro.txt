@@ -23,7 +23,7 @@ KeltnerDesvio(0.8);
 KeltnerTipo(1);
 TicksWeisWave(15); // >>> novo parametro para o COHENWEISWAVE
 
-Var
+  Var
   x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
   Compra, Venda, timeok, volok, compraKeltnerValida, vendaKeltnerValida : boolean;
   Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
@@ -34,8 +34,11 @@ Var
   i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
   tAtual                                                                  : float;
   dAtual                                                              : integer;
-  bolValidarMaxima , volValidarMinima : boolean; 
+  bolValidarMaxima , volValidarMinima : boolean;
   cohenWeisWaveAtual, cohenWeisWaveAnterior                               : float;     // >>> novos
+  ultimoTopoValido, ultimoFundoValido, topoAtualParaVenda, fundoAtualParaCompra : float;
+  precoEntradaCompra, precoEntradaVenda, stopCompraPlanejado, stopVendaPlanejado : float;
+  ordemCompraAtiva, ordemVendaAtiva                                       : boolean;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -101,7 +104,26 @@ Begin
     PLOT3(x);
     SetPlotColor(3,(RGB(255,0,0)));
     SetPlotWidth(3,3);
-  
+
+    if (ultimoTopoValido = 0) then
+      ultimoTopoValido := X;
+
+    if (X <> 0) then
+      begin
+        topoAtualParaVenda := X;
+        if (ultimoTopoValido <> 0) and (topoAtualParaVenda < ultimoTopoValido) then
+          begin
+            precoEntradaVenda := lowerKeltner;
+            stopVendaPlanejado := upperKeltner;
+            SellShortLimit(precoEntradaVenda,ContratosTotal);
+            BuyToCoverStop(stopVendaPlanejado,stopVendaPlanejado+150,ContratosTotal);
+            ordemVendaAtiva := true;
+            ordemCompraAtiva := false;
+          end;
+
+        ultimoTopoValido := topoAtualParaVenda;
+      end;
+
   end;
 
  if (vLow >= vLow[1])  then
@@ -111,13 +133,46 @@ Begin
       SetPlotColor(4,(RGB(0,255,0)));
       SetPlotWidth(4,3);
      //PlotText(Y,clblue);;
-     
+
+      if (ultimoFundoValido = 0) then
+        ultimoFundoValido := Y;
+
+      if (Y <> 0) then
+        begin
+          fundoAtualParaCompra := Y;
+          if (ultimoFundoValido <> 0) and (fundoAtualParaCompra > ultimoFundoValido) then
+            begin
+              precoEntradaCompra := upperKeltner;
+              stopCompraPlanejado := lowerKeltner;
+              BuyLimit(precoEntradaCompra,ContratosTotal);
+              SellToCoverStop(stopCompraPlanejado,stopCompraPlanejado-150,ContratosTotal);
+              ordemCompraAtiva := true;
+              ordemVendaAtiva := false;
+            end;
+
+          ultimoFundoValido := fundoAtualParaCompra;
+        end;
+
     end;
+
+  if ordemCompraAtiva and (amp > 0) then
+    if (Low <= (fundoAtualParaCompra - (2*amp))) then
+      begin
+        CancelPendingOrders;
+        ordemCompraAtiva := false;
+      end;
+
+  if ordemVendaAtiva and (amp > 0) then
+    if (High >= (topoAtualParaVenda + (2*amp))) then
+      begin
+        CancelPendingOrders;
+        ordemVendaAtiva := false;
+      end;
 
     if(renkoAcimaBanda)entao
     PlotText(consecutivosAcima,clblue);
- 
-  if(renkoAbaixoBanda)entao  
+
+  if(renkoAbaixoBanda)entao
   PlotText(consecutivosAbaixo,clblue);
 
 
