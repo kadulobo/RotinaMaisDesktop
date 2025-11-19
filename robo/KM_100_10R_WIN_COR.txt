@@ -1,27 +1,22 @@
 //Robo estudo para scaper de 1 renko fechado apos a reversão de nivel de preço 6
 //Analisando anual de 2025 , scaper de 45 pontos , gain diario de (lucro)*6 gain 
 //Stop financeiro seria de 3 entradas avaliar pelo backtest , então para 10c - stop 700 / gain 540 
+const
+Niveis=6;
+Topo_Fundo=true;
+ConsiderarHorario=true;
+RenkoTrueTempoFalse=true;
+KeltnerPeriodo=20;
+KeltnerDesvio=0.5;
+KeltnerTipo=1;
+TicksWeisWave=15;
 Input
-Niveis(6);
-Topo_Fundo(true);
-Levels(false);
-PlotMedia(false);
-ConsiderarHorario(true);
+Versao("ATT.18/11/2025 VERSÃO 1.0");
 HorarioInicio(0905);
 HorarioFinal(1800);
 bolComprar(false);
 bolVender(true);
-bolAmbos(true);
-ContratosTotal(5);
-ContratoParcial(5);
-ContratoMaiior(5);
-RenkoTrueTempoFalse(true);
-StopFixo(true);
-UltimosXCandles(8);
-KeltnerPeriodo(20);
-KeltnerDesvio(0.5);
-KeltnerTipo(1);
-TicksWeisWave(15); // >>> novo parametro para o COHENWEISWAVE
+ContratosTotal(2);
 
 Var
   x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
@@ -88,6 +83,9 @@ Begin
   else
     consecutivosAbaixo := consecutivosAbaixo-1;
 
+  se(consecutivosAcima >= 20) or (consecutivosAbaixo>=20)entao
+  PaintBar(clPurple);
+
   X := high;
   Y := low;
 
@@ -134,8 +132,8 @@ Begin
     End;
 
 
-  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo < 5) ;
-  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima < 5) ;
+  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo <= 6) ;
+  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima <= 6) ;
 
 
   se (compraKeltnerValida) entao
