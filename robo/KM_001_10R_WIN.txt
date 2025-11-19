@@ -11,10 +11,7 @@ HorarioInicio(0905);
 HorarioFinal(1800);
 bolComprar(false);
 bolVender(true);
-bolAmbos(true);
-ContratosTotal(5);
-ContratoParcial(5);
-ContratoMaiior(5);
+ContratosTotal(2);
 RenkoTrueTempoFalse(true);
 StopFixo(true);
 UltimosXCandles(8);
@@ -116,10 +113,10 @@ Begin
     end;
 
     if(renkoAcimaBanda)entao
-    PlotText(consecutivosAcima,clblue);
+    PlotText(consecutivosAcima,clYellow);
  
     if(renkoAbaixoBanda)entao  
-    PlotText(consecutivosAbaixo,clblue);
+    PlotText(consecutivosAbaixo,clYellow);
 
 
   If ConsiderarHorario then
@@ -134,8 +131,8 @@ Begin
     End;
 
 
-  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo < 5) ;
-  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima < 5) ;
+  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo < 5) and bolComprar ;
+  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima < 5) and bolVender;
 
 
   se (compraKeltnerValida) entao
@@ -151,5 +148,15 @@ Begin
   consecutivosAbaixo:=0;
  end;
 
+
+ se(compraKeltnerValida)entao
+ begin
+ BuyAtMarket(ContratosTotal);
+ end;
+
+ se(vendaKeltnerValida)entao
+ begin
+ SellShortAtMarket(ContratosTotal);
+ end;
 
 end;
