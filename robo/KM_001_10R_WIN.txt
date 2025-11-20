@@ -15,6 +15,8 @@ bolComprar(false);
 bolVender(true);
 ContratosTotal(2);
 contadorCandles(6);
+MetaPontosDiarios(540);
+ValorPorPonto(1);
 
 Var
   x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
@@ -27,8 +29,10 @@ Var
   i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
   tAtual                                                                  : float;
   dAtual                                                              : integer;
-  bolValidarMaxima , volValidarMinima : boolean; 
+  bolValidarMaxima , volValidarMinima : boolean;
   cohenWeisWaveAtual, cohenWeisWaveAnterior                               : float;     // >>> novos
+  pontosDiarios, lucroUltimaOperacao, pontosUltimaOperacao, equityAnterior : float;
+  metaAtingida, ultimaPosicaoAberta                                        : boolean;
 Begin
 
   If time >= HorarioFinal then ClosePosition;
@@ -36,6 +40,23 @@ Begin
   // --- Filtro de volume direcional (COHENWEISWAVE) ---
   cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
   cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
+
+  // ---- Controle de meta diária em pontos ----
+  if (not HasPosition) and ultimaPosicaoAberta then
+  begin
+    lucroUltimaOperacao   := ClosedEquity - equityAnterior;
+    pontosUltimaOperacao  := lucroUltimaOperacao / ValorPorPonto;
+    pontosDiarios         := pontosDiarios + pontosUltimaOperacao;
+
+    if pontosDiarios >= MetaPontosDiarios then
+      metaAtingida := true;
+  end;
+
+  equityAnterior      := ClosedEquity;
+  ultimaPosicaoAberta := HasPosition;
+
+  if metaAtingida then
+    ClosePosition;
 
 
 
@@ -49,7 +70,7 @@ Begin
   SetPlotColor(2,(RGB(255,128,0)));
   SetPlotWidth(2,2);
 
-  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
+  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal) e (not metaAtingida);
   VolOk := Volume > 10000;
 
 
