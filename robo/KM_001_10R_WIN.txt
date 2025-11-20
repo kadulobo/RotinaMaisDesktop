@@ -145,21 +145,36 @@ end;
   consecutivosAbaixo:=0;
  end;
 
-  se(compraKeltnerValida)entao
+ se(compraKeltnerValida)entao
  begin
- BuyAtMarket(ContratosTotal);
+  BuyAtMarket(ContratosTotal);
+  Entrada := Fechamento;
  end;
 
  se(vendaKeltnerValida)entao
  begin
- SellShortAtMarket(ContratosTotal);
+  SellShortAtMarket(ContratosTotal);
+  Entrada := Fechamento;
  end;
 
 
  if(HasPosition) and (cohenWeisWaveAnterior >= 300000)entao
  ClosePosition;
 
- 
+
+  if IsBought then
+  begin
+    SellToCoverLimit(Entrada + 90, ContratosTotal);
+    SellToCoverStop(Entrada - 250, (Entrada - 250) - MinPriceIncrement, ContratosTotal);
+  end;
+
+  if IsSold then
+  begin
+    BuyToCoverLimit(Entrada - 90, ContratosTotal);
+    BuyToCoverStop(Entrada + 250, (Entrada + 250) + MinPriceIncrement, ContratosTotal);
+  end;
+
+
 
 
 end;
