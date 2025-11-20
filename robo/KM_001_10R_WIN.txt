@@ -3,9 +3,6 @@
 //Stop financeiro seria de 3 entradas avaliar pelo backtest , então para 10c - stop 700 / gain 540 
 const
 Niveis=6;
-Topo_Fundo=true;
-ConsiderarHorario=true;
-RenkoTrueTempoFalse=true;
 KeltnerPeriodo=20;
 KeltnerDesvio=0.5;
 KeltnerTipo=1;
@@ -17,7 +14,7 @@ HorarioFinal(1800);
 bolComprar(false);
 bolVender(true);
 ContratosTotal(2);
-contadorCandles(4);
+contadorCandles(6);
 
 Var
   x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
@@ -41,6 +38,7 @@ Begin
   cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
 
 
+
   upperKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|0|;
   lowerKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|1|;
 
@@ -54,8 +52,7 @@ Begin
   TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
   VolOk := Volume > 10000;
 
-  se(RenkoTrueTempoFalse)entao
-  begin
+
   amp := Round(Abs(Abertura[1] - Fechamento[1]));
 
   Se Abertura[1] > Fechamento[1] então
@@ -68,7 +65,7 @@ Begin
     f := Abertura[1] - amp;
     t := Fechamento[1] + amp;
   fim;
-  end;
+
 
   renkoAcimaBanda := (fechamento > upperKeltner) ;
   renkoAbaixoBanda := (fechamento < lowerKeltner);
@@ -120,21 +117,19 @@ Begin
     if(renkoAbaixoBanda)entao  
     PlotText(consecutivosAbaixo,clblue);
 
+  if Abs(cohenWeisWaveAtual) >= 300000 then
+begin
+  PaintBar(clBlue);
+end;
 
-  If ConsiderarHorario then
-    Begin
-      Compra := (Low < VLow[1])   e TimeOk e VolOk ;
-      Venda := (High > VHigh[1])  e TimeOk e VolOk;
-    End
-  Else If not ConsiderarHorario then
-    Begin
-      Compra := (Low < VLow[1]) e (Close > Open) e VolOk;
-      Venda := (High > VHigh[1]) e (Close < Open) e VolOk;
-    End;
+    Compra := (Low < VLow[1])   e TimeOk e VolOk ;
+    Venda := (High > VHigh[1])  e TimeOk e VolOk;
 
 
-  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo <= contadorCandles) ;
-  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima <= contadorCandles) ;
+
+
+  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo <= contadorCandles) and (cohenWeisWaveAnterior < 250000)and bolComprar;
+  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima <= contadorCandles) and (cohenWeisWaveAnterior < 250000) and bolVender;
 
 
   se (compraKeltnerValida) entao
@@ -159,6 +154,10 @@ Begin
  begin
  SellShortAtMarket(ContratosTotal);
  end;
+
+
+ if(HasPosition) and (cohenWeisWaveAnterior >= 300000)entao
+ ClosePosition;
 
  
 
