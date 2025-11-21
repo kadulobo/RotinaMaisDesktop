@@ -4,20 +4,19 @@
 const
 Niveis=6;
 KeltnerPeriodo=20;
-KeltnerDesvio=0.5;
+KeltnerDesvio=1;
 KeltnerTipo=1;
 TicksWeisWave=15;
 Input
 Versao("ATT.18/11/2025 VERSÃO 1.0");
-HorarioInicio(0905);
-HorarioFinal(1800);
+HorarioInicio(0900);
+HorarioFinal(1200);
 bolComprar(false);
 bolVender(true);
 ContratosTotal(2);
 contadorCandles(6);
-MetaPontosDiarios(540);
-ValorPorPonto(1);
-
+MinRangeOperacao(400);   // <<< NOVO PARÂMETRO: mínimo de pontos entre topo e fundo
+BandasPeriodo(20);       // <<< NOVO: quantos candles olhar pra inclinação das bandas
 Var
   x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
   Compra, Venda, timeok, volok, compraKeltnerValida, vendaKeltnerValida : boolean;
@@ -29,34 +28,43 @@ Var
   i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
   tAtual                                                                  : float;
   dAtual                                                              : integer;
-  bolValidarMaxima , volValidarMinima : boolean;
+  bolValidarMaxima , volValidarMinima : boolean; 
   cohenWeisWaveAtual, cohenWeisWaveAnterior                               : float;     // >>> novos
-  pontosDiarios, lucroUltimaOperacao, pontosUltimaOperacao, equityAnterior : float;
-  metaAtingida, ultimaPosicaoAberta                                        : boolean;
-Begin
+  arrayTopos: array[1..10] of float;
+  arrayFundos : array[1..10] of float;
+  ultimoTopo, ultimoFundo : float;
+    rangeTopoFundo : float;   // diferença Topo-Fundo
+  podeOperar : boolean;     // libera ou bloqueia operações
+    // <<< NOVO: inclinação das bandas de Keltner
+  slopeUpper, slopeLower : float;
+  bandasInclinadasCima, bandasInclinadasBaixo, bandasRetas : boolean;
+
+  Begin
 
   If time >= HorarioFinal then ClosePosition;
+
+    // ===== Controle de mudança de dia =====
+  if dAtual <> Date then
+  begin
+    dAtual := Date;
+    bandasInclinadasCima:=false;
+    bandasInclinadasBaixo:=false;
+
+    // zera arrays de topos/fundos
+    for i := 0 to 9 do
+    begin
+      arrayTopos[i]  := 0;
+      arrayFundos[i] := 0;
+    end;
+
+  end;
+
+   if(HasPosition) and (cohenWeisWaveAnterior >= 300000)entao
+ ClosePosition;
 
   // --- Filtro de volume direcional (COHENWEISWAVE) ---
   cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
   cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
-
-  // ---- Controle de meta diária em pontos ----
-  if (not HasPosition) and ultimaPosicaoAberta then
-  begin
-    lucroUltimaOperacao   := ClosedEquity - equityAnterior;
-    pontosUltimaOperacao  := lucroUltimaOperacao / ValorPorPonto;
-    pontosDiarios         := pontosDiarios + pontosUltimaOperacao;
-
-    if pontosDiarios >= MetaPontosDiarios then
-      metaAtingida := true;
-  end;
-
-  equityAnterior      := ClosedEquity;
-  ultimaPosicaoAberta := HasPosition;
-
-  if metaAtingida then
-    ClosePosition;
 
 
 
@@ -70,7 +78,7 @@ Begin
   SetPlotColor(2,(RGB(255,128,0)));
   SetPlotWidth(2,2);
 
-  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal) e (not metaAtingida);
+  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
   VolOk := Volume > 10000;
 
 
@@ -86,6 +94,7 @@ Begin
     f := Abertura[1] - amp;
     t := Fechamento[1] + amp;
   fim;
+
 
 
   renkoAcimaBanda := (fechamento > upperKeltner) ;
@@ -119,7 +128,11 @@ Begin
     PLOT3(x);
     SetPlotColor(3,(RGB(255,0,0)));
     SetPlotWidth(3,3);
-  
+    for i := 9 downto 1 do
+      arrayTopos[i] := arrayTopos[i-1];
+
+    // posição 0 sempre guarda o topo mais recente
+    arrayTopos[0] := X; 
   end;
 
  if (vLow >= vLow[1])  then
@@ -129,8 +142,27 @@ Begin
       SetPlotColor(4,(RGB(0,255,0)));
       SetPlotWidth(4,3);
      //PlotText(Y,clblue);;
-     
+      for i := 9 downto 1 do
+      arrayFundos[i] := arrayFundos[i-1];
+
+    arrayFundos[0] := Y; 
     end;
+
+  // ===== Cálculo do range entre topo e fundo =====
+  ultimoTopo  := arrayTopos[0];
+  ultimoFundo := arrayFundos[0];
+
+  if (ultimoTopo > 0) and (ultimoFundo > 0) then
+    rangeTopoFundo := Abs(ultimoTopo - ultimoFundo)
+  else
+    rangeTopoFundo := 999999;   // fallback no início do dia
+
+  // valida se pode operar ou não
+  podeOperar := rangeTopoFundo <= MinRangeOperacao;
+
+  // plot visual opcional
+  PlotText(rangeTopoFundo, clPurple);
+ 
 
     if(renkoAcimaBanda)entao
     PlotText(consecutivosAcima,clblue);
@@ -146,18 +178,32 @@ end;
     Compra := (Low < VLow[1])   e TimeOk e VolOk ;
     Venda := (High > VHigh[1])  e TimeOk e VolOk;
 
+   compraKeltnerValida := Compra  
+                          e renkoAbaixoBanda
+                          e (consecutivosAbaixo <= contadorCandles)
+                          and (cohenWeisWaveAnterior < 250000)
+                          and bolComprar
+                          and podeOperar;        // <<< NOVO
 
-
-
-  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo <= contadorCandles) and (cohenWeisWaveAnterior < 250000)and bolComprar;
-  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima <= contadorCandles) and (cohenWeisWaveAnterior < 250000) and bolVender;
-
+  vendaKeltnerValida := Venda 
+                          e renkoAcimaBanda
+                          e (consecutivosAcima <= contadorCandles)
+                          and (cohenWeisWaveAnterior < 250000)
+                          and bolVender
+                          and podeOperar;        // <<< NOVO
 
   se (compraKeltnerValida) entao
-  PaintBar(clGreen);
-  
+  begin
+    PaintBar(clGreen);
+    PlotText(arrayTopos[0],clRed);
+  end;
+
   se (vendaKeltnerValida)  entao
-    PaintBar(clRed);
+  begin
+     PaintBar(clRed);
+       PlotText(arrayFundos[0],clGreen);
+  end;
+
 
  se (fechamento < upperKeltner) and (fechamento > lowerKeltner)then
  begin
@@ -178,22 +224,72 @@ end;
   Entrada := Fechamento;
  end;
 
+// === Gestão quando estiver comprado ===
+if IsBought then
+begin
+  ultimoTopo  := arrayTopos[0];
+  ultimoFundo := arrayFundos[0];
 
- if(HasPosition) and (cohenWeisWaveAnterior >= 300000)entao
- ClosePosition;
+  // ALVO: 100 pontos abaixo do último topo
+  if ultimoTopo > 0 then
+    vAlvo := ultimoTopo - 100
+  else
+    vAlvo := Entrada + 90;
 
+  SellToCoverLimit(vAlvo, ContratosTotal);
 
-  if IsBought then
+  // ---- NOVA REGRA: SE ANDAR 2 BOXES A FAVOR, STOP NO ZERO A ZERO ----
+  if (Fechamento >= Entrada + (2 * amp)) then
   begin
-    SellToCoverLimit(Entrada + 90, ContratosTotal);
-    SellToCoverStop(Entrada - 250, (Entrada - 250) - MinPriceIncrement, ContratosTotal);
-  end;
-
-  if IsSold then
+    vStop := Entrada;   // BE (break even)
+    SellToCoverStop(vStop, vStop - MinPriceIncrement, ContratosTotal);
+  end
+  // STOP pelo fundo relevante
+  else if (Fechamento > Entrada) and (ultimoFundo > 0) then
   begin
-    BuyToCoverLimit(Entrada - 90, ContratosTotal);
-    BuyToCoverStop(Entrada + 250, (Entrada + 250) + MinPriceIncrement, ContratosTotal);
+    vStop := ultimoFundo;
+    SellToCoverStop(vStop, vStop - MinPriceIncrement, ContratosTotal);
+  end
+  else
+  begin
+    // stop clássico (ainda não andou a favor)
+    SellToCoverStop(Entrada - 200, (Entrada - 250) - MinPriceIncrement, ContratosTotal);
   end;
+end;
+
+ // === Gestão quando estiver vendido ===
+if IsSold then
+begin
+  ultimoTopo  := arrayTopos[0];
+  ultimoFundo := arrayFundos[0];
+
+  // ALVO: 50 pontos acima do último fundo
+  if ultimoFundo > 0 then
+    vAlvo := ultimoFundo + 50
+  else
+    vAlvo := Entrada - 90;
+
+  BuyToCoverLimit(vAlvo, ContratosTotal);
+
+  // ---- NOVA REGRA: SE ANDAR 2 BOXES A FAVOR, STOP NO ZERO A ZERO ----
+  if (Fechamento <= Entrada - (2 * amp)) then
+  begin
+    vStop := Entrada;   // BE (break even)
+    BuyToCoverStop(vStop, vStop + MinPriceIncrement, ContratosTotal);
+  end
+  // STOP pelo topo relevante
+  else if (Fechamento < Entrada) and (ultimoTopo > 0) then
+  begin
+    vStop := ultimoTopo;
+    BuyToCoverStop(vStop, vStop + MinPriceIncrement, ContratosTotal);
+  end
+  else
+  begin
+    // stop clássico
+    BuyToCoverStop(Entrada + 200, (Entrada + 250) + MinPriceIncrement, ContratosTotal);
+  end;
+end;
+ 
 
 
 

@@ -1,0 +1,349 @@
+const
+Niveis=6;
+KeltnerPeriodo=20;
+KeltnerDesvio=0.5;
+KeltnerTipo=1;
+TicksWeisWave=15;
+
+
+Input
+Versao("ATT.18/11/2025 VERSÃO 1.0");
+HorarioInicio(0900);
+HorarioFinal(1700);
+bolComprar(false);
+bolVender(true);
+ContratosTotal(10);
+contadorCandles(6);
+MinRangeOperacao(400);   // <<< NOVO PARÂMETRO: mínimo de pontos entre topo e fundo
+BandasPeriodo(20);       // <<< NOVO: quantos candles olhar pra inclinação das bandas
+Contratos(2);
+GridLines_Max50(10);
+GridSize_emTicks(10);
+ProximosNiveis(5);
+TakeProfitPrimeiraOrdem(50);
+TakeProfitPorNivel(10);
+SaidaNoPrecoMedio(false);
+AjusteDinamicoDoGrid(true);
+PrecoDeAfastamento(10);                            
+PreçoDeAjuste(5);
+
+Var
+EntryPrice, OriginalEntryPrice : float;
+Compra, Venda : boolean;
+UpDatePrice : boolean;
+TimeOk : boolean;
+vEntryPrice : float;
+vGridPrice : float;
+Counter : integer;
+tick : float;
+
+  x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
+   volok, compraKeltnerValida, vendaKeltnerValida : boolean;
+  Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
+  amp, t, f : Real;
+  valorStopParcial,valorStopFixo : float;
+  bolStopCadastrado, bloqueiaCompras, bloqueiaVendas, renkoAcimaBanda, renkoAbaixoBanda : boolean;
+  horarioTravado                                                          : boolean;
+  i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
+  tAtual                                                                  : float;
+  dAtual                                                              : integer;
+  bolValidarMaxima , volValidarMinima : boolean; 
+  cohenWeisWaveAtual, cohenWeisWaveAnterior                               : float;     // >>> novos
+  arrayTopos: array[1..10] of float;
+  arrayFundos : array[1..10] of float;
+  ultimoTopo, ultimoFundo : float;
+    rangeTopoFundo : float;   // diferença Topo-Fundo
+  podeOperar : boolean;     // libera ou bloqueia operações
+    // <<< NOVO: inclinação das bandas de Keltner
+  slopeUpper, slopeLower : float;
+  bandasInclinadasCima, bandasInclinadasBaixo, bandasRetas : boolean;
+
+Procedure DinamicOrdersGrid(Contratos, GridLines, GridSize, ProximosNiveis, TakeProfitPrimeiraOrdem, TakeProfitPorNivel : integer; 
+                           EntryPrice, OriginalEntryPrice : float; SaidaNoPrecoMedio : boolean;);
+Var
+  i, j, n, vPosition, vTP_FirstOrder : integer;
+  nGrid, vStop, TakeProfitPrice : float;
+  tick : float;
+  arrGridPrice : array [1..105] of float;  
+  
+Begin
+  tick := MinPriceIncrement;  
+  n := 50;
+  if SaidaNoPrecoMedio then vTP_FirstOrder := TakeProfitPrimeiraOrdem
+  else if not SaidaNoPrecoMedio then vTP_FirstOrder := TakeProfitPrimeiraOrdem - GridSize;
+
+  // Validação para garantir que EntryPrice seja válido
+  if EntryPrice = 0 then 
+    Begin
+      // Não faz nada se o EntryPrice for inválido
+    End
+  Else
+    Begin
+      If IsBought then
+        Begin
+          if Lote = 1 then vPosition := BuyPosition / Contratos
+          else if Lote = 100 then vPosition := BuyPosition / (Contratos / 100);
+           
+          // Calcula os níveis do grid
+          for i := 1 to GridLines + n do 
+            arrGridPrice[i] := (EntryPrice + 2*(GridSize * tick)) - (i * (GridSize * tick));
+          
+          // Define o stop loss
+          vStop := abs(EntryPrice) - (GridSize * (GridLines+1) * Tick);
+  
+          // Define o take profit para o primeiro nível
+          if SaidaNoPrecoMedio then TakeProfitPrice := EntryPrice + (tick * vTP_FirstOrder)
+          else if not SaidaNoPrecoMedio then TakeProfitPrice := OriginalEntryPrice + (tick * vTP_FirstOrder);
+  
+          // Envia ordem de take profit para o primeiro nível
+          SellToCoverLimit(TakeProfitPrice, Contratos);
+  
+          // Envia ordens para os próximos níveis baseado na posição atual
+          for j := 1 to ProximosNiveis do
+            if (vPosition + j <= GridLines + n) and (arrGridPrice[vPosition + j + 1] > vStop) then
+              BuyLimit(arrGridPrice[vPosition + j + 1], Contratos);                
+              
+          SellToCoverStop(vStop, vStop, BuyPosition);
+          
+          // Define as ordens de venda e os stops
+          for i := 1 to (vPosition) do
+            if not SaidaNoPrecoMedio then SellToCoverLimit(arrGridPrice[i+2] + (tick * TakeProfitPorNivel), Contratos);
+        end;
+      
+      If IsSold then
+        Begin
+          if Lote = 1 then vPosition := SellPosition / Contratos
+          else if Lote = 100 then vPosition := SellPosition / (Contratos / 100); ;
+           
+          // Calcula os níveis do grid
+          for i := 1 to GridLines + n do 
+            arrGridPrice[i] := (EntryPrice - 2*(GridSize * tick)) + (i * (GridSize * tick));     
+          
+          // Define o stop loss
+          vStop := abs(EntryPrice) + (GridSize * (GridLines+1) * Tick);
+  
+          // Define o take profit para o primeiro nível
+          if SaidaNoPrecoMedio then TakeProfitPrice := EntryPrice - (tick * vTP_FirstOrder)
+          else if not SaidaNoPrecoMedio then TakeProfitPrice := OriginalEntryPrice - (tick * vTP_FirstOrder); 
+  
+          // Envia ordem de take profit para o primeiro nível
+          BuyToCoverLimit(TakeProfitPrice, Contratos);
+  
+          // Envia ordens para os próximos níveis baseado na posição atual
+          for j := 1 to ProximosNiveis do
+            if (vPosition + j <= GridLines + n) and (arrGridPrice[vPosition + j + 1] < vStop) then
+              SellShortLimit(arrGridPrice[vPosition + j + 1], Contratos);
+  
+          BuyToCoverStop(vStop, vStop, SellPosition); 
+  
+          // Define as ordens de compra e os stops
+          for i := 1 to (vPosition) do
+            if not SaidaNoPrecoMedio then BuyToCoverLimit(arrGridPrice[i+2] - (tick * TakeProfitPorNivel), Contratos);                  
+        End;
+    End;
+End;
+
+Begin
+ // if CurrentDate < 1250210 then
+ Begin 
+      TimeOk := (time >= HorarioInicio) e (time <= HorarioFinal);
+      tick := MinPriceIncrement;
+
+      if not TimeOk then ClosePosition;
+
+      if not HasPosition then
+        Begin
+          EntryPrice := 0;
+          OriginalEntryPrice := 0;
+        end;
+
+      if not HasPosition e TimeOk then UpDatePrice := False;
+
+
+
+       If time >= HorarioFinal then ClosePosition;
+
+    if(HasPosition) and (cohenWeisWaveAnterior >= 300000)entao
+ ClosePosition;
+
+  // --- Filtro de volume direcional (COHENWEISWAVE) ---
+  cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
+  cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
+
+
+
+  upperKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|0|;
+  lowerKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|1|;
+
+  Plot(upperKeltner);
+  SetPlotColor(1,(RGB(0,128,255)));
+  SetPlotWidth(1,2);
+  Plot2(lowerKeltner);
+  SetPlotColor(2,(RGB(255,128,0)));
+  SetPlotWidth(2,2);
+
+  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
+  VolOk := Volume > 10000;
+
+
+  amp := Round(Abs(Abertura[1] - Fechamento[1]));
+
+  Se Abertura[1] > Fechamento[1] então
+  inicio
+    t := Abertura[1] + amp;
+    f := Fechamento[1] - amp;
+  fim
+  Senao
+  inicio
+    f := Abertura[1] - amp;
+    t := Fechamento[1] + amp;
+  fim;
+
+
+  renkoAcimaBanda := (fechamento > upperKeltner) ;
+  renkoAbaixoBanda := (fechamento < lowerKeltner);
+
+
+  if renkoAcimaBanda then
+    consecutivosAcima := consecutivosAcima + 1
+  else
+    consecutivosAcima := consecutivosAcima-1;
+
+  if renkoAbaixoBanda then
+    consecutivosAbaixo := consecutivosAbaixo + 1
+  else
+    consecutivosAbaixo := consecutivosAbaixo-1;
+
+  se(consecutivosAcima >= 20) or (consecutivosAbaixo>=20)entao
+  PaintBar(clPurple);
+
+  X := high;
+  Y := low;
+
+  VLow := Lowest(low,Niveis);
+  VHigh := Highest(high,Niveis);
+  MediaCentral := Media(Niveis,close);
+  
+
+  if (vHigh[1]>= vHigh)  then
+  begin
+    X := X[1];
+    PLOT3(x);
+    SetPlotColor(3,(RGB(255,0,0)));
+    SetPlotWidth(3,3);
+    for i := 9 downto 1 do
+      arrayTopos[i] := arrayTopos[i-1];
+
+    // posição 0 sempre guarda o topo mais recente
+    arrayTopos[0] := X; 
+  end;
+
+ if (vLow >= vLow[1])  then
+    begin
+      Y := y[1];
+      PLOT4(y);
+      SetPlotColor(4,(RGB(0,255,0)));
+      SetPlotWidth(4,3);
+     //PlotText(Y,clblue);;
+      for i := 9 downto 1 do
+      arrayFundos[i] := arrayFundos[i-1];
+
+    arrayFundos[0] := Y; 
+    end;
+
+    if(renkoAcimaBanda)entao
+    PlotText(consecutivosAcima,clblue);
+ 
+    if(renkoAbaixoBanda)entao  
+    PlotText(consecutivosAbaixo,clblue);
+
+  if Abs(cohenWeisWaveAtual) >= 300000 then
+begin
+  PaintBar(clBlue);
+end;
+
+    Compra := (Low < VLow[1])   e TimeOk e VolOk ;
+    Venda := (High > VHigh[1])  e TimeOk e VolOk;
+
+  compraKeltnerValida := Compra  e renkoAbaixoBanda 
+  e (consecutivosAbaixo <= contadorCandles)
+   and (cohenWeisWaveAnterior < 250000) and  bolComprar ;
+  vendaKeltnerValida := 
+  Venda e renkoAcimaBanda e (consecutivosAcima <= contadorCandles)
+   and (cohenWeisWaveAnterior < 250000)  and bolVender;
+
+
+  se (compraKeltnerValida) entao
+  begin
+    PaintBar(clGreen);
+    PlotText(arrayTopos[0],clRed);
+  end;
+
+  se (vendaKeltnerValida)  entao
+  begin
+     PaintBar(clRed);
+       PlotText(arrayFundos[0],clGreen);
+  end;
+
+
+ se (fechamento < upperKeltner) and (fechamento > lowerKeltner)then
+ begin
+  PaintBar(clyellow);
+  consecutivosAcima:=0;
+  consecutivosAbaixo:=0;
+ end;
+
+ se(compraKeltnerValida) entao
+ begin
+  BuyAtMarket(ContratosTotal);
+  Entrada := Fechamento;
+ end;
+
+ se(vendaKeltnerValida) entao
+ begin
+  SellShortAtMarket(ContratosTotal);
+  Entrada := Fechamento;
+ end;
+
+
+ 
+  if HasPosition e TimeOk then
+        Begin
+          if (SaidaNoPrecoMedio = false) then
+            Begin
+              if (UpDatePrice = false) then
+                Begin
+                  EntryPrice := abs(Price);
+                  OriginalEntryPrice := EntryPrice;
+                  UpDatePrice := true;
+                end
+              else if (UpDatePrice = true) then
+                Begin
+                  if AjusteDinamicoDoGrid then
+                    Begin
+                      if isSold then
+                        Begin
+                          if (Close <= (EntryPrice - (PrecoDeAfastamento * tick))) then
+                            EntryPrice := EntryPrice - (PreçoDeAjuste * tick);
+                        End;      
+                      if isBought then
+                        Begin      
+                          if (Close >= (EntryPrice + (PrecoDeAfastamento * tick))) then
+                            EntryPrice := EntryPrice + (PreçoDeAjuste * tick);
+                        End;
+                    End
+                  Else if not AjusteDinamicoDoGrid then EntryPrice := OriginalEntryPrice;
+                End;                
+            end
+          else if (SaidaNoPrecoMedio = true) then EntryPrice := abs(Price);
+
+          DinamicOrdersGrid(Contratos, GridLines_Max50, GridSize_emTicks, ProximosNiveis, TakeProfitPrimeiraOrdem, 
+                           TakeProfitPorNivel, EntryPrice, OriginalEntryPrice, SaidaNoPrecoMedio);           
+        end;      
+    end;
+
+ // XRay("EntryPrice", EntryPrice > 0, "Update EntryPrice", EntryPrice);
+ // XRay("UpDatePrice", UpDatePrice = true, "Update EntryPrice");
+ // XRay("OriginalEntryPrice", OriginalEntryPrice > 0, "Update EntryPrice", OriginalEntryPrice);
+
+end;

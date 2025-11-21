@@ -3,9 +3,6 @@
 //Stop financeiro seria de 3 entradas avaliar pelo backtest , então para 10c - stop 700 / gain 540 
 const
 Niveis=6;
-Topo_Fundo=true;
-ConsiderarHorario=true;
-RenkoTrueTempoFalse=true;
 KeltnerPeriodo=20;
 KeltnerDesvio=0.5;
 KeltnerTipo=1;
@@ -13,10 +10,11 @@ TicksWeisWave=15;
 Input
 Versao("ATT.18/11/2025 VERSÃO 1.0");
 HorarioInicio(0905);
-HorarioFinal(1800);
+HorarioFinal(1700);
 bolComprar(false);
 bolVender(true);
 ContratosTotal(2);
+contadorCandles(6);
 
 Var
   x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
@@ -31,13 +29,19 @@ Var
   dAtual                                                              : integer;
   bolValidarMaxima , volValidarMinima : boolean; 
   cohenWeisWaveAtual, cohenWeisWaveAnterior                               : float;     // >>> novos
-Begin
+ arrayTopos: array[1..10] of float;
+ arrayFundos : array[1..10] of float;
+ Begin
 
   If time >= HorarioFinal then ClosePosition;
+
+   if(HasPosition) and (cohenWeisWaveAnterior >= 300000)entao
+ ClosePosition;
 
   // --- Filtro de volume direcional (COHENWEISWAVE) ---
   cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
   cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
+
 
 
   upperKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|0|;
@@ -53,8 +57,7 @@ Begin
   TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
   VolOk := Volume > 10000;
 
-  se(RenkoTrueTempoFalse)entao
-  begin
+
   amp := Round(Abs(Abertura[1] - Fechamento[1]));
 
   Se Abertura[1] > Fechamento[1] então
@@ -67,7 +70,7 @@ Begin
     f := Abertura[1] - amp;
     t := Fechamento[1] + amp;
   fim;
-  end;
+
 
   renkoAcimaBanda := (fechamento > upperKeltner) ;
   renkoAbaixoBanda := (fechamento < lowerKeltner);
@@ -100,7 +103,11 @@ Begin
     PLOT3(x);
     SetPlotColor(3,(RGB(255,0,0)));
     SetPlotWidth(3,3);
-  
+    for i := 9 downto 1 do
+      arrayTopos[i] := arrayTopos[i-1];
+
+    // posição 0 sempre guarda o topo mais recente
+    arrayTopos[0] := X; 
   end;
 
  if (vLow >= vLow[1])  then
@@ -110,7 +117,10 @@ Begin
       SetPlotColor(4,(RGB(0,255,0)));
       SetPlotWidth(4,3);
      //PlotText(Y,clblue);;
-     
+      for i := 9 downto 1 do
+      arrayFundos[i] := arrayFundos[i-1];
+
+    arrayFundos[0] := Y; 
     end;
 
     if(renkoAcimaBanda)entao
@@ -119,28 +129,30 @@ Begin
     if(renkoAbaixoBanda)entao  
     PlotText(consecutivosAbaixo,clblue);
 
+  if Abs(cohenWeisWaveAtual) >= 300000 then
+begin
+  PaintBar(clBlue);
+end;
 
-  If ConsiderarHorario then
-    Begin
-      Compra := (Low < VLow[1])   e TimeOk e VolOk ;
-      Venda := (High > VHigh[1])  e TimeOk e VolOk;
-    End
-  Else If not ConsiderarHorario then
-    Begin
-      Compra := (Low < VLow[1]) e (Close > Open) e VolOk;
-      Venda := (High > VHigh[1]) e (Close < Open) e VolOk;
-    End;
+    Compra := (Low < VLow[1])   e TimeOk e VolOk ;
+    Venda := (High > VHigh[1])  e TimeOk e VolOk;
 
-
-  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo <= 6) ;
-  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima <= 6) ;
+  compraKeltnerValida := Compra  e renkoAbaixoBanda e (consecutivosAbaixo <= contadorCandles) and (cohenWeisWaveAnterior < 250000) ;
+  vendaKeltnerValida := Venda e renkoAcimaBanda e (consecutivosAcima <= contadorCandles) and (cohenWeisWaveAnterior < 250000)  ;
 
 
   se (compraKeltnerValida) entao
-  PaintBar(clGreen);
-  
+  begin
+    PaintBar(clGreen);
+    PlotText(arrayTopos[0],clRed);
+  end;
+
   se (vendaKeltnerValida)  entao
-    PaintBar(clRed);
+  begin
+     PaintBar(clRed);
+       PlotText(arrayFundos[0],clGreen);
+  end;
+
 
  se (fechamento < upperKeltner) and (fechamento > lowerKeltner)then
  begin
@@ -148,6 +160,19 @@ Begin
   consecutivosAcima:=0;
   consecutivosAbaixo:=0;
  end;
+
+ se(compraKeltnerValida)entao
+ begin
+  BuyAtMarket(ContratosTotal);
+  Entrada := Fechamento;
+ end;
+
+ se(vendaKeltnerValida)entao
+ begin
+  SellShortAtMarket(ContratosTotal);
+  Entrada := Fechamento;
+ end;
+
 
 
 end;
