@@ -1,297 +1,331 @@
-//Robo estudo para scaper de 1 renko fechado apos a reversão de nivel de preço 6
-//Analisando anual de 2025 , scaper de 45 pontos , gain diario de (lucro)*6 gain 
-//Stop financeiro seria de 3 entradas avaliar pelo backtest , então para 10c - stop 700 / gain 540 
+//RESUMO DO ROBO
+//O robo roda com uma ordem OCO cadastrada na plataforma com parcial.
+//50% dos contratos o gain é de 9 ticke , stop de 27 ticket outros 50% gain de 27 tickt e stop de 45 ticket
+// cada ticket no indice é 5 pontos , então 5x9 = 45pontos , 5x27 135p , 1 sopt de 135p , 2 de 225p.
+
+
 const
-Niveis=6;
-KeltnerPeriodo=20;
-KeltnerDesvio=1;
-KeltnerTipo=1;
-TicksWeisWave=15;
+  Niveis         = 6;   // profundidade para detectar topos/fundos (Highest/Lowest)
+  KeltnerPeriodo = 20;  // período base das bandas de Keltner
+  KeltnerDesvio  = 0.5;   // desvio das bandas de Keltner
+  KeltnerTipo    = 1;   // tipo da média no Keltner
+  TicksWeisWave  = 15;  // sensibilidade do COHENWEISWAVE (volume direcional)
+  maiorVolumeAceito = 300000; //maior volume aceito do CohenPriceWave
+  menorVolumeAceito =  250000; //menor volume aceito do CohenPriceWave
+
 Input
-Versao("ATT.18/11/2025 VERSÃO 1.0");
-HorarioInicio(0900);
-HorarioFinal(1200);
-bolComprar(false);
-bolVender(true);
-ContratosTotal(2);
-contadorCandles(6);
-MinRangeOperacao(400);   // <<< NOVO PARÂMETRO: mínimo de pontos entre topo e fundo
-BandasPeriodo(20);       // <<< NOVO: quantos candles olhar pra inclinação das bandas
+  Versao("ATT.18/11/2025 VERSÃO 1.0"); // controle de versão
+  HorarioInicio(0900);                 // horário inicial para operar
+  HorarioFinal(1800);                  // horário final para operar
+  bolComprar(true);                    // habilita/desabilita operações de COMPRA
+  bolVender(false);                    // habilita/desabilita operações de VENDA
+  ContratosTotal(3);                   // número de contratos por entrada
+  contadorCandles(3);                  // máx. de renkos consecutivos fora da banda para sinal
+  MinRangeOperacao(400);               // range máx. entre topo/fundo para permitir operar
+  QtdRenkosRompimento(2);              // renkos além do topo/fundo para considerar rompimento
+  bolFiltroRompimento(true);           // liga/desliga filtro de rompimento de estrutura
+  bolFiltroTopoFundo(true);            // liga/desliga filtro de preço vs topo/fundo
 Var
-  x,Y,z,vLow,vHigh, MediaCentral, upperKeltner, lowerKeltner : float;
-  Compra, Venda, timeok, volok, compraKeltnerValida, vendaKeltnerValida : boolean;
-  Entrada, vStop, Risco, vAlvo,vParcial,VStopParcial : float;
-  amp, t, f : Real;
-  valorStopParcial,valorStopFixo : float;
-  bolStopCadastrado, bloqueiaCompras, bloqueiaVendas, renkoAcimaBanda, renkoAbaixoBanda : boolean;
-  horarioTravado                                                          : boolean;
-  i,iguais, consecutivosAcima, consecutivosAbaixo                         : integer;
-  tAtual                                                                  : float;
-  dAtual                                                              : integer;
-  bolValidarMaxima , volValidarMinima : boolean; 
-  cohenWeisWaveAtual, cohenWeisWaveAnterior                               : float;     // >>> novos
-  arrayTopos: array[1..10] of float;
-  arrayFundos : array[1..10] of float;
-  ultimoTopo, ultimoFundo : float;
-    rangeTopoFundo : float;   // diferença Topo-Fundo
-  podeOperar : boolean;     // libera ou bloqueia operações
-    // <<< NOVO: inclinação das bandas de Keltner
-  slopeUpper, slopeLower : float;
-  bandasInclinadasCima, bandasInclinadasBaixo, bandasRetas : boolean;
+  // ===== Preços de referência e bandas =====
+  x, Y             : float;   // auxiliares para gravar topo (x) e fundo (y)
+  vLow, vHigh      : float;   // Lowest/Highest dos últimos Niveis candles
+  upperKeltner     : float;   // banda superior de Keltner
+  lowerKeltner     : float;   // banda inferior de Keltner
 
-  Begin
+  // ===== Sinais básicos e filtros =====
+  Compra, Venda           : boolean; // intenção bruta de compra/venda
+  timeok, volok           : boolean; // filtros de horário e volume
+  compraKeltnerValida     : boolean; // compra final, depois de todos os filtros
+  vendaKeltnerValida      : boolean; // venda final, depois de todos os filtros
 
-  If time >= HorarioFinal then ClosePosition;
+  // ===== Gestão de posição =====
+  Entrada          : float;  // preço de entrada da posição atual
+  vStop            : float;  // preço do stop
+  vAlvo            : float;  // preço de alvo
 
-    // ===== Controle de mudança de dia =====
-  if dAtual <> Date then
-  begin
-    dAtual := Date;
-    bandasInclinadasCima:=false;
-    bandasInclinadasBaixo:=false;
+  // ===== Amplitude do renko =====
+  amp              : Real;   // tamanho (em pontos) do renko anterior
 
-    // zera arrays de topos/fundos
-    for i := 0 to 9 do
+  // ===== Estado de bandas e contadores =====
+  renkoAcimaBanda  : boolean; // candle fechou acima da banda superior
+  renkoAbaixoBanda : boolean; // candle fechou abaixo da banda inferior
+  i                : integer; // índice para arrays de topos/fundos
+  consecutivosAcima: integer; // renkos consecutivos acima da banda superior
+  consecutivosAbaixo: integer;// renkos consecutivos abaixo da banda inferior
+
+  // ===== Filtro de volume (COHENWEISWAVE) =====
+  cohenWeisWaveAtual    : float; // valor atual do COHENWEISWAVE
+  cohenWeisWaveAnterior : float; // valor anterior (candle passado)
+
+  // ===== Estrutura de topos e fundos =====
+  arrayTopos  : array[0..9] of float; // histórico de topos
+  arrayFundos : array[0..9] of float; // histórico de fundos
+  ultimoTopo  : float;                 // topo mais recente
+  ultimoFundo : float;                 // fundo mais recente
+  rangeTopoFundo : float;              // diferença em pontos entre topo e fundo
+  podeOperar : boolean;                // TRUE se rangeTopoFundo <= MinRangeOperacao
+
+  // ===== Filtros de rompimento e topo/fundo =====
+  bloqueiaCompras        : boolean; // TRUE: proíbe novas compras
+  bloqueiaVendas         : boolean; // TRUE: proíbe novas vendas
+  renkosAbaixoFundo      : float;   // renkos abaixo do último fundo (após rompimento)
+  renkosAcimaTopo        : float;   // renkos acima do último topo (após rompimento)
+
+
+  compraContinua:boolean; //define a difereção continua de compra;
+  vendaContinua:boolean;  //define a direção continua de venda;
+Begin
+
+  // =================== INICIO LOGICA CONTROLE GERAL E RESET =======================
+
+    if Time >= HorarioFinal then
+    ClosePosition;
+
+    if(date <> date[1]) entao
     begin
-      arrayTopos[i]  := 0;
-      arrayFundos[i] := 0;
+     bloqueiaCompras := false;
+     bloqueiaVendas  := false;
     end;
 
+  // Se o filtro de rompimento estiver desligado, libera ambos os lados.
+  if (bolFiltroRompimento = false) then
+  begin
+    bloqueiaCompras := false;
+    bloqueiaVendas  := false;
   end;
+  // =================== FIM LOGICA CONTROLE GERAL E RESET =========================
 
-   if(HasPosition) and (cohenWeisWaveAnterior >= 300000)entao
- ClosePosition;
 
-  // --- Filtro de volume direcional (COHENWEISWAVE) ---
+
+  // =================== INICIO LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ============
   cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
   cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
+  // =================== FIM LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ===============
 
 
 
-  upperKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|0|;
-  lowerKeltner := KeltnerCH(KeltnerDesvio,KeltnerPeriodo,KeltnerTipo)|1|;
+  // =================== INICIO LOGICA BANDAS KELTNER E PLOT =======================
+  upperKeltner := KeltnerCH(KeltnerDesvio, KeltnerPeriodo, KeltnerTipo)|0|;
+  lowerKeltner := KeltnerCH(KeltnerDesvio, KeltnerPeriodo, KeltnerTipo)|1|;
 
   Plot(upperKeltner);
-  SetPlotColor(1,(RGB(0,128,255)));
-  SetPlotWidth(1,2);
+  SetPlotColor(1, (RGB(0,128,255)));
+  SetPlotWidth(1, 2);
+
   Plot2(lowerKeltner);
-  SetPlotColor(2,(RGB(255,128,0)));
-  SetPlotWidth(2,2);
-
-  TimeOk := (Time >= HorarioInicio) e (Time <= HorarioFinal);
-  VolOk := Volume > 10000;
+  SetPlotColor(2, (RGB(255,128,0)));
+  SetPlotWidth(2, 2);
+  // =================== FIM LOGICA BANDAS KELTNER E PLOT ==========================
 
 
+
+  // =================== INICIO LOGICA FILTROS BASICOS (HORARIO E VOLUME) ==========
+  timeok := (Time >= HorarioInicio) and (Time <= HorarioFinal);
+  volok  := (Volume > 10000);
+  // =================== FIM LOGICA FILTROS BASICOS (HORARIO E VOLUME) =============
+
+
+
+  // =================== INICIO LOGICA AMPLITUDE DO RENKO ==========================
   amp := Round(Abs(Abertura[1] - Fechamento[1]));
-
-  Se Abertura[1] > Fechamento[1] então
-  inicio
-    t := Abertura[1] + amp;
-    f := Fechamento[1] - amp;
-  fim
-  Senao
-  inicio
-    f := Abertura[1] - amp;
-    t := Fechamento[1] + amp;
-  fim;
+  // =================== FIM LOGICA AMPLITUDE DO RENKO =============================
 
 
 
-  renkoAcimaBanda := (fechamento > upperKeltner) ;
-  renkoAbaixoBanda := (fechamento < lowerKeltner);
+  // =================== INICIO LOGICA POSICAO RELATIVA NAS BANDAS =================
+  renkoAcimaBanda  := (Fechamento > upperKeltner);
+  renkoAbaixoBanda := (Fechamento < lowerKeltner);
+  // =================== FIM LOGICA POSICAO RELATIVA NAS BANDAS ====================
 
 
+
+  // =================== INICIO LOGICA CONTAGEM CONSECUTIVOS FORA DAS BANDAS =======
   if renkoAcimaBanda then
     consecutivosAcima := consecutivosAcima + 1
   else
-    consecutivosAcima := consecutivosAcima-1;
+    consecutivosAcima := consecutivosAcima - 1;
 
   if renkoAbaixoBanda then
     consecutivosAbaixo := consecutivosAbaixo + 1
   else
-    consecutivosAbaixo := consecutivosAbaixo-1;
+    consecutivosAbaixo := consecutivosAbaixo - 1;
 
-  se(consecutivosAcima >= 20) or (consecutivosAbaixo>=20)entao
-  PaintBar(clPurple);
+  if (consecutivosAcima >= 20) or (consecutivosAbaixo >= 20) then
+    PaintBar(clPurple);
+  // =================== FIM LOGICA CONTAGEM CONSECUTIVOS FORA DAS BANDAS =========
 
-  X := high;
-  Y := low;
 
-  VLow := Lowest(low,Niveis);
-  VHigh := Highest(high,Niveis);
-  MediaCentral := Media(Niveis,close);
-  
 
-  if (vHigh[1]>= vHigh)  then
+// =================== INICIO LOGICA DETECCAO DE TOPOS E FUNDOS ==================
+  x := High;
+  Y := Low;
+
+  vLow  := Lowest(Low, Niveis);
+  vHigh := Highest(High, Niveis);
+
+  // TOPO
+  if (vHigh[1] >= vHigh) then
   begin
-    X := X[1];
-    PLOT3(x);
-    SetPlotColor(3,(RGB(255,0,0)));
-    SetPlotWidth(3,3);
+    x := x[1];
+    Plot3(x);
+    SetPlotColor(3, (RGB(255,0,0)));
+    SetPlotWidth(3, 3);
+
+    // shift do array de topos: empurra tudo uma posição pra frente
     for i := 9 downto 1 do
       arrayTopos[i] := arrayTopos[i-1];
 
-    // posição 0 sempre guarda o topo mais recente
-    arrayTopos[0] := X; 
+    // topo mais recente sempre na posição 0
+    arrayTopos[0] := x;
   end;
 
- if (vLow >= vLow[1])  then
-    begin
-      Y := y[1];
-      PLOT4(y);
-      SetPlotColor(4,(RGB(0,255,0)));
-      SetPlotWidth(4,3);
-     //PlotText(Y,clblue);;
-      for i := 9 downto 1 do
+  // FUNDO
+  if (vLow >= vLow[1]) then
+  begin
+    Y := Y[1];
+    Plot4(Y);
+    SetPlotColor(4, (RGB(0,255,0)));
+    SetPlotWidth(4, 3);
+
+    // shift do array de fundos: empurra tudo uma posição pra frente
+    for i := 9 downto 1 do
       arrayFundos[i] := arrayFundos[i-1];
 
-    arrayFundos[0] := Y; 
-    end;
+    // fundo mais recente sempre na posição 0
+    arrayFundos[0] := Y;
+  end;
+// =================== FIM LOGICA DETECCAO DE TOPOS E FUNDOS =====================
 
-  // ===== Cálculo do range entre topo e fundo =====
+
+
+  // =================== INICIO LOGICA RANGE TOPO-FUNDO E PERMISSAO =================
   ultimoTopo  := arrayTopos[0];
   ultimoFundo := arrayFundos[0];
 
   if (ultimoTopo > 0) and (ultimoFundo > 0) then
     rangeTopoFundo := Abs(ultimoTopo - ultimoFundo)
   else
-    rangeTopoFundo := 999999;   // fallback no início do dia
+    rangeTopoFundo := 999999;   // range grande enquanto não há estrutura válida
 
-  // valida se pode operar ou não
-  podeOperar := rangeTopoFundo <= MinRangeOperacao;
+  podeOperar := (rangeTopoFundo <= MinRangeOperacao) and volok and timeok;
+  se(podeOperar)then
+ // PaintBar(clYellow);
+  // =================== FIM LOGICA RANGE TOPO-FUNDO E PERMISSAO ====================
 
-  // plot visual opcional
-  PlotText(rangeTopoFundo, clPurple);
- 
 
-    if(renkoAcimaBanda)entao
-    PlotText(consecutivosAcima,clblue);
- 
-    if(renkoAbaixoBanda)entao  
-    PlotText(consecutivosAbaixo,clblue);
+
+// =================== INICIO LOGICA ROMPIMENTO DE ESTRUTURA =====================
+// Rompimento de FUNDO (lado da compra) e de TOPO (lado da venda)
+// respeitando o parâmetro QtdRenkosRompimento.
+if bolFiltroRompimento and volok and timeok then
+begin
+  // --- Rompimento de FUNDO -> lado da COMPRA ---
+  // Calcula quantos renkos o fechamento está abaixo do último fundo.
+  if (amp > 0) and (arrayFundos[1] > 0) then
+  begin
+    renkosAbaixoFundo := (arrayFundos[1] - Fechamento) / amp;
+
+    // Se andou pelo menos QtdRenkosRompimento renkos abaixo do fundo, rompeu estrutura.
+    if renkosAbaixoFundo >= QtdRenkosRompimento then
+    begin
+     //PlotText("Rompimento de comprar", clYellow);   // marca visualmente o rompimento de FUNDO
+      // aqui você pode também setar bloqueiaCompras := true; se quiser usar o bloqueio
+      bloqueiaCompras:=true;
+      bloqueiaVendas:=false;
+      compraContinua:=false; 
+      if(IsBought)entao 
+         ClosePosition;   
+    end;
+  end;
+
+  // --- Rompimento de TOPO -> lado da VENDA ---
+  // Calcula quantos renkos o fechamento está acima do último topo.
+  if (amp > 0) and (arrayTopos[1] > 0) then
+  begin
+    renkosAcimaTopo := (Fechamento - arrayTopos[1]) / amp;
+
+    // Se andou pelo menos QtdRenkosRompimento renkos acima do topo, rompeu estrutura.
+    if renkosAcimaTopo >= QtdRenkosRompimento then
+    begin
+  //  PlotText("aqui", clRed);      // marca visualmente o rompimento de TOPO
+      // aqui você pode também setar bloqueiaVendas := true; se quiser usar o bloqueio
+      bloqueiaVendas:=true;
+      bloqueiaCompras:=false;
+      vendaContinua:=false;
+      if(IsSold)entao
+      ClosePosition;     
+    end;
+  end;
+end;
+// =================== FIM LOGICA ROMPIMENTO DE ESTRUTURA ========================
+
+
+  // =================== INICIO LOGICA DEBUG VISUAL ================================
+  if renkoAcimaBanda then
+   // PlotText(consecutivosAcima, clBlue);
+
+  if renkoAbaixoBanda then
+   // PlotText(consecutivosAbaixo, clBlue);
+  // =================== FIM LOGICA DEBUG VISUAL ===================================
+
+
+
+  // =================== INICIO LOGICA SINAIS BRUTOS COMPRA/VENDA ==================
+  Compra := (Low < vLow[1]);
+  Venda  := (High > vHigh[1]);
+  // =================== FIM LOGICA SINAIS BRUTOS COMPRA/VENDA =====================
+
+
+
+  // =================== INICIO LOGICA VALIDACAO KELTNER + FILTROS =================
+  compraKeltnerValida := renkoAbaixoBanda
+    and (consecutivosAbaixo <= contadorCandles)
+    and (cohenWeisWaveAnterior < menorVolumeAceito)
+    and (bloqueiaCompras = false);      // filtro de rompimento
+
+  vendaKeltnerValida := renkoAcimaBanda
+    and (consecutivosAcima <= contadorCandles)
+    and (cohenWeisWaveAnterior < menorVolumeAceito)
+    and (bloqueiaVendas = false) ;      // filtro de rompimento
 
   if Abs(cohenWeisWaveAtual) >= 300000 then
-begin
-  PaintBar(clBlue);
-end;
+    PaintBar(clBlue);
 
-    Compra := (Low < VLow[1])   e TimeOk e VolOk ;
-    Venda := (High > VHigh[1])  e TimeOk e VolOk;
-
-   compraKeltnerValida := Compra  
-                          e renkoAbaixoBanda
-                          e (consecutivosAbaixo <= contadorCandles)
-                          and (cohenWeisWaveAnterior < 250000)
-                          and bolComprar
-                          and podeOperar;        // <<< NOVO
-
-  vendaKeltnerValida := Venda 
-                          e renkoAcimaBanda
-                          e (consecutivosAcima <= contadorCandles)
-                          and (cohenWeisWaveAnterior < 250000)
-                          and bolVender
-                          and podeOperar;        // <<< NOVO
-
-  se (compraKeltnerValida) entao
-  begin
+  if compraKeltnerValida then
+    begin
+    compraContinua:=true;
+    vendaContinua:=false;
     PaintBar(clGreen);
-    PlotText(arrayTopos[0],clRed);
+    end;
+
+
+  if vendaKeltnerValida then
+  begin
+  bloqueiaCompras:=false;
+  vendaContinua:=true;
+  PaintBar(clRed);
   end;
 
-  se (vendaKeltnerValida)  entao
+
+  // Se o preço está dentro das bandas, reseta contador e pinta amarelo
+  if (Fechamento < upperKeltner) and (Fechamento > lowerKeltner) then
   begin
-     PaintBar(clRed);
-       PlotText(arrayFundos[0],clGreen);
+    PaintBar(clYellow);
+    consecutivosAcima  := 0;
+    consecutivosAbaixo := 0;
   end;
-
-
- se (fechamento < upperKeltner) and (fechamento > lowerKeltner)then
- begin
-  PaintBar(clyellow);
-  consecutivosAcima:=0;
-  consecutivosAbaixo:=0;
- end;
-
- se(compraKeltnerValida)entao
- begin
-  BuyAtMarket(ContratosTotal);
-  Entrada := Fechamento;
- end;
-
- se(vendaKeltnerValida)entao
- begin
-  SellShortAtMarket(ContratosTotal);
-  Entrada := Fechamento;
- end;
-
-// === Gestão quando estiver comprado ===
-if IsBought then
-begin
-  ultimoTopo  := arrayTopos[0];
-  ultimoFundo := arrayFundos[0];
-
-  // ALVO: 100 pontos abaixo do último topo
-  if ultimoTopo > 0 then
-    vAlvo := ultimoTopo - 100
-  else
-    vAlvo := Entrada + 90;
-
-  SellToCoverLimit(vAlvo, ContratosTotal);
-
-  // ---- NOVA REGRA: SE ANDAR 2 BOXES A FAVOR, STOP NO ZERO A ZERO ----
-  if (Fechamento >= Entrada + (2 * amp)) then
-  begin
-    vStop := Entrada;   // BE (break even)
-    SellToCoverStop(vStop, vStop - MinPriceIncrement, ContratosTotal);
-  end
-  // STOP pelo fundo relevante
-  else if (Fechamento > Entrada) and (ultimoFundo > 0) then
-  begin
-    vStop := ultimoFundo;
-    SellToCoverStop(vStop, vStop - MinPriceIncrement, ContratosTotal);
-  end
-  else
-  begin
-    // stop clássico (ainda não andou a favor)
-    SellToCoverStop(Entrada - 200, (Entrada - 250) - MinPriceIncrement, ContratosTotal);
-  end;
-end;
-
- // === Gestão quando estiver vendido ===
-if IsSold then
-begin
-  ultimoTopo  := arrayTopos[0];
-  ultimoFundo := arrayFundos[0];
-
-  // ALVO: 50 pontos acima do último fundo
-  if ultimoFundo > 0 then
-    vAlvo := ultimoFundo + 50
-  else
-    vAlvo := Entrada - 90;
-
-  BuyToCoverLimit(vAlvo, ContratosTotal);
-
-  // ---- NOVA REGRA: SE ANDAR 2 BOXES A FAVOR, STOP NO ZERO A ZERO ----
-  if (Fechamento <= Entrada - (2 * amp)) then
-  begin
-    vStop := Entrada;   // BE (break even)
-    BuyToCoverStop(vStop, vStop + MinPriceIncrement, ContratosTotal);
-  end
-  // STOP pelo topo relevante
-  else if (Fechamento < Entrada) and (ultimoTopo > 0) then
-  begin
-    vStop := ultimoTopo;
-    BuyToCoverStop(vStop, vStop + MinPriceIncrement, ContratosTotal);
-  end
-  else
-  begin
-    // stop clássico
-    BuyToCoverStop(Entrada + 200, (Entrada + 250) + MinPriceIncrement, ContratosTotal);
-  end;
-end;
+  // =================== FIM LOGICA VALIDACAO KELTNER + FILTROS ====================
  
 
-
-
+ //========================Entrada========================================
+  //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
+  //Acontencem das 905 ate 1740.
+ if(compraContinua)and (time >= 905)and (time <= 1740)entao
+ begin
+ if(abertura[0]>fechamento[0])entao
+   BuyAtMarket(ContratosTotal)else
+  if(abertura[0]<fechamento[0])entao
+   BuyLimit(abertura[0],ContratosTotal);
+ end;
 
 end;
