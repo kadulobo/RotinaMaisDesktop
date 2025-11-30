@@ -423,7 +423,7 @@ end;
  begin
  if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra) and (AccAgressSaldo(1) > 5.00) entao
    BuyAtMarket(ContratosTotal)else
-  if(abertura[0]<fechamento[0])entao
+  if(abertura[0]<fechamento[0]) and (AccAgressSaldo(1) > 5.00) entao
    BuyLimit(abertura[0],ContratosTotal);
  end;
    //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
@@ -432,7 +432,7 @@ end;
  begin
  if(abertura[0]<fechamento[0])and (not bolTempoRapidoVenda) and (AccAgressSaldo(1) < -5.00) entao
    SellShortAtMarket(ContratosTotal)else
-  if(abertura[0]>fechamento[0])entao
+  if(abertura[0]>fechamento[0]) and (AccAgressSaldo(1) < -5.00)entao
    SellShortLimit(abertura[0],ContratosTotal);
  end;
 
