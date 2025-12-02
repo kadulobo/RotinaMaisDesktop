@@ -26,6 +26,7 @@ Input
   bolFiltroRompimento(true);           // liga/desliga filtro de rompimento de estrutura
   bolFiltroTopoFundo(true);            // liga/desliga filtro de preço vs topo/fundo
   MaxBarrasMesmoMinuto(1);  // número máximo de bricks permitidos no mesmo minuto
+  
 Var
   // ===== Preços de referência e bandas =====
   x, Y             : float;   // auxiliares para gravar topo (x) e fundo (y)
@@ -87,6 +88,9 @@ Var
   topoFluxoAlta        : float;
   nivel50FluxoAlta     : float;
   bolFiltro50FluxoCompra : boolean;
+    renkosEntreFundos : float;
+  renkosEntreTopos  : float;
+
 
 Begin
 
@@ -99,6 +103,7 @@ Begin
     begin
      bloqueiaCompras := false;
      bloqueiaVendas  := false;
+
     end;
 
   // Se o filtro de rompimento estiver desligado, libera ambos os lados.
@@ -114,6 +119,8 @@ Begin
   // =================== INICIO LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ============
   cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
   cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
+
+
   // =================== FIM LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ===============
 
 
@@ -227,10 +234,11 @@ Begin
 
 
 
+
 // =================== INICIO LOGICA ROMPIMENTO DE ESTRUTURA =====================
 // Rompimento de FUNDO (lado da compra) e de TOPO (lado da venda)
 // respeitando o parâmetro QtdRenkosRompimento.
-if bolFiltroRompimento and volok and timeok then
+if bolFiltroRompimento  then
 begin
   // --- Rompimento de FUNDO -> lado da COMPRA ---
   // Calcula quantos renkos o fechamento está abaixo do último fundo.
@@ -239,14 +247,14 @@ begin
     renkosAbaixoFundo := (arrayFundos[1] - Fechamento) / amp;
 
     // Se andou pelo menos QtdRenkosRompimento renkos abaixo do fundo, rompeu estrutura.
-    if renkosAbaixoFundo >= QtdRenkosRompimento then
+    if (renkosAbaixoFundo >= QtdRenkosRompimento) and (bloqueiaCompras=false) then
     begin
      //PlotText("Rompimento de comprar", clYellow);   // marca visualmente o rompimento de FUNDO
       // aqui você pode também setar bloqueiaCompras := true; se quiser usar o bloqueio
       bloqueiaCompras:=true;
       bloqueiaVendas:=false;
-      compraContinua:=false; 
-      PaintBar(clYellow);
+      compraContinua:=false;
+      PlotText("R.F",clYellow,0,15); 
       if(IsBought)entao 
          ClosePosition;   
     end;
@@ -259,14 +267,14 @@ begin
     renkosAcimaTopo := (Fechamento - arrayTopos[1]) / amp;
 
     // Se andou pelo menos QtdRenkosRompimento renkos acima do topo, rompeu estrutura.
-    if renkosAcimaTopo >= QtdRenkosRompimento then
+    if (renkosAcimaTopo >= QtdRenkosRompimento) and (bloqueiaVendas=false) then
     begin
   //  PlotText("aqui", clRed);      // marca visualmente o rompimento de TOPO
       // aqui você pode também setar bloqueiaVendas := true; se quiser usar o bloqueio
       bloqueiaVendas:=true;
       bloqueiaCompras:=false;
       vendaContinua:=false;
-   
+       PlotText("R.T",clYellow,2,15); 
       if(IsSold)entao
       ClosePosition;     
     end;
@@ -350,39 +358,42 @@ end;
 // ================== FIM DO FILTRO 50% ==========================================
 
 
-
-  // =================== INICIO LOGICA DEBUG VISUAL ================================
-  if renkoAcimaBanda then
-   // PlotText(consecutivosAcima, clBlue);
-
-  if renkoAbaixoBanda then
-   // PlotText(consecutivosAbaixo, clBlue);
-  // =================== FIM LOGICA DEBUG VISUAL ===================================
-
-
-
   // =================== INICIO LOGICA VALIDACAO KELTNER + FILTROS =================
-  compraKeltnerValida := renkoAbaixoBanda
-    and (consecutivosAbaixo <= contadorCandles)
-    and (cohenWeisWaveAnterior < menorVolumeAceito);      // filtro de rompimento
+  compraKeltnerValida := renkoAcimaBanda and  (consecutivosAcima >= contadorCandles);      // filtro de rompimento
 
-  vendaKeltnerValida := renkoAcimaBanda
-    and (consecutivosAcima <= contadorCandles)
-    and (cohenWeisWaveAnterior < menorVolumeAceito) ;      // filtro de rompimento
+  vendaKeltnerValida := renkoAbaixoBanda   and (consecutivosAbaixo >= contadorCandles);      // filtro de rompimento
 
 
-  if compraKeltnerValida then
+  if (vendaKeltnerValida) then
     begin
-    compraContinua:=true;
-    vendaContinua:=false;
+     PaintBar(clRed);
+      vendaContinua:=true;
     end;
 
 
-  if vendaKeltnerValida then
+  if (compraKeltnerValida) then
   begin
-  bloqueiaCompras:=false;
-  vendaContinua:=true;
+   PaintBar(clGreen);
+    compraContinua:=true;
   end;
+
+  
+  se(bloqueiaCompras) and (compraKeltnerValida) entao
+    begin
+    compraContinua:=true;
+    bloqueiaCompras:=false;
+    PlotText("L.C",clYellow,0,15); 
+    end;  
+  
+  se(bloqueiaVendas) and (vendaKeltnerValida) entao
+    begin
+    vendaContinua:=true;
+    bloqueiaVendas:=false;
+     PlotText("L.V",clYellow,2,15); 
+    end;   
+    
+     
+
 
   // Se o preço está dentro das bandas, reseta contador e pinta amarelo
   if (Fechamento < upperKeltner) and (Fechamento > lowerKeltner) then
@@ -391,15 +402,5 @@ end;
     consecutivosAbaixo := 0;
   end;
 
-
-  if (AccAgressSaldo(1) > 5.00)  entao
-  begin
-    PaintBar(clGreen);
-  end;
-
-    if (AccAgressSaldo(1) < -5.00)  entao
-  begin
-    PaintBar(clRed);
-  end;
 
 end;

@@ -7,7 +7,7 @@
 const
   Niveis         = 6;   // profundidade para detectar topos/fundos (Highest/Lowest)
   KeltnerPeriodo = 20;  // período base das bandas de Keltner
-  KeltnerDesvio  = 0.5;   // desvio das bandas de Keltner
+  KeltnerDesvio  = 1;   // desvio das bandas de Keltner
   KeltnerTipo    = 1;   // tipo da média no Keltner
   TicksWeisWave  = 15;  // sensibilidade do COHENWEISWAVE (volume direcional)
   maiorVolumeAceito = 300000; //maior volume aceito do CohenPriceWave
@@ -19,14 +19,20 @@ Input
   HorarioFinal(1800);                  // horário final para operar
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
-  ContratosTotal(2);                   // número de contratos por entrada
+  ContratosTotal(3);                   // número de contratos por entrada
+  ContratosParcial1(2);               // 1ª parcial = 2 contratos
+  ContratosParcial2(1);               // 2ª parcial = 1 contrato
+  Gain1Ticks(9);                      // 1º gain em ticks
+  Stop1Ticks(36);                     // 1º stop em ticks
+  Gain2Ticks(27);                     // 2º gain em ticks
+  Stop2Ticks(45);                     // 2º stop em ticks
+  TamanhoTick(5);                     // cada tick = 5 pontos no índice
   contadorCandles(3);                  // máx. de renkos consecutivos fora da banda para sinal
   MinRangeOperacao(400);               // range máx. entre topo/fundo para permitir operar
   QtdRenkosRompimento(2);              // renkos além do topo/fundo para considerar rompimento
   bolFiltroRompimento(true);           // liga/desliga filtro de rompimento de estrutura
   bolFiltroTopoFundo(true);            // liga/desliga filtro de preço vs topo/fundo
   MaxBarrasMesmoMinuto(1);  // número máximo de bricks permitidos no mesmo minuto
-  
 Var
   // ===== Preços de referência e bandas =====
   x, Y             : float;   // auxiliares para gravar topo (x) e fundo (y)
@@ -88,9 +94,9 @@ Var
   topoFluxoAlta        : float;
   nivel50FluxoAlta     : float;
   bolFiltro50FluxoCompra : boolean;
-    renkosEntreFundos : float;
-  renkosEntreTopos  : float;
 
+    precoEntrada       : float;
+  // (opcional) se quiser usar depois pra controlar se já configuro
 
 Begin
 
@@ -103,7 +109,6 @@ Begin
     begin
      bloqueiaCompras := false;
      bloqueiaVendas  := false;
-
     end;
 
   // Se o filtro de rompimento estiver desligado, libera ambos os lados.
@@ -119,8 +124,6 @@ Begin
   // =================== INICIO LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ============
   cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
   cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
-
-
   // =================== FIM LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ===============
 
 
@@ -171,7 +174,8 @@ Begin
   else
     consecutivosAbaixo := consecutivosAbaixo - 1;
 
-
+  if (consecutivosAcima >= 20) or (consecutivosAbaixo >= 20) then
+    PaintBar(clPurple);
   // =================== FIM LOGICA CONTAGEM CONSECUTIVOS FORA DAS BANDAS =========
 
 
@@ -227,18 +231,17 @@ Begin
   else
     rangeTopoFundo := 999999;   // range grande enquanto não há estrutura válida
 
-  podeOperar := (rangeTopoFundo <= MinRangeOperacao) and volok and timeok;
+  podeOperar := (rangeTopoFundo <= MinRangeOperacao) ;
   se(podeOperar)then
  // PaintBar(clYellow);
   // =================== FIM LOGICA RANGE TOPO-FUNDO E PERMISSAO ====================
 
 
 
-
 // =================== INICIO LOGICA ROMPIMENTO DE ESTRUTURA =====================
 // Rompimento de FUNDO (lado da compra) e de TOPO (lado da venda)
 // respeitando o parâmetro QtdRenkosRompimento.
-if bolFiltroRompimento  then
+if bolFiltroRompimento and volok and timeok then
 begin
   // --- Rompimento de FUNDO -> lado da COMPRA ---
   // Calcula quantos renkos o fechamento está abaixo do último fundo.
@@ -247,14 +250,13 @@ begin
     renkosAbaixoFundo := (arrayFundos[1] - Fechamento) / amp;
 
     // Se andou pelo menos QtdRenkosRompimento renkos abaixo do fundo, rompeu estrutura.
-    if (renkosAbaixoFundo >= QtdRenkosRompimento) and (bloqueiaCompras=false) then
+    if renkosAbaixoFundo >= QtdRenkosRompimento  then
     begin
      //PlotText("Rompimento de comprar", clYellow);   // marca visualmente o rompimento de FUNDO
       // aqui você pode também setar bloqueiaCompras := true; se quiser usar o bloqueio
       bloqueiaCompras:=true;
       bloqueiaVendas:=false;
-      compraContinua:=false;
-      PlotText("R.F",clYellow,0,15); 
+      compraContinua:=false; 
       if(IsBought)entao 
          ClosePosition;   
     end;
@@ -267,14 +269,13 @@ begin
     renkosAcimaTopo := (Fechamento - arrayTopos[1]) / amp;
 
     // Se andou pelo menos QtdRenkosRompimento renkos acima do topo, rompeu estrutura.
-    if (renkosAcimaTopo >= QtdRenkosRompimento) and (bloqueiaVendas=false) then
+    if renkosAcimaTopo >= QtdRenkosRompimento then
     begin
   //  PlotText("aqui", clRed);      // marca visualmente o rompimento de TOPO
       // aqui você pode também setar bloqueiaVendas := true; se quiser usar o bloqueio
       bloqueiaVendas:=true;
       bloqueiaCompras:=false;
       vendaContinua:=false;
-       PlotText("R.T",clYellow,2,15); 
       if(IsSold)entao
       ClosePosition;     
     end;
@@ -358,51 +359,66 @@ end;
 // ================== FIM DO FILTRO 50% ==========================================
 
 
+
+  // =================== INICIO LOGICA DEBUG VISUAL ================================
+  if renkoAcimaBanda then
+   // PlotText(consecutivosAcima, clBlue);
+
+  if renkoAbaixoBanda then
+   // PlotText(consecutivosAbaixo, clBlue);
+  // =================== FIM LOGICA DEBUG VISUAL ===================================
+
+
+
+  // =================== INICIO LOGICA SINAIS BRUTOS COMPRA/VENDA ==================
+  Compra := (Low < vLow[1]);
+  Venda  := (High > vHigh[1]);
+  // =================== FIM LOGICA SINAIS BRUTOS COMPRA/VENDA =====================
+
+
+
   // =================== INICIO LOGICA VALIDACAO KELTNER + FILTROS =================
-  compraKeltnerValida := renkoAcimaBanda and  (consecutivosAcima >= contadorCandles);      // filtro de rompimento
+  compraKeltnerValida := renkoAbaixoBanda
+    and (consecutivosAbaixo <= contadorCandles)
+    and (cohenWeisWaveAnterior < menorVolumeAceito)
+    and (bolComprar);
 
-  vendaKeltnerValida := renkoAbaixoBanda   and (consecutivosAbaixo >= contadorCandles);      // filtro de rompimento
+  vendaKeltnerValida := renkoAcimaBanda
+    and (consecutivosAcima <= contadorCandles)
+    and (cohenWeisWaveAnterior < menorVolumeAceito)
+    and (bolVender);
 
 
-  if (vendaKeltnerValida) then
+
+  if compraKeltnerValida then
     begin
-     PaintBar(clRed);
-      vendaContinua:=true;
+    compraContinua:=true;
     end;
 
 
-  if (compraKeltnerValida) then
+  if vendaKeltnerValida then
   begin
-   PaintBar(clGreen);
-    compraContinua:=true;
+  vendaContinua:=true;
   end;
 
-  
-  se(bloqueiaCompras) and (compraKeltnerValida) entao
-    begin
-    compraContinua:=true;
-    bloqueiaCompras:=false;
-    PlotText("L.C",clYellow,0,15); 
-    end;  
-  
-  se(bloqueiaVendas) and (vendaKeltnerValida) entao
-    begin
-    vendaContinua:=true;
-    bloqueiaVendas:=false;
-     PlotText("L.V",clYellow,2,15); 
-    end;   
-    
-     
-   
+  //Houvve um rompimento de fundo e agora vamos re ligar
+  se(bolComprar) and (bloqueiaCompras)  and (compraContinua=false) and (renkoAcimaBanda) entao
+  begin
+  compraContinua:=true;
+  bloqueiaCompras:=false;
+  end;
+
 
   // Se o preço está dentro das bandas, reseta contador e pinta amarelo
   if (Fechamento < upperKeltner) and (Fechamento > lowerKeltner) then
-  begin    
+  begin
     consecutivosAcima  := 0;
     consecutivosAbaixo := 0;
   end;
+  // =================== FIM LOGICA VALIDACAO KELTNER + FILTROS ====================
+ 
 
-    XRay("compraKeltnerValida",compraKeltnerValida,"comprar");
+  XRay("compraKeltnerValida",compraKeltnerValida,"comprar");
   XRay("compraContinua",compraContinua,"comprar");
   XRay("bolComprar",bolComprar,"comprar");
 
@@ -413,21 +429,81 @@ end;
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
- if(compraContinua)and (time >= 901)and (time <= 1740) entao
+ if(compraContinua)and (time >= 901)and (time <= 1740)  entao
  begin
- if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  entao
+ if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra) and (AccAgressSaldo(1) > 5.00) entao
    BuyAtMarket(ContratosTotal)else
-  if(abertura[0]<fechamento[0]) entao
+  if(abertura[0]<fechamento[0]) and (AccAgressSaldo(1) > 5.00) entao
    BuyLimit(abertura[0],ContratosTotal);
+
  end;
    //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
  if(vendaContinua) and (time >= 901)and (time <= 1740)entao
  begin
- if(abertura[0]<fechamento[0])and (not bolTempoRapidoVenda) entao
+ if(abertura[0]<fechamento[0])and (not bolTempoRapidoVenda) and (AccAgressSaldo(1) < -5.00) entao
    SellShortAtMarket(ContratosTotal)else
-  if(abertura[0]>fechamento[0]) entao
+  if(abertura[0]>fechamento[0]) and (AccAgressSaldo(1) < -5.00)entao
    SellShortLimit(abertura[0],ContratosTotal);
  end;
+
+ // ================== CAPTURA DO PRECO DE ENTRADA =====================
+// Quando a posição muda de 0 para diferente de 0, guardamos o preço médio
+if (Position <> 0) and (Position[1] = 0) then
+begin
+  precoEntrada := AvgPrice;
+end;
+
+// ================== LOGICA DE STOP / GAIN INTERNO ====================
+
+// POSICAO COMPRADA
+if Position > 0 then
+begin
+  // Posição cheia: 3 contratos (2 + 1)
+  if Position >= (ContratosParcial1 + ContratosParcial2) then
+  begin
+    // 1ª parcial - 2 contratos (gain 9 ticks, stop 27 ticks)
+    SellToCoverStop (precoEntrada - Stop1Ticks * TamanhoTick, ContratosParcial1);
+    SellToCoverLimit(precoEntrada + Gain1Ticks * TamanhoTick, ContratosParcial1);
+
+    // 2ª parcial - 1 contrato  (gain 27 ticks, stop 45 ticks)
+    SellToCoverStop (precoEntrada - Stop2Ticks * TamanhoTick, ContratosParcial2);
+    SellToCoverLimit(precoEntrada + Gain2Ticks * TamanhoTick, ContratosParcial2);
+  end
+  else
+  // Já realizou a 1ª parcial, sobrou só o último contrato
+  if Position = ContratosParcial2 then
+  begin
+    SellToCoverStop (precoEntrada - Stop2Ticks * TamanhoTick, ContratosParcial2);
+    SellToCoverLimit(precoEntrada + Gain2Ticks * TamanhoTick, ContratosParcial2);
+  end;
+end;
+
+// POSICAO VENDIDA
+if Position < 0 then
+begin
+  // Posição cheia vendida: -3 contratos
+  if Abs(Position) >= (ContratosParcial1 + ContratosParcial2) then
+  begin
+    // 1ª parcial - 2 contratos (gain 9 ticks abaixo, stop 27 ticks acima)
+    BuyToCoverStop (precoEntrada + Stop1Ticks * TamanhoTick, ContratosParcial1);
+    BuyToCoverLimit(precoEntrada - Gain1Ticks * TamanhoTick, ContratosParcial1);
+
+    // 2ª parcial - 1 contrato  (gain 27 ticks abaixo, stop 45 ticks acima)
+    BuyToCoverStop (precoEntrada + Stop2Ticks * TamanhoTick, ContratosParcial2);
+    BuyToCoverLimit(precoEntrada - Gain2Ticks * TamanhoTick, ContratosParcial2);
+  end
+  else
+  // Já realizou a 1ª parcial, sobrou só o último contrato
+  if Abs(Position) = ContratosParcial2 then
+  begin
+    BuyToCoverStop (precoEntrada + Stop2Ticks * TamanhoTick, ContratosParcial2);
+    BuyToCoverLimit(precoEntrada - Gain2Ticks * TamanhoTick, ContratosParcial2);
+  end;
+end;
+
+// ================== FIM STOP / GAIN INTERNO ==========================
+
+
 
 end;
