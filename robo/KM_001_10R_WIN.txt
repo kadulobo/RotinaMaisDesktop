@@ -19,7 +19,7 @@ Input
   HorarioFinal(1800);                  // horário final para operar
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
-  ContratosTotal(2);                   // número de contratos por entrada
+  ContratosTotal(3);                   // número de contratos por entrada
   contadorCandles(3);                  // máx. de renkos consecutivos fora da banda para sinal
   MinRangeOperacao(400);               // range máx. entre topo/fundo para permitir operar
   QtdRenkosRompimento(2);              // renkos além do topo/fundo para considerar rompimento
@@ -99,11 +99,18 @@ Begin
     if Time >= HorarioFinal then
     ClosePosition;
 
-    if(date <> date[1]) entao
+   if(date <> date[1])  or ((Time >= HorarioFinal) or (Time <= HorarioInicio))entao
     begin
      bloqueiaCompras := false;
      bloqueiaVendas  := false;
-
+     bloqueiaCompras := false;
+     bloqueiaVendas  := false;
+     compraContinua :=false;
+     vendaContinua :=false;
+     compraKeltnerValida:=false;
+     vendaKeltnerValida:=false;
+     consecutivosAcima:=0;
+     consecutivosAbaixo:=0;
     end;
 
   // Se o filtro de rompimento estiver desligado, libera ambos os lados.
@@ -413,7 +420,7 @@ end;
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
- if(compraContinua)and (time >= 901)and (time <= 1740) entao
+ if(compraContinua)and (time >= 901)and (time <= 1740) and bolComprar entao
  begin
  if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  entao
    BuyAtMarket(ContratosTotal)else
@@ -422,7 +429,7 @@ end;
  end;
    //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
- if(vendaContinua) and (time >= 901)and (time <= 1740)entao
+ if(vendaContinua) and (time >= 901)and (time <= 1740) and bolVender  entao
  begin
  if(abertura[0]<fechamento[0])and (not bolTempoRapidoVenda) entao
    SellShortAtMarket(ContratosTotal)else
