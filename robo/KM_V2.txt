@@ -26,6 +26,16 @@ Input
   bolFiltroRompimento(true);           // liga/desliga filtro de rompimento de estrutura
   bolFiltroTopoFundo(true);            // liga/desliga filtro de preço vs topo/fundo
   MaxBarrasMesmoMinuto(1);  // número máximo de bricks permitidos no mesmo minuto
+  PivotLen(2);                         // nº de candles antes/depois para validar pivô
+  MinCandlesPerna(2);                  // perna clara antes/depois do pivô
+  DistMinEstrutura(50);                // distância mínima entre swings (pontos/renkos)
+  BOSImpulsoMinRenkos(2);              // renkos mínimos no rompimento da estrutura
+  BOSImpulsoMinPontos(100);            // range mínimo em pontos para BOS
+  RangeMinEntreEstruturaEOB(150);      // range mínimo entre estrutura anterior e OB
+  TamanhoMinZonaOB(10);                // tamanho mínimo (pontos) da zona do OB
+  UsaPavioNaZonaOB(true);              // usa pavio para definir limites da zona
+  AcionaMitigacaoCompra(true);         // sinal ao mitigar OB de compra
+  AcionaMitigacaoVenda(true);          // sinal ao mitigar OB de venda
   
 Var
   // ===== Preços de referência e bandas =====
@@ -93,6 +103,25 @@ Var
      // distância desse topo em relação ao ÚLTIMO FUNDO válido
      distTopoFundo,distFundoTopo : float;
 
+  // ===== Estrutura forte (pivôs) e BOS/Order Blocks =====
+  pivotHigh, pivotLow       : float;
+  leftHighOk, rightHighOk   : boolean;
+  leftLowOk, rightLowOk     : boolean;
+  candlesAltaAntes          : integer;
+  candlesBaixaDepois        : integer;
+  candlesBaixaAntes         : integer;
+  candlesAltaDepois         : integer;
+  bosAlta, bosBaixa         : boolean;
+  impulsoOK                 : boolean;
+  movimentoEstrutura        : float;
+  zonaAlta, zonaBaixa       : float;
+  bullObTopo, bullObFundo   : float;
+  bearObTopo, bearObFundo   : float;
+  bullObAtivo, bearObAtivo  : boolean;
+  bullObMitigado, bearObMitigado : boolean;
+  tamanhoZona               : float;
+  idxCandle, impulsoRenkos  : integer;
+
 
 Begin
 
@@ -111,6 +140,10 @@ Begin
      vendaKeltnerValida:=false;
      consecutivosAcima:=0;
      consecutivosAbaixo:=0;
+     bullObAtivo := false;
+     bearObAtivo := false;
+     bullObMitigado := false;
+     bearObMitigado := false;
     end;
 
   // Se o filtro de rompimento estiver desligado, libera ambos os lados.
@@ -187,92 +220,263 @@ Begin
   vHigh := Highest(High, Niveis);
 
 // =================== INICIO LOGICA DETECCAO DE TOPOS E FUNDOS ==================
-  x := High;
-  Y := Low;
+  pivotHigh := High[PivotLen];
+  pivotLow  := Low[PivotLen];
+  leftHighOk := true;
+  rightHighOk := true;
+  leftLowOk  := true;
+  rightLowOk := true;
+  candlesAltaAntes := 0;
+  candlesBaixaDepois := 0;
+  candlesBaixaAntes := 0;
+  candlesAltaDepois := 0;
 
-  vLow  := Lowest(Low, Niveis);
-  vHigh := Highest(High, Niveis);
-
-  // TOPO
-  if (vHigh[1] >= vHigh) then
+  // verifica candles anteriores e posteriores ao pivô para swing forte
+  for i := 1 to PivotLen do
   begin
-    x := x[1];
-    Plot3(x);
-    SetPlotColor(3, (RGB(255,0,0)));
-    SetPlotWidth(3, 3);
-
-    // shift do array de topos: empurra tudo uma posição pra frente
-    for i := 9 downto 1 do
-      arrayTopos[i] := arrayTopos[i-1];
-
-    // topo mais recente sempre na posição 0
-    arrayTopos[0] := x;
+    if (pivotHigh <= High[PivotLen + i]) then leftHighOk := false;
+    if (pivotHigh <= High[PivotLen - i]) then rightHighOk := false;
+    if (pivotLow  >= Low[PivotLen + i])  then leftLowOk := false;
+    if (pivotLow  >= Low[PivotLen - i])  then rightLowOk := false;
   end;
 
-  // FUNDO
-  if (vLow >= vLow[1]) then
+  for i := 1 to MinCandlesPerna do
   begin
-    Y := Y[1];
-    Plot4(Y);
-    SetPlotColor(4, (RGB(0,255,0)));
-    SetPlotWidth(4, 3);
+    if (Fechamento[PivotLen + i] > Abertura[PivotLen + i]) then
+      candlesAltaAntes := candlesAltaAntes + 1;
+    if (Fechamento[PivotLen - i] < Abertura[PivotLen - i]) then
+      candlesBaixaDepois := candlesBaixaDepois + 1;
+    if (Fechamento[PivotLen + i] < Abertura[PivotLen + i]) then
+      candlesBaixaAntes := candlesBaixaAntes + 1;
+    if (Fechamento[PivotLen - i] > Abertura[PivotLen - i]) then
+      candlesAltaDepois := candlesAltaDepois + 1;
+  end;
 
-    // shift do array de fundos: empurra tudo uma posição pra frente
-    for i := 9 downto 1 do
-      arrayFundos[i] := arrayFundos[i-1];
+  // TOPO forte (perna de alta + perna de baixa)
+  if leftHighOk and rightHighOk and (candlesAltaAntes >= MinCandlesPerna) and (candlesBaixaDepois >= MinCandlesPerna) then
+  begin
+    if (ultimoFundo <= 0) or ((pivotHigh - ultimoFundo) >= DistMinEstrutura) then
+    begin
+      for i := 9 downto 1 do
+        arrayTopos[i] := arrayTopos[i-1];
 
-    // fundo mais recente sempre na posição 0
-    arrayFundos[0] := Y;
+      arrayTopos[0] := pivotHigh;
+      ultimoTopo := pivotHigh;
+      Plot3(pivotHigh);
+      SetPlotColor(3, (RGB(255,0,0)));
+      SetPlotWidth(3, 3);
+    end;
+  end;
+
+  // FUNDO forte (perna de baixa + perna de alta)
+  if leftLowOk and rightLowOk and (candlesBaixaAntes >= MinCandlesPerna) and (candlesAltaDepois >= MinCandlesPerna) then
+  begin
+    if (ultimoTopo <= 0) or ((ultimoTopo - pivotLow) >= DistMinEstrutura) then
+    begin
+      for i := 9 downto 1 do
+        arrayFundos[i] := arrayFundos[i-1];
+
+      arrayFundos[0] := pivotLow;
+      ultimoFundo := pivotLow;
+      Plot4(pivotLow);
+      SetPlotColor(4, (RGB(0,255,0)));
+      SetPlotWidth(4, 3);
+    end;
   end;
 // =================== FIM LOGICA DETECCAO DE TOPOS E FUNDOS =====================
 
 
-// =================== INICIO LOGICA ROMPIMENTO DE ESTRUTURA =====================
-// Rompimento de FUNDO (lado da compra) e de TOPO (lado da venda)
-// respeitando o parâmetro QtdRenkosRompimento.
-if bolFiltroRompimento  then
-begin
-  // --- Rompimento de FUNDO -> lado da COMPRA ---
-  // Calcula quantos renkos o fechamento está abaixo do último fundo.
-  if (amp > 0) and (arrayFundos[1] > 0) then
-  begin
-    renkosAbaixoFundo := (arrayFundos[1] - Fechamento) / amp;
+// =================== INICIO LOGICA ROMPIMENTO DE ESTRUTURA (BOS) E ORDER BLOCK =
+bosAlta  := false;
+bosBaixa := false;
 
-    // Se andou pelo menos QtdRenkosRompimento renkos abaixo do fundo, rompeu estrutura.
-    if (renkosAbaixoFundo >= QtdRenkosRompimento) and (bloqueiaCompras=false) then
+if bolFiltroRompimento then
+begin
+  // Rompimento de alta: fechamento acima do último topo válido
+  if (ultimoTopo > 0) and (Fechamento > ultimoTopo) then
+  begin
+    impulsoOK := ((amp > 0) and (((Fechamento - ultimoTopo) / amp) >= BOSImpulsoMinRenkos)) or ((Fechamento - ultimoTopo) >= BOSImpulsoMinPontos);
+    if impulsoOK then
     begin
-     //PlotText("Rompimento de comprar", clYellow);   // marca visualmente o rompimento de FUNDO
-      // aqui você pode também setar bloqueiaCompras := true; se quiser usar o bloqueio
-      bloqueiaCompras:=true;
-      bloqueiaVendas:=false;
-      compraContinua:=false;
-      PlotText("R.F",clYellow,0,15); 
-      if(IsBought)entao 
-         ClosePosition;   
+      bosAlta := true;
+      PlotText("BOS+", clGreen, 0, 25);
     end;
   end;
 
-  // --- Rompimento de TOPO -> lado da VENDA ---
-  // Calcula quantos renkos o fechamento está acima do último topo.
-  if (amp > 0) and (arrayTopos[1] > 0) then
+  // Rompimento de baixa: fechamento abaixo do último fundo válido
+  if (ultimoFundo > 0) and (Fechamento < ultimoFundo) then
   begin
-    renkosAcimaTopo := (Fechamento - arrayTopos[1]) / amp;
-
-    // Se andou pelo menos QtdRenkosRompimento renkos acima do topo, rompeu estrutura.
-    if (renkosAcimaTopo >= QtdRenkosRompimento) and (bloqueiaVendas=false) then
+    impulsoOK := ((amp > 0) and (((ultimoFundo - Fechamento) / amp) >= BOSImpulsoMinRenkos)) or ((ultimoFundo - Fechamento) >= BOSImpulsoMinPontos);
+    if impulsoOK then
     begin
-  //  PlotText("aqui", clRed);      // marca visualmente o rompimento de TOPO
-      // aqui você pode também setar bloqueiaVendas := true; se quiser usar o bloqueio
-      bloqueiaVendas:=true;
-      bloqueiaCompras:=false;
-      vendaContinua:=false;
-       PlotText("R.T",clYellow,2,15); 
-      if(IsSold)entao
-      ClosePosition;     
+      bosBaixa := true;
+      PlotText("BOS-", clRed, 0, 25);
     end;
   end;
 end;
-// =================== FIM LOGICA ROMPIMENTO DE ESTRUTURA ========================
+
+// Criação de Bullish Order Block após BOS de alta
+if bosAlta then
+begin
+  movimentoEstrutura := 0;
+  if (ultimoFundo > 0) then
+    movimentoEstrutura := Fechamento - ultimoFundo;
+
+  if (movimentoEstrutura >= RangeMinEntreEstruturaEOB) then
+  begin
+    idxCandle := 0;
+    impulsoRenkos := 0;
+    while (idxCandle < 50) and (Fechamento[idxCandle] >= Abertura[idxCandle]) do
+    begin
+      impulsoRenkos := impulsoRenkos + 1;
+      idxCandle := idxCandle + 1;
+    end;
+
+    zonaAlta := Abertura[idxCandle];
+    zonaBaixa := Low[idxCandle];
+
+    if (not UsaPavioNaZonaOB) then
+    begin
+      zonaAlta := Max(Abertura[idxCandle], Fechamento[idxCandle]);
+      zonaBaixa := Min(Abertura[idxCandle], Fechamento[idxCandle]);
+    end;
+
+    tamanhoZona := Abs(zonaAlta - zonaBaixa);
+
+    if (tamanhoZona >= TamanhoMinZonaOB) then
+    begin
+      // ignora OB interno se já existir um mais amplo
+      if bullObAtivo and (zonaAlta <= bullObTopo) and (zonaBaixa >= bullObFundo) then
+      begin
+        // mantém o mais externo
+      end
+      else
+      begin
+        bullObTopo   := zonaAlta;
+        bullObFundo  := zonaBaixa;
+        bullObAtivo  := true;
+        bullObMitigado := false;
+
+        // se o OB novo contiver o antigo, substitui pelo maior
+        if bearObAtivo and (bullObTopo >= bearObTopo) and (bullObFundo <= bearObFundo) then
+        begin
+          bearObAtivo := false;
+          bearObMitigado := false;
+        end;
+      end;
+    end;
+  end;
+end;
+
+// Criação de Bearish Order Block após BOS de baixa
+if bosBaixa then
+begin
+  movimentoEstrutura := 0;
+  if (ultimoTopo > 0) then
+    movimentoEstrutura := ultimoTopo - Fechamento;
+
+  if (movimentoEstrutura >= RangeMinEntreEstruturaEOB) then
+  begin
+    idxCandle := 0;
+    impulsoRenkos := 0;
+    while (idxCandle < 50) and (Fechamento[idxCandle] <= Abertura[idxCandle]) do
+    begin
+      impulsoRenkos := impulsoRenkos + 1;
+      idxCandle := idxCandle + 1;
+    end;
+
+    zonaAlta := High[idxCandle];
+    zonaBaixa := Abertura[idxCandle];
+
+    if (not UsaPavioNaZonaOB) then
+    begin
+      zonaAlta := Max(Abertura[idxCandle], Fechamento[idxCandle]);
+      zonaBaixa := Min(Abertura[idxCandle], Fechamento[idxCandle]);
+    end;
+
+    tamanhoZona := Abs(zonaAlta - zonaBaixa);
+
+    if (tamanhoZona >= TamanhoMinZonaOB) then
+    begin
+      if bearObAtivo and (zonaAlta <= bearObTopo) and (zonaBaixa >= bearObFundo) then
+      begin
+        // mantém OB mais amplo
+      end
+      else
+      begin
+        bearObTopo   := zonaAlta;
+        bearObFundo  := zonaBaixa;
+        bearObAtivo  := true;
+        bearObMitigado := false;
+
+        if bullObAtivo and (bearObTopo <= bullObTopo) and (bearObFundo >= bullObFundo) then
+        begin
+          bullObAtivo := false;
+          bullObMitigado := false;
+        end;
+      end;
+    end;
+  end;
+end;
+
+// Mitigação e invalidação dos OBs
+if bullObAtivo then
+begin
+  if (Fechamento < bullObFundo) then
+  begin
+    bullObAtivo := false;
+    bullObMitigado := false;
+  end
+  else if (not bullObMitigado) and (Low <= bullObTopo) and (High >= bullObFundo) then
+  begin
+    bullObMitigado := true;
+    if (AcionaMitigacaoCompra) then
+      PlotText("MIT-BUY", clGreen, 0, 18);
+  end;
+end;
+
+if bearObAtivo then
+begin
+  if (Fechamento > bearObTopo) then
+  begin
+    bearObAtivo := false;
+    bearObMitigado := false;
+  end
+  else if (not bearObMitigado) and (High >= bearObFundo) and (Low <= bearObTopo) then
+  begin
+    bearObMitigado := true;
+    if (AcionaMitigacaoVenda) then
+      PlotText("MIT-SELL", clRed, 0, 18);
+  end;
+end;
+
+// Plotagem das zonas dos OBs
+if bullObAtivo then
+begin
+  Plot5(bullObTopo);
+  SetPlotColor(5, clGreen);
+  Plot6(bullObFundo);
+  SetPlotColor(6, clGreen);
+end
+else
+begin
+  Plot5(0);
+  Plot6(0);
+end;
+
+if bearObAtivo then
+begin
+  Plot7(bearObTopo);
+  SetPlotColor(7, clRed);
+  Plot8(bearObFundo);
+  SetPlotColor(8, clRed);
+end
+else
+begin
+  Plot7(0);
+  Plot8(0);
+end;
+// =================== FIM LOGICA ROMPIMENTO DE ESTRUTURA (BOS) E ORDER BLOCK ===
 
 
 
