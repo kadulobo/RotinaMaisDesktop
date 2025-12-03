@@ -20,13 +20,14 @@ Input
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
   ContratosTotal(3);                   // número de contratos por entrada
-  contadorCandles(3);                  // máx. de renkos consecutivos fora da banda para sinal
+  contadorCandles(1);                  // máx. de renkos consecutivos fora da banda para sinal
   MinRangeOperacao(400);               // range máx. entre topo/fundo para permitir operar
-  QtdRenkosRompimento(2);              // renkos além do topo/fundo para considerar rompimento
+  QtdRenkosRompimento(4);              // renkos além do topo/fundo para considerar rompimento
   bolFiltroRompimento(true);           // liga/desliga filtro de rompimento de estrutura
   bolFiltroTopoFundo(true);            // liga/desliga filtro de preço vs topo/fundo
   MaxBarrasMesmoMinuto(1);  // número máximo de bricks permitidos no mesmo minuto
   
+    Periodo(5);
 Var
   // ===== Preços de referência e bandas =====
   x, Y             : float;   // auxiliares para gravar topo (x) e fundo (y)
@@ -91,7 +92,8 @@ Var
     renkosEntreFundos : float;
   renkosEntreTopos  : float;
 
-
+   
+  tf,v : Real;
 Begin
 
   // =================== INICIO LOGICA CONTROLE GERAL E RESET =======================
@@ -182,44 +184,40 @@ Begin
   // =================== FIM LOGICA CONTAGEM CONSECUTIVOS FORA DAS BANDAS =========
 
 
-
-// =================== INICIO LOGICA DETECCAO DE TOPOS E FUNDOS ==================
+// ============ DETECCAO DE TOPOS E FUNDOS VIA _NTB_TopBottomDetector ============
   x := High;
   Y := Low;
 
   vLow  := Lowest(Low, Niveis);
   vHigh := Highest(High, Niveis);
+ tf := _NTB_TopBottomDetector_Breakout(Periodo,false,0,false,false)|1|;
+
+  Se (tf <> 0) entao v := tf
+  Senao v := v[1];
 
   // TOPO
-  if (vHigh[1] >= vHigh) then
+  if (vHigh[1] >= vHigh) and(v=vHigh[1]) then
   begin
     x := x[1];
     Plot3(x);
     SetPlotColor(3, (RGB(255,0,0)));
     SetPlotWidth(3, 3);
 
-    // shift do array de topos: empurra tudo uma posição pra frente
-    for i := 9 downto 1 do
-      arrayTopos[i] := arrayTopos[i-1];
-
     // topo mais recente sempre na posição 0
-    arrayTopos[0] := x;
+    arrayTopos[0] := v;
   end;
 
   // FUNDO
-  if (vLow >= vLow[1]) then
+  if (vLow >= vLow[1]) and (v=vLow[1]) then
   begin
     Y := Y[1];
     Plot4(Y);
     SetPlotColor(4, (RGB(0,255,0)));
     SetPlotWidth(4, 3);
 
-    // shift do array de fundos: empurra tudo uma posição pra frente
-    for i := 9 downto 1 do
-      arrayFundos[i] := arrayFundos[i-1];
 
     // fundo mais recente sempre na posição 0
-    arrayFundos[0] := Y;
+    arrayFundos[0] := v;
   end;
 // =================== FIM LOGICA DETECCAO DE TOPOS E FUNDOS =====================
 
@@ -316,6 +314,53 @@ end;
 
 // ================= FIM DO FILTRO ===========================================
 
+// =================== INICIO LOGICA ROMPIMENTO DE ESTRUTURA =====================
+// Rompimento de FUNDO (lado da compra) e de TOPO (lado da venda)
+// respeitando o parâmetro QtdRenkosRompimento.
+if bolFiltroRompimento  then
+begin
+  // --- Rompimento de FUNDO -> lado da COMPRA ---
+  // Calcula quantos renkos o fechamento está abaixo do último fundo.
+  if (amp > 0) and (arrayFundos[0] > 0) then
+  begin
+    renkosAbaixoFundo := (arrayFundos[0] - Fechamento) / amp;
+
+    // Se andou pelo menos QtdRenkosRompimento renkos abaixo do fundo, rompeu estrutura.
+    if (renkosAbaixoFundo >= QtdRenkosRompimento) and (bloqueiaCompras=false) then
+    begin
+     //PlotText("Rompimento de comprar", clYellow);   // marca visualmente o rompimento de FUNDO
+      // aqui você pode também setar bloqueiaCompras := true; se quiser usar o bloqueio
+      bloqueiaCompras:=true;
+      bloqueiaVendas:=false;
+      compraContinua:=false;
+      PlotText("R.F",clYellow,0,15); 
+      if(IsBought)entao 
+         ClosePosition;   
+    end;
+  end;
+
+  // --- Rompimento de TOPO -> lado da VENDA ---
+  // Calcula quantos renkos o fechamento está acima do último topo.
+  if (amp > 0) and (arrayTopos[0] > 0) then
+  begin
+    renkosAcimaTopo := (Fechamento - arrayTopos[0]) / amp;
+
+    // Se andou pelo menos QtdRenkosRompimento renkos acima do topo, rompeu estrutura.
+    if (renkosAcimaTopo >= QtdRenkosRompimento) and (bloqueiaVendas=false) then
+    begin
+  //  PlotText("aqui", clRed);      // marca visualmente o rompimento de TOPO
+      // aqui você pode também setar bloqueiaVendas := true; se quiser usar o bloqueio
+      bloqueiaVendas:=true;
+      bloqueiaCompras:=false;
+      vendaContinua:=false;
+       PlotText("R.T",clYellow,2,15); 
+      if(IsSold)entao
+      ClosePosition;     
+    end;
+  end;
+end;
+// =================== FIM LOGICA ROMPIMENTO DE ESTRUTURA ========================
+
 // ================== DETECCAO DO ULTIMO FLUXO CONTINUO DE ALTA ==================
 // Candle de ALTA (fechamento acima da abertura)
 if (Fechamento > Abertura) then
@@ -409,13 +454,15 @@ end;
     consecutivosAbaixo := 0;
   end;
 
-    XRay("compraKeltnerValida",compraKeltnerValida,"comprar");
+  XRay("compraKeltnerValida",compraKeltnerValida,"comprar");
   XRay("compraContinua",compraContinua,"comprar");
   XRay("bolComprar",bolComprar,"comprar");
 
-  XRay("vendaKeltnerValida",compraKeltnerValida,"venda");
+  XRay("vendaKeltnerValida",vendaKeltnerValida,"venda");
   XRay("vendaContinua",vendaContinua,"venda");
   XRay("bolVender",bolVender,"venda");
+
+
 
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
