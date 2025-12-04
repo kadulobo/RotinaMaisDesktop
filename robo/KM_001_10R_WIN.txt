@@ -196,7 +196,7 @@ Begin
 
    se(canalAlta)entao
    begin
-     //PlotText("alta",clyellow);
+     PlotText("alta",clyellow);
      intPorcentagemCompra:=0.4;
      intPorcentagemVenda:=0.2;
      bolFiltroMaiorKelterVenda:=true;
@@ -206,7 +206,7 @@ Begin
 
       se(canalBaixa)entao
    begin
-     //PlotText("baixa",clyellow);
+      PlotText("baixa",clyellow);
      intPorcentagemCompra:=0.2;
      intPorcentagemVenda:=0.4;
      bolFiltroMaiorKelterVenda:=false;
@@ -215,6 +215,7 @@ Begin
 
   if(canalAlta=false)and(canalBaixa=false)entao
   begin
+    PlotText("lateral",clyellow);
    intPorcentagemCompra:=0.4;
      intPorcentagemVenda:=0.4;
      bolFiltroMaiorKelterVenda:=false;
@@ -576,12 +577,6 @@ end;
   begin
    if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  entao
       BuyAtMarket(ContratosTotal);
-  end;
-
-   if(bolFiltroMaiorKelterCompra=false)entao
-  begin
-   if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  entao
-      PlotText("compra",clYellow);
   end;
 
 
