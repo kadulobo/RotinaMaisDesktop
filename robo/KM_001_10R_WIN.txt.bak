@@ -201,7 +201,6 @@ Begin
      intPorcentagemVenda:=0.2;
      bolFiltroMaiorKelterVenda:=true;
      bolFiltro50FluxoCompra:=false;
-
    end;
 
       se(canalBaixa)entao
@@ -210,7 +209,7 @@ Begin
      intPorcentagemCompra:=0.2;
      intPorcentagemVenda:=0.4;
      bolFiltroMaiorKelterVenda:=false;
-
+     bolFiltro50FluxoCompra:=true;
    end;
 
   if(canalAlta=false)and(canalBaixa=false)entao
@@ -563,7 +562,7 @@ end;
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
- if(compraContinua)and (time >= 901)and (time <= 1740) and bolComprar  and ((canalAlta) and (canalAlta=false)and(canalBaixa=false))entao
+ if(compraContinua)and (time >= 901)and (time <= 1740) and bolComprar entao
  begin
   
   if(bolFiltroMaiorKelterCompra)entao
@@ -595,7 +594,7 @@ if(abertura[0]<fechamento[0]) entao
 
    //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
- if(vendaContinua) and (time >= 901)and (time <= 1740) and bolVender  and ((canalBaixa) or (canalAlta=false)and(canalBaixa=false))entao
+ if(vendaContinua) and (time >= 901)and (time <= 1740) and bolVender  entao
  begin
 
  if(bolFiltroMaiorKelterVenda)entao
