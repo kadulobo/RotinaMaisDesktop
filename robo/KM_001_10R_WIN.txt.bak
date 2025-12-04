@@ -197,7 +197,7 @@ Begin
    se(canalAlta)entao
    begin
      PlotText("alta",clyellow);
-     intPorcentagemCompra:=0.6;
+     intPorcentagemCompra:=0.7;
      intPorcentagemVenda:=0.2;
      bolFiltroMaiorKelterVenda:=true;
      bolFiltro50FluxoCompra:=false;
@@ -207,7 +207,7 @@ Begin
    begin
      PlotText("baixa",clyellow);
      intPorcentagemCompra:=0.2;
-     intPorcentagemVenda:=0.6;
+     intPorcentagemVenda:=0.7;
      bolFiltroMaiorKelterVenda:=false;
      bolFiltro50FluxoCompra:=true;
    end;
@@ -556,7 +556,10 @@ end;
   XRay("vendaContinua",vendaContinua,"venda");
   XRay("bolVender",bolVender,"venda");
 
-                                                                          
+ if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  entao
+   BuyAtMarket(ContratosTotal)else
+  if(abertura[0]<fechamento[0]) entao
+   BuyLimit(abertura[0],ContratosTotal);                                                                           
   
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
