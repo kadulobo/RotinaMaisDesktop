@@ -29,8 +29,8 @@ Input
   MetaDiaria(400.0);  // valor da meta em R$ ou pontos, como você usar aí
   DiasRetroativos(90);
   bolAMercadoNivel1(true);
-  bolAMercadoNivel2(false);
-  bolAMercadoNivel3(false);
+  bolAMercadoNivel2(true);
+  bolAMercadoNivel3(true);
   bolALimite(true);
 Var
   // ===== Preços de referência e bandas =====
@@ -272,8 +272,8 @@ end;
   upperKeltner := KeltnerCH(KeltnerDesvio, KeltnerPeriodo, KeltnerTipo)|0|;
   lowerKeltner := KeltnerCH(KeltnerDesvio, KeltnerPeriodo, KeltnerTipo)|1|;
 
-  upperKeltner_v2 := KeltnerCH(1.3, KeltnerPeriodo, KeltnerTipo)|0|;
-  lowerKeltner_v2 := KeltnerCH(1.3, KeltnerPeriodo, KeltnerTipo)|1|;
+  upperKeltner_v2 := KeltnerCH(1.0, KeltnerPeriodo, KeltnerTipo)|0|;
+  lowerKeltner_v2 := KeltnerCH(1.0, KeltnerPeriodo, KeltnerTipo)|1|;
 
   // =================== FIM LOGICA BANDAS KELTNER E PLOT ==========================
 
@@ -565,7 +565,23 @@ end;
     PlotText("L.V",clYellow,2,15); 
     end;   
   
-  se(metaFechamentoFeita) entao
+
+  if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]>=upperKeltner_v2) and (bolVender) entao
+  begin
+    bateuMetaFiltroMaisPesadoVenda:=false;
+    metaFechamentoFeita:=false;
+    negativoVenda:=resultadoFechadoDia + resultadoAbertoDia;
+  end;
+
+    if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]<=lowerKeltner_v2) and (bolComprar) entao
+  begin
+    bateuMetaFiltroMaisPesadoVenda:=false;
+    metaFechamentoFeita:=false;
+    negativoVenda:=resultadoFechadoDia + resultadoAbertoDia;
+  end;
+
+
+    se(metaFechamentoFeita) entao
   begin
   bateuMetaFiltroMaisPesadoVenda:=true;
   end; 
@@ -579,20 +595,6 @@ end;
   if(bateuMetaFiltroMaisPesadoVenda) and (bolComprar) entao
   begin
   compraContinua:=false;
-  end;
-
-  if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]>=upperKeltner_v2) and (bolVender) entao
-  begin
-    bateuMetaFiltroMaisPesadoVenda:=false;
-    metaFechamentoFeita:=false;
-    negativoVenda:=MetaDiaria;
-  end;
-
-    if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]<=lowerKeltner_v2) and (bolComprar) entao
-  begin
-    bateuMetaFiltroMaisPesadoVenda:=false;
-    metaFechamentoFeita:=false;
-    negativoVenda:=MetaDiaria;
   end;
 
   // Se o preço está dentro das bandas, reseta contador e pinta amarelo
