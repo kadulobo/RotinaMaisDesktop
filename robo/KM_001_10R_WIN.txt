@@ -12,25 +12,22 @@ const
   TicksWeisWave  = 15;  // sensibilidade do COHENWEISWAVE (volume direcional)
   maiorVolumeAceito = 300000; //maior volume aceito do CohenPriceWave
   menorVolumeAceito =  250000; //menor volume aceito do CohenPriceWave
-
+  HorarioInicio = 0800;   // horário inicial para operar
+  HorarioFinal = 1930;// horário final para operar
+  contadorCandles = 1;                  // máx. de renkos consecutivos fora da banda para sinal
+  MinRangeOperacao = 400;               // range máx. entre topo/fundo para permitir operar
+  QtdRenkosRompimento = 4;              // renkos além do topo/fundo para considerar rompimento
+  bolFiltroRompimento = true;           // liga/desliga filtro de rompimento de estrutura
+  bolFiltroTopoFundo = true;            // liga/desliga filtro de preço vs topo/fundo
+  MaxBarrasMesmoMinuto = 1 ;  // número máximo de bricks permitidos no mesmo minuto
+  Periodo = 5; 
 Input
-  Versao("1.0"); // controle de versão
-  HorarioInicio(0800);                 // horário inicial para operar
-  HorarioFinal(1830);                  // horário final para operar
+  Versao("1.0"); // controle de versão              
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
   ContratosTotal(6);                   // número de contratos por entrada
-  contadorCandles(1);                  // máx. de renkos consecutivos fora da banda para sinal
-  MinRangeOperacao(400);               // range máx. entre topo/fundo para permitir operar
-  QtdRenkosRompimento(4);              // renkos além do topo/fundo para considerar rompimento
-  bolFiltroRompimento(true);           // liga/desliga filtro de rompimento de estrutura
-  bolFiltroTopoFundo(true);            // liga/desliga filtro de preço vs topo/fundo
-  MaxBarrasMesmoMinuto(1);  // número máximo de bricks permitidos no mesmo minuto
   MetaDiaria(500.0);  // valor da meta em R$ ou pontos, como você usar aí
-  Periodo(5);
-
-
-  
+  DiasRetroativos(5);
 Var
   // ===== Preços de referência e bandas =====
   x, Y             : float;   // auxiliares para gravar topo (x) e fundo (y)
@@ -154,9 +151,9 @@ Var
 
 
 Begin
-
+  If (Date >= CalcDate(CurrentDate, - DiasRetroativos)) then
   // =================== INICIO LOGICA CONTROLE GERAL E RESET =======================
-
+   begin
     if Time >= HorarioFinal then
     ClosePosition;
 
@@ -191,7 +188,7 @@ begin
   if IsBought or IsSold then
     ClosePosition;          // zera a posição atual apenas uma vez
   metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia
-  PlotText("META.V",clYellow,2,15); 
+  //PlotText("META.V",clYellow,2,15); 
 end;
 //============== FIM CONTROLE META DIÁRIA ===================
 
@@ -223,7 +220,7 @@ end;
 
    se(canalAlta) entao
    begin
-     PlotText("alta",clyellow);
+     //PlotText("alta",clyellow);
      intPorcentagemCompra:=0.4;
      intPorcentagemVenda:=0.2;
      bolFiltroMaiorKelterVenda:=true;
@@ -234,7 +231,7 @@ end;
 
       se(canalBaixa)entao
    begin
-      PlotText("baixa",clyellow);
+      //PlotText("baixa",clyellow);
      intPorcentagemCompra:=0.2;
      intPorcentagemVenda:=0.4;
      bolFiltroMaiorKelterVenda:=false;
@@ -244,7 +241,7 @@ end;
 
   if(canalAlta=false)and(canalBaixa=false)entao
   begin
-    PlotText("lateral",clyellow);
+    //PlotText("lateral",clyellow);
    intPorcentagemCompra:=0.4;
      intPorcentagemVenda:=0.4;
      bolFiltroMaiorKelterVenda:=false;
@@ -470,7 +467,7 @@ begin
   begin
     fluxoBaixaAtivo := false;
     if (contadorBaixas >= 2) then
-      nivel50FluxoBaixa := inicioFluxoBaixa - (inicioFluxoBaixa - fundoFluxoBaixa) * intPorcentagemVenda;
+      nivel50FluxoBaixa := inicioFluxoBaixa - (inicioFluxoBaixa - fundoFluxoBaixa) * 0.2;
       // 50% entre o topo inicial e o fundo da perna de baixa
   end;
 end;
@@ -526,6 +523,7 @@ begin
     bolFiltro50FluxoVenda := true;
 end;
 
+
 // ================== FIM DO FILTRO 50% ==========================================
 
 
@@ -579,14 +577,14 @@ end;
   compraContinua:=false;
   end;
 
-  if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[1]>upperKeltner_v2) and (bolVender) entao
+  if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]>upperKeltner_v2) and (bolVender) entao
   begin
     bateuMetaFiltroMaisPesadoVenda:=false;
     metaFechamentoFeita:=false;
     negativoVenda:=MetaDiaria;
   end;
 
-    if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[1]<lowerKeltner_v2) and (bolComprar) entao
+    if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]<lowerKeltner_v2) and (bolComprar) entao
   begin
     bateuMetaFiltroMaisPesadoVenda:=false;
     metaFechamentoFeita:=false;
@@ -631,7 +629,7 @@ end;
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
- if(compraContinua)and (time >= 901)and (time <= 1740) and bolComprar  and ((canalAlta) or (canalAlta=false)and(canalBaixa=false))entao
+ if(compraContinua)and (time > 901)and (time < 1740) and bolComprar  and ((canalAlta) or (canalAlta=false)and(canalBaixa=false))entao
  begin
   
   if(bolFiltroMaiorKelterCompra)entao
@@ -646,18 +644,20 @@ end;
       BuyAtMarket(ContratosTotal);
   end;
 
+  if(abertura[0]<fechamento[0]) and (abs(position)<(ContratosTotal*2))entao
+  BuyLimit(abertura[0],ContratosTotal);
 
-if(abertura[0]<fechamento[0]) entao
-   BuyLimit(abertura[0],ContratosTotal);;
 
-  end;
+if (abertura[0]<fechamento[0]) and (not HasPosition) entao
+   BuyAtMarket(ContratosTotal);
+
+end;
 
    //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
- if(vendaContinua) and (time >= 901)and (time <= 1740) and bolVender  and ((canalBaixa) or (canalAlta=false)and(canalBaixa=false))entao
+ if(vendaContinua) and (time > 901)and (time < 1740) and bolVender  and ((canalBaixa) or (canalAlta=false)and(canalBaixa=false))entao
  begin
-
- if(bolFiltroMaiorKelterVenda)entao
+  if(bolFiltroMaiorKelterVenda)entao
 begin
    se(bolVender) and ( not bolFiltro50FluxoVenda) and (abertura[0]<fechamento[0])and(fechamento>upperKeltner_v2) entao
      SellShortAtMarket(ContratosTotal); 
@@ -668,8 +668,15 @@ begin
  se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) entao
  SellShortAtMarket(ContratosTotal);
 end;
- if(abertura[0]>fechamento[0]) entao
+
+ if(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) entao
     SellShortLimit(abertura[0],ContratosTotal);
-  end;
+
+ if (abertura[0]>fechamento[0]) and (not HasPosition) entao
+    SellShortAtMarket(ContratosTotal);
+
+ end;
+
+end;//fim dias retroativos
 
 end;
