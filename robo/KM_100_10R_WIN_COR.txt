@@ -26,8 +26,12 @@ Input
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
   ContratosTotal(6);                   // número de contratos por entrada
-  MetaDiaria(500.0);  // valor da meta em R$ ou pontos, como você usar aí
-  DiasRetroativos(5);
+  MetaDiaria(400.0);  // valor da meta em R$ ou pontos, como você usar aí
+  DiasRetroativos(90);
+  bolAMercadoNivel1(true);
+  bolAMercadoNivel2(false);
+  bolAMercadoNivel3(false);
+  bolALimite(true);
 Var
   // ===== Preços de referência e bandas =====
   x, Y             : float;   // auxiliares para gravar topo (x) e fundo (y)
@@ -151,9 +155,7 @@ Var
 
 
 Begin
-  If (Date >= CalcDate(CurrentDate, - DiasRetroativos)) then
-  // =================== INICIO LOGICA CONTROLE GERAL E RESET =======================
-   begin
+
     if Time >= HorarioFinal then
     ClosePosition;
 
@@ -577,14 +579,14 @@ end;
   compraContinua:=false;
   end;
 
-  if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]>upperKeltner_v2) and (bolVender) entao
+  if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]>=upperKeltner_v2) and (bolVender) entao
   begin
     bateuMetaFiltroMaisPesadoVenda:=false;
     metaFechamentoFeita:=false;
     negativoVenda:=MetaDiaria;
   end;
 
-    if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]<lowerKeltner_v2) and (bolComprar) entao
+    if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]<=lowerKeltner_v2) and (bolComprar) entao
   begin
     bateuMetaFiltroMaisPesadoVenda:=false;
     metaFechamentoFeita:=false;
@@ -634,22 +636,23 @@ end;
   
   if(bolFiltroMaiorKelterCompra)entao
   begin
-     if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra) and(fechamento<lowerKeltner_v2) entao
+     if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra) and(fechamento<=lowerKeltner_v2) and (bolAMercadoNivel3) entao
     BuyAtMarket(ContratosTotal); 
   end;
 
  if(bolFiltroMaiorKelterCompra=false)entao
   begin
-   if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  entao
+   if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  and (bolAMercadoNivel2) entao
       BuyAtMarket(ContratosTotal);
   end;
 
-  if(abertura[0]<fechamento[0]) and (abs(position)<(ContratosTotal*2))entao
+  if (abertura[0]<fechamento[0]) and (not HasPosition)  and (bolAMercadoNivel1) entao
+   BuyAtMarket(ContratosTotal)else
+  if(IsBought) and (abertura[0]<fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite)entao
   BuyLimit(abertura[0],ContratosTotal);
 
 
-if (abertura[0]<fechamento[0]) and (not HasPosition) entao
-   BuyAtMarket(ContratosTotal);
+
 
 end;
 
@@ -659,24 +662,23 @@ end;
  begin
   if(bolFiltroMaiorKelterVenda)entao
 begin
-   se(bolVender) and ( not bolFiltro50FluxoVenda) and (abertura[0]<fechamento[0])and(fechamento>upperKeltner_v2) entao
+   se(bolVender) and ( not bolFiltro50FluxoVenda) and (abertura[0]<fechamento[0])and(fechamento>=upperKeltner_v2)and (bolAMercadoNivel3) entao
      SellShortAtMarket(ContratosTotal); 
 end;
 
 if(bolFiltroMaiorKelterVenda=false)entao
 begin
- se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) entao
+ se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) and (bolAMercadoNivel2) entao
  SellShortAtMarket(ContratosTotal);
 end;
 
- if(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) entao
+ if (abertura[0]>fechamento[0]) and (not HasPosition) and (bolAMercadoNivel1) entao
+    SellShortAtMarket(ContratosTotal)else
+ if(IsSold)and(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) entao
     SellShortLimit(abertura[0],ContratosTotal);
 
- if (abertura[0]>fechamento[0]) and (not HasPosition) entao
-    SellShortAtMarket(ContratosTotal);
+
 
  end;
-
-end;//fim dias retroativos
 
 end;
