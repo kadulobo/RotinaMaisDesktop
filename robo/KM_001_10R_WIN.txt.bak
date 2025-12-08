@@ -15,7 +15,7 @@ const
   HorarioInicio = 0800;   // horário inicial para operar
   HorarioFinal = 1930;// horário final para operar
   contadorCandles = 1;                  // máx. de renkos consecutivos fora da banda para sinal
-  MinRangeOperacao = 400;               // range máx. entre topo/fundo para permitir operar
+  MinRangeOperacao = 500;               // range máx. entre topo/fundo para permitir operar
   QtdRenkosRompimento = 4;              // renkos além do topo/fundo para considerar rompimento
   bolFiltroRompimento = true;           // liga/desliga filtro de rompimento de estrutura
   bolFiltroTopoFundo = true;            // liga/desliga filtro de preço vs topo/fundo
@@ -366,9 +366,9 @@ end;
   else
     rangeTopoFundo := 999999;   // range grande enquanto não há estrutura válida
 
-  podeOperar := (rangeTopoFundo >= MinRangeOperacao);
-  se(podeOperar)then
-  // PlotText(rangeTopoFundo,CLBLUE);
+  podeOperar := (rangeTopoFundo <= MinRangeOperacao);
+
+   PlotText(rangeTopoFundo,CLBLUE);
   // =================== FIM LOGICA RANGE TOPO-FUNDO E PERMISSAO ====================
 
 
@@ -646,7 +646,7 @@ end;
 
  if(bolFiltroMaiorKelterCompra=false)entao
   begin
-   if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  and (bolAMercadoNivel2) entao
+   if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  and (bolAMercadoNivel2)  and (podeOperar)  entao
       BuyAtMarket(ContratosTotal);
   end;
 
@@ -672,7 +672,7 @@ end;
 
 if(bolFiltroMaiorKelterVenda=false)entao
 begin
- se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) and (bolAMercadoNivel2) entao
+ se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) and (bolAMercadoNivel2)  and (podeOperar)  entao
  SellShortAtMarket(ContratosTotal);
 end;
 

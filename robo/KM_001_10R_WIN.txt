@@ -23,11 +23,11 @@ const
   Periodo = 5; 
 Input
   Versao("1.0"); // controle de versão              
-  bolComprar(true);                    // habilita/desabilita operações de COMPRA
-  bolVender(false);                    // habilita/desabilita operações de VENDA
+  bolComprar(false);                    // habilita/desabilita operações de COMPRA
+  bolVender(true);                    // habilita/desabilita operações de VENDA
   ContratosTotal(6);                   // número de contratos por entrada
   MetaDiaria(400.0);  // valor da meta em R$ ou pontos, como você usar aí
-  DiasRetroativos(90);
+  DiasRetroativos(120);
   bolAMercadoNivel1(true);
   bolAMercadoNivel2(true);
   bolAMercadoNivel3(true);
@@ -150,6 +150,8 @@ Var
   metaFechamentoFeita   : boolean; // garante que o ClosePosition ocorra só 1x no dia
   negativoVenda : float;
   bateuMetaFiltroMaisPesadoVenda:boolean;
+
+  compraValor:float;
 
   // -----------------------------------------------------------------------------
 
@@ -566,14 +568,14 @@ end;
     end;   
   
 
-  if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]>=upperKeltner_v2) and (bolVender) entao
+  if(bateuMetaFiltroMaisPesadoVenda) and ((fechamento[0]>=upperKeltner_v2)or(AccAgressSaldo(1)<=-110000))  and (bolVender) entao
   begin
     bateuMetaFiltroMaisPesadoVenda:=false;
     metaFechamentoFeita:=false;
     negativoVenda:=resultadoFechadoDia + resultadoAbertoDia;
   end;
 
-    if(bateuMetaFiltroMaisPesadoVenda) and(fechamento[0]<=lowerKeltner_v2) and (bolComprar) entao
+    if(bateuMetaFiltroMaisPesadoVenda) and ((fechamento[0]<=lowerKeltner_v2)or(AccAgressSaldo(1)>=110000)) and (bolComprar) entao
   begin
     bateuMetaFiltroMaisPesadoVenda:=false;
     metaFechamentoFeita:=false;
@@ -631,7 +633,7 @@ end;
   XRay("bateuMetaFiltroMaisPesadoVenda",bateuMetaFiltroMaisPesadoVenda,"MetaVenda"); 
   end;
                                                                  
-
+  
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
@@ -646,16 +648,15 @@ end;
 
  if(bolFiltroMaiorKelterCompra=false)entao
   begin
-   if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  and (bolAMercadoNivel2)  and (podeOperar)  entao
+   if(abertura[0]>fechamento[0]) and (abertura[1]>fechamento[1]) and (abertura[2]>fechamento[2]) and ( not  bolFiltro50FluxoCompra)  and (bolAMercadoNivel2)   entao
       BuyAtMarket(ContratosTotal);
+      compraValor:=abertura[0];
   end;
 
   if (abertura[0]<fechamento[0]) and (not HasPosition)  and (bolAMercadoNivel1) entao
    BuyAtMarket(ContratosTotal)else
   if(IsBought) and (abertura[0]<fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite)entao
   BuyLimit(abertura[0],ContratosTotal);
-
-
 
 
 end;
@@ -666,19 +667,22 @@ end;
  begin
   if(bolFiltroMaiorKelterVenda)entao
 begin
-   se(bolVender) and ( not bolFiltro50FluxoVenda) and (abertura[0]<fechamento[0])and(fechamento>=upperKeltner_v2)and (bolAMercadoNivel3) entao
+   se(bolVender) and ( not bolFiltro50FluxoVenda) 
+   and (abertura[0]<fechamento[0])  
+   and (abertura[1]<fechamento[1])  
+   and (abertura[2]<fechamento[2]) and(fechamento>=upperKeltner_v2)and (bolAMercadoNivel3) entao
      SellShortAtMarket(ContratosTotal); 
 end;
 
 if(bolFiltroMaiorKelterVenda=false)entao
 begin
- se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) and (bolAMercadoNivel2)  and (podeOperar)  entao
+ se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) and (bolAMercadoNivel2)   entao
  SellShortAtMarket(ContratosTotal);
 end;
 
  if (abertura[0]>fechamento[0]) and (not HasPosition) and (bolAMercadoNivel1) entao
     SellShortAtMarket(ContratosTotal)else
- if(IsSold)and(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) entao
+ if(IsSold)and(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite) entao
     SellShortLimit(abertura[0],ContratosTotal);
 
 
