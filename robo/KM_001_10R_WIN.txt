@@ -1,7 +1,10 @@
-//RESUMO DO ROBO
-//O robo roda com uma ordem OCO cadastrada na plataforma com parcial.
-//50% dos contratos o gain é de 9 ticke , stop de 27 ticket outros 50% gain de 27 tickt e stop de 45 ticket
-// cada ticket no indice é 5 pontos , então 5x9 = 45pontos , 5x27 135p , 1 sopt de 135p , 2 de 225p.
+//REGRAS DO ROBO
+// NIVEL 2 (6c) maximo de 18c , multiplicar 6cx3 , ORDEM OCO COM GAIN DE 8 ,16 , 24 , STOP DE 90.
+// Gain por robo 450 depois gain na parte da manha , volta a rodar para dois gain parte das 14h
+// Caso o robo genha a perder 1.5k sera fechada a posicição da como gain e bloqueia.  liga dnv as 14h
+// Motivo de religar as 14h mercado possivel mente mais calmo.
+// Este robo não ganha em voltas em V porém está resido os riscos.
+// GAIN NA PLATAFORMA DE 1.000[Provavel] , 1.200[media] , 1.4000[arriscado], VISTO chegar em 2.6k em 24/11 um dia ruim.
 
 
 const
@@ -26,7 +29,8 @@ Input
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
   ContratosTotal(6);                   // número de contratos por entrada
-  MetaDiaria(500.0);  // valor da meta em R$ ou pontos, como você usar aí
+  MetaDiaria(450.0);  // valor da meta em R$ ou pontos, como você usar aí
+  MetaLossPorPeriodo(1500);
   DiasRetroativos(90);
   bolAMercadoNivel1(true);
   bolAMercadoNivel2(true);
@@ -156,6 +160,10 @@ Var
    bloqueia : boolean;
    bolAgressaoForteCompra : boolean;
    bolAgressaoForteVenda  : boolean;
+
+
+   bolParaPorResultadoNegativo:boolean;
+
   // -----------------------------------------------------------------------------
 
 
@@ -195,11 +203,22 @@ resultadoAbertoDia  := DailyResult(true) - DailyResult(false); // só trades em 
 resultadoTotalDia   := resultadoFechadoDia + resultadoAbertoDia-negativoVenda;
 
 //--- força zerar as posições UMA ÚNICA VEZ quando bater a meta
+if (not metaFechamentoFeita) and (resultadoTotalDia <= -MetaLossPorPeriodo) then
+begin
+  if IsBought or IsSold then
+    ClosePosition;          // zera a posição atual apenas uma vez
+    metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia
+    contMeta:=2;
+    bloqueia:=false;
+  //PlotText("META.V",clYellow,2,15); 
+end;
+
+//--- força zerar as posições UMA ÚNICA VEZ quando bater a meta
 if (not metaFechamentoFeita) and ((resultadoTotalDia >= MetaDiaria) or (resultadoAbertoDia[1]>=MetaDiaria)) then
 begin
   if IsBought or IsSold then
     ClosePosition;          // zera a posição atual apenas uma vez
-  metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia
+    metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia
   //PlotText("META.V",clYellow,2,15); 
 end;
 //============== FIM CONTROLE META DIÁRIA ===================
@@ -225,7 +244,7 @@ bolAgressaoForteVenda :=
 
 
 // Libera COMPRAS após horário programado
-if bloqueia and (Time >= 1200) then
+if bloqueia and (Time >= 1400) then
 begin
   bloqueia := false;
   contMeta :=0;
