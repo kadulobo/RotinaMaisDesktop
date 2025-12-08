@@ -231,7 +231,7 @@ end;
      intPorcentagemVenda:=0.2;
      bolFiltroMaiorKelterVenda:=true;
      bolFiltroMaiorKelterCompra:=false;
-     bolFiltro50FluxoCompra:=false;
+     
 
    end;
 
@@ -667,16 +667,16 @@ end;
  begin
   if(bolFiltroMaiorKelterVenda)entao
 begin
-   se(bolVender) and ( not bolFiltro50FluxoVenda) 
-   and (abertura[0]<fechamento[0])  
-   and (abertura[1]<fechamento[1])  
-   and (abertura[2]<fechamento[2]) and(fechamento>=upperKeltner_v2)and (bolAMercadoNivel3) entao
+   se  (abertura[0]<fechamento[0])and  (bolVender) and ( not bolFiltro50FluxoVenda) and(fechamento>=upperKeltner_v2)and (bolAMercadoNivel3) entao
      SellShortAtMarket(ContratosTotal); 
 end;
 
 if(bolFiltroMaiorKelterVenda=false)entao
 begin
- se(bolVender) and (( not bolFiltro50FluxoVenda)) and (abertura[0]<fechamento[0]) and (bolAMercadoNivel2)   entao
+ se(bolVender) and (abertura[0]<fechamento[0])  
+   and (abertura[1]<fechamento[1])  
+   and (abertura[2]<fechamento[2])
+    and ( not bolFiltro50FluxoVenda)  and (bolAMercadoNivel2)   entao
  SellShortAtMarket(ContratosTotal);
 end;
 
