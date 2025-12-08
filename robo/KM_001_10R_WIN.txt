@@ -195,7 +195,7 @@ resultadoAbertoDia  := DailyResult(true) - DailyResult(false); // só trades em 
 resultadoTotalDia   := resultadoFechadoDia + resultadoAbertoDia-negativoVenda;
 
 //--- força zerar as posições UMA ÚNICA VEZ quando bater a meta
-if (not metaFechamentoFeita) and (resultadoTotalDia >= MetaDiaria) then
+if (not metaFechamentoFeita) and ((resultadoTotalDia >= MetaDiaria) or (resultadoAbertoDia[1]>=MetaDiaria)) then
 begin
   if IsBought or IsSold then
     ClosePosition;          // zera a posição atual apenas uma vez
