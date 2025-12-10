@@ -25,7 +25,7 @@ const
   MaxBarrasMesmoMinuto = 1 ;  // número máximo de bricks permitidos no mesmo minuto
   Periodo = 5; 
 Input
-  Versao("11/12/2025"); // controle de versão              
+  Versao("16:48 10/12/2025"); // controle de versão              
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
   ContratosTotal(3);                   // número de contratos por entrada
@@ -746,9 +746,9 @@ end;
       BuyAtMarket(ContratosTotal);
   end;
 
-  if (abertura[0]<fechamento[0]) and (not HasPosition)  and (bolAMercadoNivel1) and (AccAgressSaldo(1)[1] >= 15000) and (bolLateral=false)  entao
+  if (abertura[0]<fechamento[0]) and (not HasPosition)  and (bolAMercadoNivel1)and (bolLateral=false)  entao
    BuyAtMarket(ContratosTotal)else
-  if(IsBought) and (abertura[0]<fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite) and (bolLateral=false) entao
+  if(IsBought) and (abertura[0]<fechamento[0])and (bolALimite) and (bolLateral=false) entao
   BuyLimit(abertura[0],ContratosTotal);
 
 end;
@@ -770,9 +770,9 @@ begin
  SellShortAtMarket(ContratosTotal);
 end;
 
- if (abertura[0]>fechamento[0]) and (not HasPosition) and (bolAMercadoNivel1) and (AccAgressSaldo(1)[1] <= -15000)and (bolLateral=false)entao
+ if (abertura[0]>fechamento[0]) and (not HasPosition) and (bolAMercadoNivel1) and (bolLateral=false)entao
     SellShortAtMarket(ContratosTotal)else
- if(IsSold)and(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite) and (bolLateral=false) entao
+ if(IsSold)and(abertura[0]>fechamento[0])  and (bolALimite) and (bolLateral=false) entao
     SellShortLimit(abertura[0],ContratosTotal);
 
  end;
