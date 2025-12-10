@@ -25,13 +25,13 @@ const
   MaxBarrasMesmoMinuto = 1 ;  // número máximo de bricks permitidos no mesmo minuto
   Periodo = 5; 
 Input
-  Versao("1.0"); // controle de versão              
+  Versao("10/12/2025"); // controle de versão              
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
-  ContratosTotal(6);                   // número de contratos por entrada
-  MetaDiaria(500.0);  // valor da meta em R$ ou pontos, como você usar aí
-  MetaLossPorPeriodo(1500);
-  DiasRetroativos(90);
+  ContratosTotal(3);                   // número de contratos por entrada
+  MetaDiaria(250.0);  // valor da meta em R$ ou pontos, como você usar aí
+  MetaLossPorPeriodo(750);
+  DiasRetroativos(10);
   bolAMercadoNivel1(true);
   bolAMercadoNivel2(true);
   bolAMercadoNivel3(true);
@@ -559,7 +559,7 @@ begin
   begin
     fluxoAltaAtivo := false;
     if (contadorAltas >= 2) then
-      nivel50FluxoAlta := inicioFluxoAlta + (topoFluxoAlta - inicioFluxoAlta) * intPorcentagemCompra;
+      nivel50FluxoAlta := inicioFluxoAlta + (topoFluxoAlta - inicioFluxoAlta) * 0.2;
   end;
 end;
 
@@ -675,25 +675,21 @@ end;
 
   se(bolComprar)entao
   begin
-  XRay("compraKeltnerValida",compraKeltnerValida,"comprar");
   XRay("compraContinua",compraContinua,"comprar");
   XRay("bolComprar",bolComprar,"comprar");
   XRay("canalAlta",canalAlta,"comprar");
   xRay("MetaAtual",true,"comprar",resultadoTotalDia);
-  XRay("bateuMeta",(resultadoTotalDia >= MetaDiaria),"comprar",resultadoTotalDia);
   end;
                                                                   
 
   se(bolVender)entao
   begin
   XRay("contMeta",true,"venda",contMeta); 
-  XRay("(AccAgressSaldo(1)[1] <= -15000)",(AccAgressSaldo(1)[1] <= -15000),"venda");
   XRay("vendaContinua",vendaContinua,"venda");
   XRay("bolVender",bolVender,"venda");
   XRay("MetaAtual",true,"venda",resultadoTotalDia);
   XRay("canalBaixa",canalBaixa,"venda");
   XRay("bloqueia",bloqueia,"venda"); 
-  XRay("bateuMetaFiltroMaisPesadoVenda",bateuMetaFiltroMaisPesadoVenda,"venda"); 
 
   end;
                                                                  
