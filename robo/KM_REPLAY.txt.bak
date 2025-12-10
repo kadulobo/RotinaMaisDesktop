@@ -1,0 +1,782 @@
+//REGRAS DO ROBO
+// NIVEL 2 (6c) maximo de 18c , multiplicar 6cx3 , ORDEM OCO COM GAIN DE 8 ,16 , 24 , STOP DE 90.
+// Gain por robo 450 depois gain na parte da manha , volta a rodar para dois gain parte das 14h
+// Caso o robo genha a perder 1.5k sera fechada a posicição da como gain e bloqueia.  liga dnv as 14h
+// Motivo de religar as 14h mercado possivel mente mais calmo.
+// Este robo não ganha em voltas em V porém está resido os riscos.
+// GAIN NA PLATAFORMA DE 1.000[Provavel] , 1.200[media] , 1.4000[arriscado], VISTO chegar em 2.6k em 24/11 um dia ruim.
+
+
+const
+  Niveis         = 5;   // profundidade para detectar topos/fundos (Highest/Lowest)
+  KeltnerPeriodo = 20;  // período base das bandas de Keltner
+  KeltnerDesvio  = 0.5;   // desvio das bandas de Keltner
+  KeltnerTipo    = 1;   // tipo da média no Keltner
+  TicksWeisWave  = 15;  // sensibilidade do COHENWEISWAVE (volume direcional)
+  maiorVolumeAceito = 300000; //maior volume aceito do CohenPriceWave
+  menorVolumeAceito =  250000; //menor volume aceito do CohenPriceWave
+  HorarioInicio = 0800;   // horário inicial para operar
+  HorarioFinal = 1930;// horário final para operar
+  contadorCandles = 1;                  // máx. de renkos consecutivos fora da banda para sinal
+  MinRangeOperacao = 500;               // range máx. entre topo/fundo para permitir operar
+  QtdRenkosRompimento = 4;              // renkos além do topo/fundo para considerar rompimento
+  bolFiltroRompimento = true;           // liga/desliga filtro de rompimento de estrutura
+  bolFiltroTopoFundo = true;            // liga/desliga filtro de preço vs topo/fundo
+  MaxBarrasMesmoMinuto = 1 ;  // número máximo de bricks permitidos no mesmo minuto
+  Periodo = 5; 
+Input
+  Versao("11/12/2025"); // controle de versão              
+  bolComprar(true);                    // habilita/desabilita operações de COMPRA
+  bolVender(false);                    // habilita/desabilita operações de VENDA
+  ContratosTotal(3);                   // número de contratos por entrada
+  MetaDiaria(250.0);  // valor da meta em R$ ou pontos, como você usar aí
+  MetaLossPorPeriodo(750);
+  DiasRetroativos(10);
+  bolTerceiraMetaProAgressao(false);
+  bolAMercadoNivel1(true);
+  bolAMercadoNivel2(true);
+  bolAMercadoNivel3(true);
+  bolALimite(true);
+
+Var
+  // ===== Preços de referência e bandas =====
+  x, Y             : float;   // auxiliares para gravar topo (x) e fundo (y)
+  vLow, vHigh      : float;   // Lowest/Highest dos últimos Niveis candles
+  upperKeltner     : float;   // banda superior de Keltner
+  lowerKeltner     : float;   // banda inferior de Keltner
+
+  upperKeltner_v2     : float;   // banda superior de Keltner
+  lowerKeltner_v2     : float;   // banda inferior de Keltner
+
+  // ===== Sinais básicos e filtros =====
+  Compra, Venda           : boolean; // intenção bruta de compra/venda
+  timeok, volok           : boolean; // filtros de horário e volume
+  compraKeltnerValida     : boolean; // compra final, depois de todos os filtros
+  vendaKeltnerValida      : boolean; // venda final, depois de todos os filtros
+
+  // ===== Gestão de posição =====
+  Entrada          : float;  // preço de entrada da posição atual
+  vStop            : float;  // preço do stop
+  vAlvo            : float;  // preço de alvo
+
+  // ===== Amplitude do renko =====
+  amp              : Real;   // tamanho (em pontos) do renko anterior
+
+  // ===== Estado de bandas e contadores =====
+  renkoAcimaBanda  : boolean; // candle fechou acima da banda superior
+  renkoAbaixoBanda : boolean; // candle fechou abaixo da banda inferior
+  i                : integer; // índice para arrays de topos/fundos
+  consecutivosAcima: integer; // renkos consecutivos acima da banda superior
+  consecutivosAbaixo: integer;// renkos consecutivos abaixo da banda inferior
+
+  // ===== Filtro de volume (COHENWEISWAVE) =====
+  cohenWeisWaveAtual    : float; // valor atual do COHENWEISWAVE
+  cohenWeisWaveAnterior : float; // valor anterior (candle passado)
+
+  // ===== Estrutura de topos e fundos =====
+  arrayTopos  : array[0..9] of float; // histórico de topos
+  arrayFundos : array[0..9] of float; // histórico de fundos
+  ultimoTopo  : float;                 // topo mais recente
+  ultimoFundo : float;                 // fundo mais recente
+  rangeTopoFundo : float;              // diferença em pontos entre topo e fundo
+  podeOperar : boolean;                // TRUE se rangeTopoFundo <= MinRangeOperacao
+
+  // ===== Filtros de rompimento e topo/fundo =====
+  bloqueiaCompras        : boolean; // TRUE: proíbe novas compras
+  bloqueiaVendas         : boolean; // TRUE: proíbe novas vendas
+  renkosAbaixoFundo      : float;   // renkos abaixo do último fundo (após rompimento)
+  renkosAcimaTopo        : float;   // renkos acima do último topo (após rompimento)
+
+
+  compraContinua:boolean; //define a difereção continua de compra;
+  vendaContinua:boolean;  //define a direção continua de venda;
+
+ barrasMesmoMinuto  : integer;
+  bolTempoRapidoCompra : boolean;
+  bolTempoRapidoVenda  : boolean;
+
+
+  contadorAltas        : integer;
+  fluxoAltaAtivo       : boolean;
+  inicioFluxoAlta      : float;
+  topoFluxoAlta        : float;
+  nivel50FluxoAlta     : float;
+
+  contadorBaixas       : integer;
+  fluxoBaixaAtivo      : boolean;
+  inicioFluxoBaixa     : float;
+  fundoFluxoBaixa      : float;
+  nivel50FluxoBaixa    : float;
+
+  bolFiltro50FluxoCompra : boolean;
+  bolFiltro50FluxoVenda  : boolean;
+
+  renkosEntreFundos    : float;
+  renkosEntreTopos     : float;
+
+     // distância desse topo em relação ao ÚLTIMO FUNDO válido
+     distTopoFundo,distFundoTopo : float;
+
+  // ===== Estrutura forte (pivôs) e BOS/Order Blocks =====
+  pivotHigh, pivotLow       : float;
+  leftHighOk, rightHighOk   : boolean;
+  leftLowOk, rightLowOk     : boolean;
+  candlesAltaAntes          : integer;
+  candlesBaixaDepois        : integer;
+  candlesBaixaAntes         : integer;
+  candlesAltaDepois         : integer;
+  bosAlta, bosBaixa         : boolean;
+  impulsoOK                 : boolean;
+  movimentoEstrutura        : float;
+  zonaAlta, zonaBaixa       : float;
+  bullObTopo, bullObFundo   : float;
+  bearObTopo, bearObFundo   : float;
+  bullObAtivo, bearObAtivo  : boolean;
+  bullObMitigado, bearObMitigado : boolean;
+  tamanhoZona               : float;
+  idxCandle, impulsoRenkos  : integer;
+  
+  tf,v : Real;
+
+      valorConfirmaTF : float;
+  serieTopoNTB    : float;
+  serieFundoNTB   : float;
+  intPorcentagemCompra:float;
+  intPorcentagemVenda:float;
+  intContratosParaUsar:integer;
+
+  bolFiltroMaiorKelterVenda:boolean;
+  bolFiltroMaiorKelterCompra:boolean;
+
+     canalAlta, canalBaixa : boolean;   // <<< novos booleanos
+    c, s, ii, l : real;
+  resultadoFechadoDia   : float;   // lucro/prejuízo das operações já encerradas
+  resultadoAbertoDia    : float;   // lucro/prejuízo das posições abertas
+  resultadoTotalDia     : float;   // soma dos dois
+  metaFechamentoFeita   : boolean; // garante que o ClosePosition ocorra só 1x no dia
+  negativoVenda : float;
+  bateuMetaFiltroMaisPesadoVenda:boolean;
+
+
+   contMeta        : integer;
+   bloqueia : boolean;
+   bolAgressaoForteCompra : boolean;
+   bolAgressaoForteVenda  : boolean;
+
+   bolLateral:boolean;
+   bolParaPorResultadoNegativo:boolean;
+   bolPodeAvaliarCodigo:boolean;
+  // -----------------------------------------------------------------------------
+
+
+Begin
+  If (Date >= CalcDate(CurrentDate, - DiasRetroativos)) then
+  // =================== INICIO LOGICA CONTROLE GERAL E RESET =======================
+   begin
+    if Time >= HorarioFinal then
+    ClosePosition;
+
+    if(date <> date[1])  or ((Time >= HorarioFinal) or (Time <= HorarioInicio))entao
+    begin
+     bloqueiaCompras := false;
+     bloqueiaVendas  := false;
+     compraContinua :=false;
+     vendaContinua :=false;
+     compraKeltnerValida:=false;
+     vendaKeltnerValida:=false;
+     consecutivosAcima:=0;
+     consecutivosAbaixo:=0;
+     bullObAtivo := false;
+     bearObAtivo := false;
+     bullObMitigado := false;
+     bearObMitigado := false;
+     metaFechamentoFeita := false;
+     bateuMetaFiltroMaisPesadoVenda:=false;
+     negativoVenda:=0;
+     contMeta        := 0;
+     bloqueia := false;
+     bolPodeAvaliarCodigo:=false;
+    end;
+
+bolLateral:= (abertura[0]=abertura[1]) and (abertura[1]=abertura[2])and (abertura[2]=abertura[3]);
+
+if(bolLateral)entao
+PlotText("lateral",clyellow);
+  
+//--- cálculo dos resultados
+resultadoFechadoDia := DailyResult(false);                // só trades fechados
+resultadoAbertoDia  := DailyResult(true) - DailyResult(false); // só trades em aberto
+resultadoTotalDia   := resultadoFechadoDia + resultadoAbertoDia-negativoVenda;
+
+//--- força zerar as posições UMA ÚNICA VEZ quando bater a meta
+if (not metaFechamentoFeita) and (resultadoTotalDia <= -MetaLossPorPeriodo) then
+begin
+  if IsBought or IsSold then
+    ClosePosition;          // zera a posição atual apenas uma vez
+    metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia
+    bloqueia:=true;
+  //PlotText("META.V",clYellow,2,15); 
+end;
+
+//--- força zerar as posições UMA ÚNICA VEZ quando bater a meta
+if (not metaFechamentoFeita) and ((resultadoTotalDia >= MetaDiaria) or (resultadoAbertoDia[1]>=MetaDiaria)) and (contMeta=0) then
+begin
+  if IsBought or IsSold then
+    ClosePosition;          // zera a posição atual apenas uma vez
+    metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia 
+    contMeta:=contMeta+1;
+    bolPodeAvaliarCodigo:=false;
+    vendaContinua:=false;
+    compraContinua:=false;
+  //PlotText("META.V",clYellow,2,15); 
+end;
+
+//--- força zerar as posições UMA ÚNICA VEZ quando bater a meta
+if (not metaFechamentoFeita) and ((resultadoTotalDia >= MetaDiaria*2) or (resultadoAbertoDia[1]>=MetaDiaria*2)) and (contMeta=1) then
+begin
+  if IsBought or IsSold then
+    ClosePosition;          // zera a posição atual apenas uma vez
+    metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia 
+    contMeta:=contMeta+1;
+    bolPodeAvaliarCodigo:=false;
+    vendaContinua:=false;
+    compraContinua:=false;
+  //PlotText("META.V",clYellow,2,15); 
+end;
+
+//--- força zerar as posições UMA ÚNICA VEZ quando bater a meta
+if (not metaFechamentoFeita) and ((resultadoTotalDia >= MetaDiaria*3) or (resultadoAbertoDia[1]>=MetaDiaria*2)) and (contMeta=2) then
+begin
+  if IsBought or IsSold then
+    ClosePosition;          // zera a posição atual apenas uma vez
+    metaFechamentoFeita := true;  // não deixa repetir o ClosePosition no mesmo dia 
+    contMeta:=contMeta+1;
+    bolPodeAvaliarCodigo:=false;
+    vendaContinua:=false;
+    compraContinua:=false;
+  //PlotText("META.V",clYellow,2,15); 
+end;
+
+//============META 1===================//
+if(bolPodeAvaliarCodigo=false)and(contMeta=0)entao
+bolPodeAvaliarCodigo:=true;
+
+//============META 2 ===================//
+if(bolPodeAvaliarCodigo=false) and (bolVender)  and(contMeta=1) and ((fechamento[0]>=upperKeltner_v2)or (bolAgressaoForteVenda))then
+begin
+metaFechamentoFeita:=false;
+  bolPodeAvaliarCodigo:=true;
+end;
+
+
+if(bolPodeAvaliarCodigo=false) and (bolComprar)  and(contMeta=1) and((fechamento[0]<=lowerKeltner_v2)or (bolAgressaoForteCompra)) then
+begin
+ metaFechamentoFeita:=false;
+  bolPodeAvaliarCodigo:=true;
+end;
+
+//============FIM META 2===================//
+
+//============META 3===================//
+ 
+if(bolPodeAvaliarCodigo=false) and (bolComprar)  and(contMeta=2) and(bolAgressaoForteCompra) then
+begin
+ metaFechamentoFeita:=false;
+  bolPodeAvaliarCodigo:=true;
+end;
+
+if(bolPodeAvaliarCodigo=false) and (bolVender)  and(contMeta=2) and (bolAgressaoForteVenda)then
+begin
+metaFechamentoFeita:=false;
+  bolPodeAvaliarCodigo:=true;
+end;
+
+//============FIM META 3===================//
+
+//============== FIM CONTROLE META DIÁRIA ===================
+
+// ================== AGRESSÃO FORTE NOS ÚLTIMOS 3 CANDLES ==================
+// Usamos os 3 ÚLTIMOS candles fechados: [1], [2], [3]
+
+// Compra: todos os 3 com saldo >= +110.000
+bolAgressaoForteCompra :=
+      (AccAgressSaldo(1)[1] >= 110000)
+  and (AccAgressSaldo(1)[2] >= 110000)
+  and (AccAgressSaldo(1)[3] >= 110000);
+
+// Venda: todos os 3 com saldo <= -110.000
+bolAgressaoForteVenda :=
+      (AccAgressSaldo(1)[1] <= -110000)
+  and (AccAgressSaldo(1)[2] <= -110000)
+  and (AccAgressSaldo(1)[3] <= -110000);
+// ========================================================================
+
+ if(contMeta>=2) and (bolTerceiraMetaProAgressao=false) entao
+   bloqueia:=true;
+
+ if(contMeta>=3) and (bolTerceiraMetaProAgressao) entao
+   bloqueia:=true;
+
+  // Se o filtro de rompimento estiver desligado, libera ambos os lados.
+  if (bolFiltroRompimento = false) then
+  begin
+    bloqueiaCompras := false;
+    bloqueiaVendas  := false;
+  end;
+  // =================== FIM LOGICA CONTROLE GERAL E RESET =========================
+  
+  c := LinearRegressionChannel(60, true, 2.0, true, 2.0)|0|;
+  s := LinearRegressionChannel(60, true, 2.0, true, 2.0)|1|;
+  ii := LinearRegressionChannel(60, true, 2.0, true, 2.0)|2|;
+
+  canalAlta  := false;
+  canalBaixa := false;
+
+  // Canal subindo (inclinação positiva)
+  if c[1] > c[2] then
+    canalAlta := true;
+
+  // Canal caindo (inclinação negativa)
+  if c[1] < c[2] then
+    canalBaixa := true;
+
+ 
+
+   se(canalAlta) entao
+   begin
+     //PlotText("alta",clyellow);
+     intPorcentagemCompra:=0.4;
+     intPorcentagemVenda:=0.2;
+     bolFiltroMaiorKelterVenda:=true;
+     bolFiltroMaiorKelterCompra:=false;
+     bolFiltro50FluxoCompra:=false;
+
+   end;
+
+      se(canalBaixa)entao
+   begin
+      //PlotText("baixa",clyellow);
+     intPorcentagemCompra:=0.2;
+     intPorcentagemVenda:=0.4;
+     bolFiltroMaiorKelterVenda:=false;
+     bolFiltroMaiorKelterCompra:=true;
+
+   end;
+
+  if(canalAlta=false)and(canalBaixa=false)entao
+  begin
+    //PlotText("lateral",clyellow);
+   intPorcentagemCompra:=0.4;
+     intPorcentagemVenda:=0.4;
+     bolFiltroMaiorKelterVenda:=false;
+     bolFiltroMaiorKelterCompra:=false;
+  end;
+
+ se(bolComprar) entao
+ // PlotText(intPorcentagemCompra,clyellow);
+
+ se(bolVender) entao
+ // PlotText(intPorcentagemVenda,clyellow);
+
+
+  // =================== INICIO LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ============
+  cohenWeisWaveAtual    := COHENWEISWAVE(TicksWeisWave);
+  cohenWeisWaveAnterior := cohenWeisWaveAtual[1];
+
+
+  // =================== FIM LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ===============
+
+
+
+  // =================== INICIO LOGICA BANDAS KELTNER E PLOT =======================
+  upperKeltner := KeltnerCH(KeltnerDesvio, KeltnerPeriodo, KeltnerTipo)|0|;
+  lowerKeltner := KeltnerCH(KeltnerDesvio, KeltnerPeriodo, KeltnerTipo)|1|;
+
+  upperKeltner_v2 := KeltnerCH(1.0, KeltnerPeriodo, KeltnerTipo)|0|;
+  lowerKeltner_v2 := KeltnerCH(1.0, KeltnerPeriodo, KeltnerTipo)|1|;
+
+  // =================== FIM LOGICA BANDAS KELTNER E PLOT ==========================
+
+
+
+  // =================== INICIO LOGICA FILTROS BASICOS (HORARIO E VOLUME) ==========
+  timeok := (Time >= HorarioInicio) and (Time <= HorarioFinal);
+  volok  := (Volume > 10000);
+  // =================== FIM LOGICA FILTROS BASICOS (HORARIO E VOLUME) =============
+
+
+
+  // =================== INICIO LOGICA AMPLITUDE DO RENKO ==========================
+  amp := Round(Abs(Abertura[1] - Fechamento[1]));
+  // =================== FIM LOGICA AMPLITUDE DO RENKO =============================
+
+
+
+  // =================== INICIO LOGICA POSICAO RELATIVA NAS BANDAS =================
+  renkoAcimaBanda  := (Fechamento > upperKeltner);
+  renkoAbaixoBanda := (Fechamento < lowerKeltner);
+  // =================== FIM LOGICA POSICAO RELATIVA NAS BANDAS ====================
+
+
+
+  // =================== INICIO LOGICA CONTAGEM CONSECUTIVOS FORA DAS BANDAS =======
+  if renkoAcimaBanda then
+    consecutivosAcima := consecutivosAcima + 1
+  else
+    consecutivosAcima := consecutivosAcima - 1;
+
+  if renkoAbaixoBanda then
+    consecutivosAbaixo := consecutivosAbaixo + 1
+  else
+    consecutivosAbaixo := consecutivosAbaixo - 1;
+
+
+  // =================== FIM LOGICA CONTAGEM CONSECUTIVOS FORA DAS BANDAS =========
+
+
+// ============ DETECCAO DE TOPOS E FUNDOS VIA _NTB_TopBottomDetector ============
+  x := High;
+  Y := Low;
+
+  vLow  := Lowest(Low, Niveis);
+  vHigh := Highest(High, Niveis);
+ tf := _NTB_TopBottomDetector_Breakout(periodo,false,0,false,false)|1|;
+
+  Se (tf <> 0) entao v := tf
+  Senao v := v[1];
+
+
+
+  // TOPO
+  if (vHigh[1] >= vHigh) and(v=vHigh[1]) then
+  begin
+    x := x[1];
+
+
+    
+    se(arrayTopos[0]<>arrayTopos[1])entao
+    arrayTopos[1] := arrayTopos[0];
+    // topo mais recente sempre na posição 0
+    arrayTopos[0] := v;
+  end;
+
+  // FUNDO
+  if (vLow >= vLow[1]) and (v=vLow[1]) then
+  begin
+    Y := Y[1];
+
+
+    se(arrayTopos[0]<>arrayTopos[1])entao
+    arrayFundos[1] := arrayFundos[0];
+    // fundo mais recente sempre na posição 0
+    arrayFundos[0] := v;
+  end;
+// =================== FIM LOGICA DETECCAO DE TOPOS E FUNDOS =====================
+
+
+ 
+
+
+  // =================== INICIO LOGICA RANGE TOPO-FUNDO E PERMISSAO =================
+  ultimoTopo  := arrayTopos[0];
+  ultimoFundo := arrayFundos[0];
+
+  if (ultimoTopo > 0) and (ultimoFundo > 0) then
+    rangeTopoFundo := Abs(ultimoTopo - ultimoFundo)
+  else
+    rangeTopoFundo := 999999;   // range grande enquanto não há estrutura válida
+
+  podeOperar := (rangeTopoFundo <= MinRangeOperacao);
+
+   PlotText(rangeTopoFundo,CLBLUE);
+  // =================== FIM LOGICA RANGE TOPO-FUNDO E PERMISSAO ====================
+
+
+// ================= FILTRO DE BARRAS RAPIDAS (MESMO MINUTO) =================
+
+// Se a barra atual tem o mesmo TIME que a anterior → ocorreu no mesmo minuto
+if (Time = Time[1]) then
+  barrasMesmoMinuto := barrasMesmoMinuto + 1
+else
+  barrasMesmoMinuto := 0;
+
+// reset flags
+bolTempoRapidoCompra := false;
+bolTempoRapidoVenda  := false;
+
+// Se houver muitas barras dentro do mesmo minuto → mercado muito rápido
+if (barrasMesmoMinuto >= MaxBarrasMesmoMinuto) then
+begin
+  // Se o candle anterior é de baixa → filtra compras a mercado
+  if (Abertura[0] > Fechamento[0]) then
+    bolTempoRapidoCompra := true;
+
+  // Se o candle anterior é de alta → filtra vendas a mercado
+  if (Abertura[0] < Fechamento[0]) then
+    bolTempoRapidoVenda := true;
+end;
+
+// ================= FIM DO FILTRO ===========================================
+
+
+// =================== INICIO LOGICA ROMPIMENTO DE ESTRUTURA =====================
+// Rompimento de FUNDO (lado da compra) e de TOPO (lado da venda)
+// respeitando o parâmetro QtdRenkosRompimento.
+if bolFiltroRompimento  then
+begin
+  // --- Rompimento de FUNDO -> lado da COMPRA ---
+  // Calcula quantos renkos o fechamento está abaixo do último fundo.
+  if (amp > 0) and (arrayFundos[0] > 0) then
+  begin
+    renkosAbaixoFundo := (arrayFundos[0] - Fechamento) / amp;
+
+    // Se andou pelo menos QtdRenkosRompimento renkos abaixo do fundo, rompeu estrutura.
+    if (renkosAbaixoFundo >= QtdRenkosRompimento) and (bloqueiaCompras=false) then
+    begin
+     //PlotText("Rompimento de comprar", clYellow);   // marca visualmente o rompimento de FUNDO
+      // aqui você pode também setar bloqueiaCompras := true; se quiser usar o bloqueio
+      bloqueiaCompras:=true;
+      bloqueiaVendas:=false;
+      compraContinua:=false;
+      PlotText("R.F",clYellow,0,15); 
+   
+    end;
+  end;
+
+  // --- Rompimento de TOPO -> lado da VENDA ---
+  // Calcula quantos renkos o fechamento está acima do último topo.
+  if (amp > 0) and (arrayTopos[0] > 0) then
+  begin
+    renkosAcimaTopo := (Fechamento - arrayTopos[0]) / amp;
+
+    // Se andou pelo menos QtdRenkosRompimento renkos acima do topo, rompeu estrutura.
+    if (renkosAcimaTopo >= QtdRenkosRompimento) and (bloqueiaVendas=false) then
+    begin
+  //  PlotText("aqui", clRed);      // marca visualmente o rompimento de TOPO
+      // aqui você pode também setar bloqueiaVendas := true; se quiser usar o bloqueio
+      bloqueiaVendas:=true;
+      bloqueiaCompras:=false;
+      vendaContinua:=false;
+       PlotText("R.T",clYellow,2,15); 
+      
+    end;
+  end;
+end;
+// =================== FIM LOGICA ROMPIMENTO DE ESTRUTURA ========================
+
+
+
+// ================== DETECCAO DOS ULTIMOS FLUXOS CONTINUOS (ALTA e BAIXA) =======
+
+// Candle de ALTA
+if (Fechamento > Abertura) then
+begin
+  // ------ fluxo de ALTA ------
+  if (not fluxoAltaAtivo) then
+  begin
+    fluxoAltaAtivo   := true;
+    contadorAltas    := 1;
+    inicioFluxoAlta  := Low;    // início da perna de alta
+    topoFluxoAlta    := High;
+  end
+  else
+  begin
+    contadorAltas := contadorAltas + 1;
+    if (High > topoFluxoAlta) then
+      topoFluxoAlta := High;
+  end;
+
+  // ------ encerra fluxo de BAIXA, se estiver ativo ------
+  if (fluxoBaixaAtivo) then
+  begin
+    fluxoBaixaAtivo := false;
+    if (contadorBaixas >= 2) then
+      nivel50FluxoBaixa := inicioFluxoBaixa - (inicioFluxoBaixa - fundoFluxoBaixa) * 0.2;
+      // 50% entre o topo inicial e o fundo da perna de baixa
+  end;
+end;
+
+// Candle de BAIXA
+if (Fechamento < Abertura) then
+begin
+  // ------ fluxo de BAIXA ------
+  if (not fluxoBaixaAtivo) then
+  begin
+    fluxoBaixaAtivo   := true;
+    contadorBaixas    := 1;
+    inicioFluxoBaixa  := High;  // início da perna de baixa
+    fundoFluxoBaixa   := Low;
+  end
+  else
+  begin
+    contadorBaixas := contadorBaixas + 1;
+    if (Low < fundoFluxoBaixa) then
+      fundoFluxoBaixa := Low;
+  end;
+
+  // ------ encerra fluxo de ALTA, se estiver ativo ------
+  if (fluxoAltaAtivo) then
+  begin
+    fluxoAltaAtivo := false;
+    if (contadorAltas >= 2) then
+      nivel50FluxoAlta := inicioFluxoAlta + (topoFluxoAlta - inicioFluxoAlta) * 0.2;
+  end;
+end;
+
+
+// ================== FILTRO PARA COMPRAS A MERCADO (50% DA PERNA) ==============
+// Por padrão, não bloqueia
+bolFiltro50FluxoCompra := false;
+bolFiltro50FluxoVenda:=false;
+
+// Se temos um nível de 50% válido
+if (nivel50FluxoAlta > 0) then
+begin
+  // Enquanto o preço da barra atual estiver ACIMA do 50% da última perna de alta,
+  // NÃO queremos comprar a mercado (a correção ainda é pequena)
+  if (Low > nivel50FluxoAlta) then
+    bolFiltro50FluxoCompra := true;
+end;
+
+// Se temos um nível de 50% válido para a ÚLTIMA PERNA DE BAIXA
+if (nivel50FluxoBaixa > 0) then
+begin
+  // Enquanto o preço estiver ABAIXO do 50% da perna de baixa,
+  // NÃO vendemos a mercado (pullback ainda curto)
+  if (High < nivel50FluxoBaixa) then
+    bolFiltro50FluxoVenda := true;
+end;
+
+
+// ================== FIM DO FILTRO 50% ==========================================
+
+ if(bolPodeAvaliarCodigo) then
+ begin
+  // =================== INICIO LOGICA VALIDACAO KELTNER + FILTROS =================
+  compraKeltnerValida := renkoAcimaBanda and  (consecutivosAcima >= contadorCandles);      // filtro de rompimento
+
+  vendaKeltnerValida := renkoAbaixoBanda   and (consecutivosAbaixo >= contadorCandles);      // filtro de rompimento
+
+  if (vendaKeltnerValida) then
+    begin
+     PaintBar(clRed);
+     vendaContinua:=true;
+    end;
+
+
+  if (compraKeltnerValida) then
+  begin
+   PaintBar(clGreen);
+   compraContinua:=true;
+  end;
+
+ end;
+ 
+   
+  se(bloqueiaCompras) and (compraKeltnerValida) entao
+    begin
+    compraContinua:=true;
+    bloqueiaCompras:=false;
+    PlotText("L.C",clYellow,0,15); 
+    end;  
+  
+  se(bloqueiaVendas) and (vendaKeltnerValida) entao
+    begin
+    vendaContinua:=true;
+    bloqueiaVendas:=false;
+    PlotText("L.V",clYellow,2,15); 
+    end;   
+  
+
+  PlotText(contMeta,clBlue);
+  // Se o preço está dentro das bandas, reseta contador e pinta amarelo
+  if (Fechamento < upperKeltner) and (Fechamento > lowerKeltner) then
+  begin    
+    consecutivosAcima  := 0;
+    consecutivosAbaixo := 0;
+  end;
+    // Se o preço está dentro das bandas, reseta contador e pinta amarelo
+  if (Fechamento < upperKeltner) and (Fechamento > lowerKeltner) then
+  begin    
+    consecutivosAcima  := 0;
+    consecutivosAbaixo := 0;
+  end;
+
+  se(bolComprar)entao
+  begin
+  XRay("bolPodeAvaliarCodigo",bolPodeAvaliarCodigo,"comprar");
+  XRay("contMeta",true,"comprar",contMeta); 
+  XRay("compraContinua",compraContinua,"comprar");
+  XRay("bolComprar",bolComprar,"comprar");
+  XRay("canalAlta",canalAlta,"comprar");
+  xRay("MetaAtual",true,"comprar",resultadoTotalDia);
+  XRay("bloqueia",bloqueia,"comprar");
+  end;
+                                                                  
+
+  se(bolVender)entao
+  begin
+  XRay("bolPodeAvaliarCodigo",bolPodeAvaliarCodigo,"venda");
+  XRay("contMeta",true,"venda",contMeta); 
+  XRay("vendaContinua",vendaContinua,"venda");
+  XRay("bolVender",bolVender,"venda");
+  XRay("MetaAtual",true,"venda",resultadoTotalDia);
+  XRay("canalBaixa",canalBaixa,"venda");
+  XRay("bloqueia",bloqueia,"venda"); 
+
+  end;
+                                                                 
+
+ //========================Entrada========================================
+  //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
+  //Acontencem das 905 ate 1740.
+ if (bloqueia=false)and (compraContinua)and (time >= 901)and (time < 1740) 
+  and bolComprar  and ((canalAlta) or (canalAlta=false)and(canalBaixa=false))entao
+ begin
+  
+  if(bolFiltroMaiorKelterCompra)entao
+  begin
+     if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra) and(fechamento<=lowerKeltner_v2) and (bolAMercadoNivel3)and (bolLateral=false) entao
+    BuyAtMarket(ContratosTotal); 
+  end;
+
+ if(bolFiltroMaiorKelterCompra=false)entao
+  begin
+   if(abertura[0]>fechamento[0]) and ( not  bolFiltro50FluxoCompra)  and (bolAMercadoNivel2) and (bolLateral=false) entao
+      BuyAtMarket(ContratosTotal);
+  end;
+
+  if (abertura[0]<fechamento[0]) and (not HasPosition)  and (bolAMercadoNivel1) and (AccAgressSaldo(1)[1] >= 15000) and (bolLateral=false)  entao
+   BuyAtMarket(ContratosTotal)else
+  if(IsBought) and (abertura[0]<fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite) and (bolLateral=false) entao
+  BuyLimit(abertura[0],ContratosTotal);
+
+end;
+
+//O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
+//Acontencem das 905 ate 1740.
+ if (bloqueia=false)and (vendaContinua) and (time >= 901) and (time < 1740) 
+  and bolVender  and ((canalBaixa) or (canalAlta=false)and(canalBaixa=false))entao
+ begin
+  if(bolFiltroMaiorKelterVenda)entao
+begin
+   se(bolVender) and ( not bolFiltro50FluxoVenda) and (abertura[0]<fechamento[0])and(fechamento>=upperKeltner_v2)and (bolAMercadoNivel3)and (bolLateral=false) entao
+     SellShortAtMarket(ContratosTotal); 
+end;
+
+if(bolFiltroMaiorKelterVenda=false)entao
+begin
+ se(bolVender) and (abertura[0]<fechamento[0]) and ( not bolFiltro50FluxoVenda)  and (bolAMercadoNivel2)and (bolLateral=false) entao
+ SellShortAtMarket(ContratosTotal);
+end;
+
+ if (abertura[0]>fechamento[0]) and (not HasPosition) and (bolAMercadoNivel1) and (AccAgressSaldo(1)[1] <= -15000)and (bolLateral=false)entao
+    SellShortAtMarket(ContratosTotal)else
+ if(IsSold)and(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite) and (bolLateral=false) entao
+    SellShortLimit(abertura[0],ContratosTotal);
+
+ end;
+
+end;//fim dias retroativos
+
+end;

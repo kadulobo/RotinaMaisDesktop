@@ -25,7 +25,7 @@ const
   MaxBarrasMesmoMinuto = 1 ;  // número máximo de bricks permitidos no mesmo minuto
   Periodo = 5; 
 Input
-  Versao("10/12/2025"); // controle de versão              
+  Versao("11/12/2025"); // controle de versão              
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
   ContratosTotal(3);                   // número de contratos por entrada
