@@ -28,9 +28,9 @@ Input
   Versao("1.0"); // controle de versão              
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
-  ContratosTotal(3);                   // número de contratos por entrada
-  MetaDiaria(250.0);  // valor da meta em R$ ou pontos, como você usar aí
-  MetaLossPorPeriodo(750);
+  ContratosTotal(6);                   // número de contratos por entrada
+  MetaDiaria(500.0);  // valor da meta em R$ ou pontos, como você usar aí
+  MetaLossPorPeriodo(1500);
   DiasRetroativos(90);
   bolAMercadoNivel1(true);
   bolAMercadoNivel2(true);
@@ -164,7 +164,8 @@ Var
 
      bolLateral:boolean;
    bolParaPorResultadoNegativo:boolean;
-
+     SatrVenda, SatrCompra: float;
+   bolAtrVendaAtivo, bolAtrCompraAtivo: boolean;
   // -----------------------------------------------------------------------------
 
 
@@ -196,8 +197,25 @@ Begin
 
 bolLateral:= (abertura[0]=abertura[1]) and (abertura[1]=abertura[2])and (abertura[2]=abertura[3]);
 
-if(bolLateral)entao
-PlotText("lateral",clyellow);
+  // Validação se os 3 pontos estão subindo ou descendo
+  canalAlta := (c > c[1]) and (c[1] > c[2])
+           and (s > s[1]) and (s[1] > s[2])
+           and (ii > ii[1]) and (ii[1] > ii[2]);
+
+  canalBaixa := (c < c[1]) and (c[1] < c[2])
+            and (s < s[1]) and (s[1] < s[2])
+            and (ii < ii[1]) and (ii[1] < ii[2]);
+
+ 
+
+  // Exemplo de uso visual
+  if canalAlta then
+    PaintBar(clLime)
+  else if canalBaixa then
+    PaintBar(clRed)
+  else if canalAlta and not canalBaixa then
+    PaintBar(clYellow);
+
   
 //--- cálculo dos resultados
 resultadoFechadoDia := DailyResult(false);                // só trades fechados
@@ -311,6 +329,18 @@ end;
 
 
   // =================== FIM LOGICA FILTRO DE VOLUME (COHENWEISWAVE) ===============
+
+
+
+    // ATR Stop: venda (linha superior) e compra (linha inferior)
+  
+  
+
+   if(StopAtr(7, 20, 0)|1|=1)entao
+   PaintBar(clRed)
+   else
+   PaintBar(clLime);
+
 
 
 
@@ -614,10 +644,6 @@ end;
     consecutivosAbaixo := 0;
   end;
 
-  se (bolAgressaoForteVenda) entao
-  PaintBar(clred);
 
- se (bolAgressaoForteCompra) entao
-  PaintBar(clGreen); 
 
 end;

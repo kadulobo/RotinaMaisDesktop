@@ -148,7 +148,7 @@ Var
   bolFiltroMaiorKelterVenda:boolean;
   bolFiltroMaiorKelterCompra:boolean;
 
-     canalAlta, canalBaixa : boolean;   // <<< novos booleanos
+     canalAlta, canalBaixa , canalLateral: boolean;   // <<< novos booleanos
     c, s, ii, l : real;
   resultadoFechadoDia   : float;   // lucro/prejuízo das operações já encerradas
   resultadoAbertoDia    : float;   // lucro/prejuízo das posições abertas
@@ -166,13 +166,21 @@ Var
    bolLateral:boolean;
    bolParaPorResultadoNegativo:boolean;
    bolPodeAvaliarCodigo:boolean;
+
+   SatrVenda, SatrCompra: float;
+   bolAtrVendaAtivo, bolAtrCompraAtivo: boolean;
+   
+  arrayC: array[0..2] of float;
+  arrayS: array[0..2] of float;
+  arrayII: array[0..2] of float;
+  bolPrecoRompeuVenda:boolean;
   // -----------------------------------------------------------------------------
 
 
 Begin
-  If (Date >= CalcDate(CurrentDate, - DiasRetroativos)) then
+     If (Date >= CalcDate(CurrentDate, - DiasRetroativos)) then
   // =================== INICIO LOGICA CONTROLE GERAL E RESET =======================
-   begin
+     begin
     if Time >= HorarioFinal then
     ClosePosition;
 
@@ -295,6 +303,11 @@ end;
 
 //============== FIM CONTROLE META DIÁRIA ===================
 
+
+
+
+
+
 // ================== AGRESSÃO FORTE NOS ÚLTIMOS 3 CANDLES ==================
 // Usamos os 3 ÚLTIMOS candles fechados: [1], [2], [3]
 
@@ -325,52 +338,46 @@ bolAgressaoForteVenda :=
   end;
   // =================== FIM LOGICA CONTROLE GERAL E RESET =========================
   
+  // Captura os valores atuais do canal de regressão linear
   c := LinearRegressionChannel(60, true, 2.0, true, 2.0)|0|;
   s := LinearRegressionChannel(60, true, 2.0, true, 2.0)|1|;
   ii := LinearRegressionChannel(60, true, 2.0, true, 2.0)|2|;
 
-  canalAlta  := false;
-  canalBaixa := false;
+  // Shift dos valores antigos para manter histórico
+  arrayC[2] := arrayC[1];
+  arrayC[1] := arrayC[0];
+  arrayC[0] := c;
 
-  // Canal subindo (inclinação positiva)
-  if c[1] > c[2] then
-    canalAlta := true;
+  arrayS[2] := arrayS[1];
+  arrayS[1] := arrayS[0];
+  arrayS[0] := s;
 
-  // Canal caindo (inclinação negativa)
-  if c[1] < c[2] then
-    canalBaixa := true;
+  arrayII[2] := arrayII[1];
+  arrayII[1] := arrayII[0];
+  arrayII[0] := ii;
 
- 
+  // Verifica se os 3 últimos valores estão em alta
+  canalAlta := (arrayC[0] > arrayC[1]) and (arrayC[1] > arrayC[2])
+           and (arrayS[0] > arrayS[1]) and (arrayS[1] > arrayS[2])
+           and (arrayII[0] > arrayII[1]) and (arrayII[1] > arrayII[2]);
 
-   se(canalAlta) entao
-   begin
-     //PlotText("alta",clyellow);
-     intPorcentagemCompra:=0.4;
-     intPorcentagemVenda:=0.2;
-     bolFiltroMaiorKelterVenda:=true;
-     bolFiltroMaiorKelterCompra:=false;
-     bolFiltro50FluxoCompra:=false;
+  // Verifica se os 3 últimos valores estão em baixa
+  canalBaixa := (arrayC[0] < arrayC[1]) and (arrayC[1] < arrayC[2])
+            and (arrayS[0] < arrayS[1]) and (arrayS[1] < arrayS[2])
+            and (arrayII[0] < arrayII[1]) and (arrayII[1] < arrayII[2]);
 
-   end;
 
-      se(canalBaixa)entao
-   begin
-      //PlotText("baixa",clyellow);
-     intPorcentagemCompra:=0.2;
-     intPorcentagemVenda:=0.4;
-     bolFiltroMaiorKelterVenda:=false;
-     bolFiltroMaiorKelterCompra:=true;
 
-   end;
 
-  if(canalAlta=false)and(canalBaixa=false)entao
+   canalLateral :=  not canalAlta and not canalBaixa;
+ if(canalBaixa)then
   begin
-    //PlotText("lateral",clyellow);
-   intPorcentagemCompra:=0.4;
-     intPorcentagemVenda:=0.4;
-     bolFiltroMaiorKelterVenda:=false;
-     bolFiltroMaiorKelterCompra:=false;
+  PlotText("aqui",clBlue);
   end;
+
+
+
+
 
  se(bolComprar) entao
  // PlotText(intPorcentagemCompra,clyellow);
@@ -488,7 +495,7 @@ bolAgressaoForteVenda :=
 
   podeOperar := (rangeTopoFundo <= MinRangeOperacao);
 
-   PlotText(rangeTopoFundo,CLBLUE);
+  
   // =================== FIM LOGICA RANGE TOPO-FUNDO E PERMISSAO ====================
 
 
@@ -708,11 +715,14 @@ end;
   XRay("contMeta",true,"comprar",contMeta); 
   XRay("compraContinua",compraContinua,"comprar");
   XRay("bolComprar",bolComprar,"comprar");
-  XRay("canalAlta",canalAlta,"comprar");
   xRay("MetaAtual",true,"comprar",resultadoTotalDia);
   XRay("bloqueia",bloqueia,"comprar");
+  XRay("(not bolFiltro50FluxoCompra)",(not bolFiltro50FluxoCompra),"comprar");
   end;
-                                                                  
+
+  XRay("canalAlta",canalAlta,"canal");  
+  XRay("canalBaixa",canalBaixa,"canal");                                                              
+  XRay("canal lateral",((canalAlta=false) and (canalBaixa=false)),"canal");
 
   se(bolVender)entao
   begin
@@ -721,17 +731,17 @@ end;
   XRay("vendaContinua",vendaContinua,"venda");
   XRay("bolVender",bolVender,"venda");
   XRay("MetaAtual",true,"venda",resultadoTotalDia);
-  XRay("canalBaixa",canalBaixa,"venda");
+  
   XRay("bloqueia",bloqueia,"venda"); 
 
   end;
-                                                                 
+ 
 
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
   //Acontencem das 905 ate 1740.
  if (bloqueia=false)and (compraContinua)and (time >= 901)and (time < 1740) 
-  and bolComprar  and ((canalAlta) or (canalAlta=false)and(canalBaixa=false))entao
+  and bolComprar  and ((canalAlta) or (canalAlta=false)and(canalBaixa=false)) and ((StopAtr(7, 20, 0)|1|=1)=false)  entao
  begin
   
   if(bolFiltroMaiorKelterCompra)entao
@@ -746,9 +756,9 @@ end;
       BuyAtMarket(ContratosTotal);
   end;
 
-  if (abertura[0]<fechamento[0]) and (not HasPosition)  and (bolAMercadoNivel1)and (bolLateral=false)  entao
+  if (abertura[0]<fechamento[0]) and (not HasPosition)  and (bolAMercadoNivel1) and (AccAgressSaldo(1)[1] >= 15000) and (bolLateral=false)  entao
    BuyAtMarket(ContratosTotal)else
-  if(IsBought) and (abertura[0]<fechamento[0])and (bolALimite) and (bolLateral=false) entao
+  if(IsBought) and (abertura[0]<fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite) and (bolLateral=false) entao
   BuyLimit(abertura[0],ContratosTotal);
 
 end;
@@ -756,7 +766,7 @@ end;
 //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
 //Acontencem das 905 ate 1740.
  if (bloqueia=false)and (vendaContinua) and (time >= 901) and (time < 1740) 
-  and bolVender  and ((canalBaixa) or (canalAlta=false)and(canalBaixa=false))entao
+  and bolVender  and ((canalBaixa) or (canalAlta=false)and(canalBaixa=false)) and (StopAtr(7, 20, 0)|1|=1) entao
  begin
   if(bolFiltroMaiorKelterVenda)entao
 begin
@@ -770,13 +780,14 @@ begin
  SellShortAtMarket(ContratosTotal);
 end;
 
- if (abertura[0]>fechamento[0]) and (not HasPosition) and (bolAMercadoNivel1) and (bolLateral=false)entao
+ if (abertura[0]>fechamento[0]) and (not HasPosition) and (bolAMercadoNivel1) and (AccAgressSaldo(1)[1] <= -15000)and (bolLateral=false)entao
     SellShortAtMarket(ContratosTotal)else
- if(IsSold)and(abertura[0]>fechamento[0])  and (bolALimite) and (bolLateral=false) entao
+ if(IsSold)and(abertura[0]>fechamento[0]) and (abs(position)<(ContratosTotal*2)) and (bolALimite) and (bolLateral=false) entao
     SellShortLimit(abertura[0],ContratosTotal);
 
  end;
 
 end;//fim dias retroativos
+
 
 end;
