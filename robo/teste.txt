@@ -763,7 +763,7 @@ end;
                       and (Position<ContratosTotal)
                       and not(HasPosition) entao
 
-   BuyAtMarket(ContratosTotal); 
+   BuyAtMarket(ContratosTotal)else 
 
   
 if (abertura[0]>fechamento[0]) 
@@ -775,7 +775,7 @@ if (abertura[0]>fechamento[0])
                                   and (Position <= ContratosTotal * 2) 
                                   entao
 
-if(Position>ContratosTotal)entao BuyAtMarket(abs(ContratosTotal-Position))else BuyAtMarket(ContratosTotal);
+ BuyAtMarket(ContratosTotal)else
 
   
 
@@ -805,7 +805,7 @@ end;
                       and (fechamento[0]<=precoVenda_3)
                       and (not HasPosition)
                        entao
-   SellShortAtMarket(ContratosTotal); 
+   SellShortAtMarket(ContratosTotal)else 
 
   
    if bolCandleALta 
@@ -815,8 +815,8 @@ end;
                                   and (fechamento[0]>=precoVenda_3) 
                                   and (not bolFiltro50FluxoCompra) 
                                   and (Position <= ContratosTotal * 2) 
-                                   entao
-if(abs(Position)>ContratosTotal)entao SellShortAtMarket(abs(ContratosTotal-Position))else SellShortAtMarket(ContratosTotal);
+                                  entao
+  SellShortAtMarket(ContratosTotal)else
 
   if  (bolAMercadoNivel3) 
                                   and (bolLateral=false) 
