@@ -25,7 +25,7 @@ const
   MaxBarrasMesmoMinuto = 1 ;  // número máximo de bricks permitidos no mesmo minuto
   Periodo = 5; 
 Input
-  Versao("16:48 10/12/2025"); // controle de versão              
+  Versao("18:10 11/12/2025"); // controle de versão              
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
   ContratosTotal(3);                   // número de contratos por entrada
@@ -760,9 +760,10 @@ end;
                       and   (AccAgressSaldo(1)[1] >= 60000)
                       and (bolLateral=false) 
                       and (fechamento[0]>=precoCompra_3)  
-                      and (Position<ContratosTotal) entao
+                      and (Position<ContratosTotal)
+                      and not(HasPosition) entao
 
-   BuyAtMarket(ContratosTotal-Position); 
+   BuyAtMarket(ContratosTotal)else 
 
   
 if (abertura[0]>fechamento[0]) 
@@ -771,9 +772,10 @@ if (abertura[0]>fechamento[0])
                                   and (fechamento[0]>=precoCompra_2)
                                   and (fechamento[0]<=precoCompra_3) 
                                   and (not bolFiltro50FluxoCompra)  
-                                  and (Position < ContratosTotal * 2) entao
+                                  and (Position <= ContratosTotal * 2) 
+                                  entao
 
-if(Position>ContratosTotal)entao BuyAtMarket(abs(ContratosTotal-Position))else BuyAtMarket(ContratosTotal);
+ BuyAtMarket(ContratosTotal)else
 
   
 
@@ -801,8 +803,9 @@ end;
                       and   (AccAgressSaldo(1)[1] <= -60000)
                       and (bolLateral=false) 
                       and (fechamento[0]<=precoVenda_3)
-                      and (abs(Position)<ContratosTotal) entao
-   SellShortAtMarket(ContratosTotal); 
+                      and (not HasPosition)
+                       entao
+   SellShortAtMarket(ContratosTotal)else 
 
   
    if bolCandleALta 
@@ -810,15 +813,16 @@ end;
                                   and (bolLateral=false) 
                                   and (fechamento[0]<=precoVenda_2)
                                   and (fechamento[0]>=precoVenda_3) 
-                                  and (not bolFiltro50FluxoCompra) 
-                                  and (Position < ContratosTotal * 2)  entao
-if(abs(Position)>ContratosTotal)entao SellShortAtMarket(abs(ContratosTotal-Position))else SellShortAtMarket(ContratosTotal);
+                                  and (not bolFiltro50FluxoVenda) 
+                                  and (abs(Position) <= ContratosTotal * 2) 
+                                  entao
+  SellShortAtMarket(ContratosTotal)else
 
   if  (bolAMercadoNivel3) 
                                   and (bolLateral=false) 
                                   and (fechamento[0]<=precoVenda_1)
                                   and (fechamento[0]>=precoVenda_2)
-                                  and (not bolFiltro50FluxoCompra)   entao
+                                  and (not bolFiltro50FluxoVenda)   entao
   SellShortAtMarket(ContratosTotal); 
 
  end;
@@ -848,8 +852,9 @@ if(abs(Position)>ContratosTotal)entao SellShortAtMarket(abs(ContratosTotal-Posit
   XRay("vendaContinua",vendaContinua,"venda");
   XRay("bolVender",bolVender,"venda");
   XRay("MetaAtual",true,"venda",resultadoTotalDia);
+  XRay("(bolSinalVenda or BolSinalSemDirecao)",(bolSinalVenda or BolSinalSemDirecao),"venda");
+  XRay("(not bolFiltro50FluxoVenda)",(not bolFiltro50FluxoVenda),"venda");  
   end;
-
 
 end;//fim dias retroativos
 
