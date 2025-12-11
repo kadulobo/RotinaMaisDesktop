@@ -162,10 +162,15 @@ Var
    bolAgressaoForteCompra : boolean;
    bolAgressaoForteVenda  : boolean;
 
-     bolLateral:boolean;
+   bolLateral:boolean;
    bolParaPorResultadoNegativo:boolean;
-     SatrVenda, SatrCompra: float;
+   SatrVenda, SatrCompra: float;
    bolAtrVendaAtivo, bolAtrCompraAtivo: boolean;
+   linha:integer;
+   precoCompra_1,precoCompra_2,precoCompra_3:float;
+   precoVenda_1,precoVenda_2,precoVenda_3:float;
+   bolCandleBaixa , bolCandleALta:boolean;
+   bolSinalCompra, bolSinalVenda, BolSinalSemDirecao:boolean;
   // -----------------------------------------------------------------------------
 
 
@@ -208,14 +213,7 @@ bolLateral:= (abertura[0]=abertura[1]) and (abertura[1]=abertura[2])and (abertur
 
  
 
-  // Exemplo de uso visual
-  if canalAlta then
-    PaintBar(clLime)
-  else if canalBaixa then
-    PaintBar(clRed)
-  else if canalAlta and not canalBaixa then
-    PaintBar(clYellow);
-
+ 
   
 //--- cálculo dos resultados
 resultadoFechadoDia := DailyResult(false);                // só trades fechados
@@ -335,13 +333,6 @@ end;
     // ATR Stop: venda (linha superior) e compra (linha inferior)
   
   
-
-   if(StopAtr(7, 20, 0)|1|=1)entao
-   PaintBar(clRed)
-   else
-   PaintBar(clLime);
-
-
 
 
   // =================== INICIO LOGICA BANDAS KELTNER E PLOT =======================
@@ -643,7 +634,109 @@ end;
     consecutivosAcima  := 0;
     consecutivosAbaixo := 0;
   end;
+  
+   se ((StopAtr(7, 20, 0)|1|=1)=false) entao
+   SatrCompra:=StopAtr(7, 20, 0)|0|
+   else 
+   SatrVenda:=StopAtr(7, 20, 0)|0|;
+
+  // se(fechamento[0]>SatrCompra) and ((StopAtr(7, 20, 0)|1|=1)=false) entao
+  // PaintBar(clLime);
+
+  bolSinalCompra:= (SatrCompra>0) and (fechamento[0]>SatrCompra) and ((SatrVenda>0) and (fechamento[0]<SatrVenda)=false);
+  bolSinalVenda:= (SatrVenda>0) and (fechamento[0]<SatrVenda) and ((SatrCompra>0) and (fechamento[0]>SatrCompra)=false);
+  BolSinalSemDirecao := not bolSinalCompra and not bolSinalVenda;
+   se bolSinalCompra entao
+   PaintBar(clLime);
+
+  se bolSinalVenda  entao
+   PaintBar(clRed);
+
+   se BolSinalSemDirecao entao
+   PaintBar(clPurple);
 
 
+
+ //  se(StopAtr(7, 20, 0)|1|=1) and (fechamento[0]<SatrCompra)  entao
+  // PaintBar(clRed);
+
+
+   se (bolSinalCompra) entao
+ begin
+  SatrCompra:=StopAtr(7, 20, 0)|0|;
+  precoCompra_1:=SatrCompra+50;
+  precoCompra_2:= SatrCompra+150;
+  precoCompra_3:= SatrCompra+600;
+ end;
+
+
+
+  if(bolSinalCompra  or BolSinalSemDirecao) entao
+    begin
+
+  if (abertura[0]<fechamento[0]) 
+                      and (bolAMercadoNivel1) 
+                      and   (AccAgressSaldo(1)[1] >= 60000)
+                      and (bolLateral=false) 
+                      and (fechamento[0]>=precoCompra_3) entao
+   PlotText("Nivel _ 1",clGreen);  
+
+  
+   if (abertura[0]>fechamento[0]) 
+                                  and (bolAMercadoNivel2) 
+                                  and (bolLateral=false) 
+                                  and (fechamento[0]>=precoCompra_2)
+                                  and (fechamento[0]<=precoCompra_3) 
+                                  and (not bolFiltro50FluxoCompra)   entao
+   PlotText("Nivel _ 2",clGreen);  
+
+  if  (bolAMercadoNivel3) 
+                                  and (bolLateral=false) 
+                                  and (fechamento[0]>=precoCompra_1)
+                                  and (fechamento[0]<=precoCompra_2)
+                                  and (not bolFiltro50FluxoCompra)   entao
+   PlotText("Nivel _ 3",clGreen);  
+
+end;
+
+
+   se (bolSinalVenda) entao
+ begin
+  SatrVenda:=StopAtr(7, 20, 0)|0|;
+  precoVenda_1:=SatrVenda-50;
+  precoVenda_2:= SatrVenda-150;
+  precoVenda_3:= SatrVenda-600;
+ end;
+
+ if(bolSinalVenda) or (BolSinalSemDirecao) entao
+  begin
+
+  bolCandleBaixa := (abertura[0]>fechamento[0]);
+  bolCandleALta  :=   (abertura[0]<fechamento[0]);
+
+  if             bolCandleBaixa
+                      and (bolAMercadoNivel1) 
+                      and   (AccAgressSaldo(1)[1] <= -60000)
+                      and (bolLateral=false) 
+                      and (fechamento[0]<=precoVenda_3) entao
+   PlotText("Nivel _ 1",clRed);  
+
+  
+   if bolCandleALta 
+                                  and (bolAMercadoNivel2) 
+                                  and (bolLateral=false) 
+                                  and (fechamento[0]<=precoVenda_2)
+                                  and (fechamento[0]>=precoVenda_3) 
+                                  and (not bolFiltro50FluxoCompra)   entao
+   PlotText("Nivel _ 2",clRed);  
+
+  if  (bolAMercadoNivel3) 
+                                  and (bolLateral=false) 
+                                  and (fechamento[0]<=precoVenda_1)
+                                  and (fechamento[0]>=precoVenda_2)
+                                  and (not bolFiltro50FluxoCompra)   entao
+   PlotText("Nivel _ 3",clRed);  
+
+end;
 
 end;
