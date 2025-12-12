@@ -171,6 +171,9 @@ Var
    precoVenda_1,precoVenda_2,precoVenda_3:float;
    bolCandleBaixa , bolCandleALta:boolean;
    bolSinalCompra, bolSinalVenda, BolSinalSemDirecao:boolean;
+    arrayC: array[0..2] of float;
+  arrayS: array[0..2] of float;
+  arrayII: array[0..2] of float;
   // -----------------------------------------------------------------------------
 
 
@@ -277,20 +280,33 @@ end;
   end;
   // =================== FIM LOGICA CONTROLE GERAL E RESET =========================
   
+ // Captura os valores atuais do canal de regressão linear
   c := LinearRegressionChannel(60, true, 2.0, true, 2.0)|0|;
   s := LinearRegressionChannel(60, true, 2.0, true, 2.0)|1|;
   ii := LinearRegressionChannel(60, true, 2.0, true, 2.0)|2|;
 
-  canalAlta  := false;
-  canalBaixa := false;
+  // Shift dos valores antigos para manter histórico
+  arrayC[2] := arrayC[1];
+  arrayC[1] := arrayC[0];
+  arrayC[0] := c;
 
-  // Canal subindo (inclinação positiva)
-  if c[1] > c[2] then
-    canalAlta := true;
+  arrayS[2] := arrayS[1];
+  arrayS[1] := arrayS[0];
+  arrayS[0] := s;
 
-  // Canal caindo (inclinação negativa)
-  if c[1] < c[2] then
-    canalBaixa := true;
+  arrayII[2] := arrayII[1];
+  arrayII[1] := arrayII[0];
+  arrayII[0] := ii;
+
+  // Verifica se os 3 últimos valores estão em alta
+  canalAlta := (arrayC[0] > arrayC[1]) and (arrayC[1] > arrayC[2])
+           and (arrayS[0] > arrayS[1]) and (arrayS[1] > arrayS[2])
+           and (arrayII[0] > arrayII[1]) and (arrayII[1] > arrayII[2]);
+
+  // Verifica se os 3 últimos valores estão em baixa
+  canalBaixa := (arrayC[0] < arrayC[1]) and (arrayC[1] < arrayC[2])
+            and (arrayS[0] < arrayS[1]) and (arrayS[1] < arrayS[2])
+            and (arrayII[0] < arrayII[1]) and (arrayII[1] < arrayII[2]);
 
  
 
@@ -492,7 +508,7 @@ begin
       begin
          nivel50FluxoBaixa := inicioFluxoBaixa - (inicioFluxoBaixa - fundoFluxoBaixa) * 0.2;
           PlotText(inicioFluxoBaixa - fundoFluxoBaixa,clYellow,0,8); 
-      end;
+      end;              
    
   end;
 end;
@@ -522,7 +538,7 @@ begin
     if (contadorAltas >= 2) then
     begin
      nivel50FluxoAlta := inicioFluxoAlta + (topoFluxoAlta - inicioFluxoAlta) * 0.2;
-    PlotText(topoFluxoAlta - inicioFluxoAlta,clYellow,2,8); 
+      PlotText(topoFluxoAlta - inicioFluxoAlta,clYellow,2,8); 
     end;
      
   end;
@@ -666,36 +682,42 @@ end;
   SatrCompra:=StopAtr(7, 20, 0)|0|;
   precoCompra_1:=SatrCompra+50;
   precoCompra_2:= SatrCompra+150;
-  precoCompra_3:= SatrCompra+600;
+  precoCompra_3:= SatrCompra+350;
  end;
 
 
 
-  if(bolSinalCompra  or BolSinalSemDirecao) entao
+  if(bolSinalCompra or BolSinalSemDirecao)  entao
     begin
+   
+    bolCandleBaixa := (abertura[0]>fechamento[0]);
+    bolCandleALta  :=   (abertura[0]<fechamento[0]);
 
-  if (abertura[0]<fechamento[0]) 
-                      and (bolAMercadoNivel1) 
-                      and   (AccAgressSaldo(1)[1] >= 60000)
-                      and (bolLateral=false) 
-                      and (fechamento[0]>=precoCompra_3) entao
-   PlotText("Nivel _ 1",clGreen);  
+  if  bolCandleBaixa
+                         and (bolAMercadoNivel3) 
+                    //  and   (AccAgressSaldo(1)[1] >= 60000)
+                        // and (bolLateral=false)
+                         and (fechamento[0]>=precoCompra_3) 
+                         and (fechamento[0]>precoCompra_2) entao
+   PlotText("Nivel _ 3",clGreen);  
 
   
-   if (abertura[0]>fechamento[0]) 
+   if  bolCandleBaixa
                                   and (bolAMercadoNivel2) 
-                                  and (bolLateral=false) 
+                                //and (bolLateral=false) 
                                   and (fechamento[0]>=precoCompra_2)
-                                  and (fechamento[0]<=precoCompra_3) 
-                                  and (not bolFiltro50FluxoCompra)   entao
+                                  and (fechamento[0]<precoCompra_3) 
+                                // and (not bolFiltro50FluxoCompra) 
+                                    entao
    PlotText("Nivel _ 2",clGreen);  
 
-  if  (bolAMercadoNivel3) 
-                                  and (bolLateral=false) 
+  if   bolCandleBaixa             and (bolAMercadoNivel1) 
+                                //  and (bolLateral=false) 
+                                  and (fechamento[0]<precoCompra_2)
                                   and (fechamento[0]>=precoCompra_1)
-                                  and (fechamento[0]<=precoCompra_2)
-                                  and (not bolFiltro50FluxoCompra)   entao
-   PlotText("Nivel _ 3",clGreen);  
+                                //   and (not bolFiltro50FluxoCompra) 
+                                   entao
+   PlotText("Nivel _ 1",clGreen);  
 
 end;
 
@@ -705,36 +727,38 @@ end;
   SatrVenda:=StopAtr(7, 20, 0)|0|;
   precoVenda_1:=SatrVenda-50;
   precoVenda_2:= SatrVenda-150;
-  precoVenda_3:= SatrVenda-600;
+  precoVenda_3:= SatrVenda-350;
  end;
 
- if(bolSinalVenda) or (BolSinalSemDirecao) entao
+ if(bolSinalVenda or BolSinalSemDirecao)   entao
   begin
 
   bolCandleBaixa := (abertura[0]>fechamento[0]);
   bolCandleALta  :=   (abertura[0]<fechamento[0]);
 
-  if             bolCandleBaixa
+  if             bolCandleALta
                       and (bolAMercadoNivel1) 
-                      and   (AccAgressSaldo(1)[1] <= -60000)
-                      and (bolLateral=false) 
-                      and (fechamento[0]<=precoVenda_3) entao
+                     // and   (AccAgressSaldo(1)[1] <= -60000)
+                      //and (bolLateral=false) 
+                      and (fechamento[0]>precoVenda_2)
+                      and (fechamento[0]<=precoVenda_1) entao
    PlotText("Nivel _ 1",clRed);  
 
   
    if bolCandleALta 
                                   and (bolAMercadoNivel2) 
-                                  and (bolLateral=false) 
+                                  //and (bolLateral=false) 
                                   and (fechamento[0]<=precoVenda_2)
                                   and (fechamento[0]>=precoVenda_3) 
-                                  and (not bolFiltro50FluxoVenda)   entao
+                                   // and (not bolFiltro50FluxoVenda)
+                                    entao
    PlotText("Nivel _ 2",clRed);  
 
-  if  (bolAMercadoNivel3) 
-                                  and (bolLateral=false) 
-                                  and (fechamento[0]<=precoVenda_1)
-                                  and (fechamento[0]>=precoVenda_2)
-                                  and (not bolFiltro50FluxoVenda)   entao
+  if                             bolCandleALta and (bolAMercadoNivel3) 
+                                  //and (bolLateral=false) 
+                                  and (fechamento[0]<=precoVenda_3) 
+                               //    and (not bolFiltro50FluxoVenda)
+                                     entao
    PlotText("Nivel _ 3",clRed);  
 
 end;
