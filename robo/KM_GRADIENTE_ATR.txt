@@ -24,13 +24,13 @@
 Input
 DiasRetroativos(100);
 Contratos(1);
-Bandas_Max40(10);
+Bandas_Max40(12);
 VariaçãoEmTicks(true);
 __VariaçãoTicks(19);
 HorarioInicio(0901);
 HorarioDayTrade(1700);
 CorDaLinhaDeStop(65535);
-AlvoDiário_Financeiro(1500);
+AlvoDiário_Financeiro(1000);
 
 var
 SatrCompra,SatrVenda,InicioGradeCompra, Tick, vStop, acumDif, preçoMedio : float;
@@ -74,8 +74,11 @@ begin
    
    if Date <> Date[1] then bolPrimeiraCompra :=false;
 
+   if((AgressionVolBuy > AgressionVolSell * 1.5))entao
+   PaintBar(clBlue);
 
-
+    if FinancialLock(AlvoDiário_Financeiro) then
+    ClosePosition;
 
 
 
@@ -118,10 +121,8 @@ begin
           Begin
             Begin
              // vBandsUp[i + 1] := (SatrCompra + (i * (Tick * __VariaçãoTicks)));
-              if(i>=Bandas_Max40/2)entao
-              vBandsDown[i + 1] := (InicioGradeCompra - (i * (Tick * __VariaçãoTicks)))else
-              vBandsDown[i + 1] := (InicioGradeCompra - (i * ( Tick * __VariaçãoTicks*3)));
-              Plotn(i + 1, vBandsUp[i+1]);
+              vBandsDown[i + 1] := (InicioGradeCompra - (i * (Tick * __VariaçãoTicks)));
+              //Plotn(i + 1, vBandsUp[i+1]);
               Plotn(i + (vMaxBand+2), vBandsDown[i+1]);
             End;
           End;
@@ -166,7 +167,7 @@ begin
   //-------------------------------------------------------------------------------------
   // BLOCO 2: Regras de Entrada (quando não há posição)
   //-------------------------------------------------------------------------------------
-  If (not HasPosition)  e TradingAllowed e (not FinancialLock(AlvoDiário_Financeiro)) e ((StopAtr(7, 20, 0)|1|=1)=false) then
+  If (not HasPosition)  and (AgressionVolBuy > AgressionVolSell * 1.5) e TradingAllowed e (not FinancialLock(AlvoDiário_Financeiro)) e ((StopAtr(7, 20, 0)|1|=1)=false) then
     Begin    
 //     If (Close >= vBandsDown[2]) e (Close <= vBandsUp[2]) then
 //        Begin
@@ -185,7 +186,8 @@ begin
         //--------------------------------------------------------------
         for i := vPosition to (vMaxBand-2) do
           Begin
-            nGrid := vBandsDown[i + 2];   
+            nGrid := vBandsDown[i + 2]; 
+            if  (AgressionVolBuy > AgressionVolSell * 1.5) entao  
             BuyLimit(nGrid, Contratos);
           End;
     
