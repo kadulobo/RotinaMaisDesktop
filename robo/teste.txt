@@ -30,6 +30,7 @@ __VariaçãoTicks(15);
 HorarioInicio(0901);
 HorarioDayTrade(1700);
 CorDaLinhaDeStop(65535);
+quantosManter(1);
 AlvoDiário_Financeiro(10000);
 
 var
@@ -184,8 +185,8 @@ begin
         //--------------------------------------------------------------     
         // Posicionamento das ordens Entrada nos respectivos Arrays
         //--------------------------------------------------------------
-        if(SatrCompra>fechamento[0]) e (BuyPosition>contratos) entao
-        SellToCoverLimit(BuyPrice+40, BuyPosition-Contratos);
+        if(fechamento[0]<BuyPrice) e (BuyPosition>contratos) entao
+        SellToCoverLimit(BuyPrice+40, BuyPosition-quantosManter);
 
       end;
 
