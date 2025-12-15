@@ -163,21 +163,8 @@ begin
         SetPlotColor((vMaxBand+1)*2, CorDaLinhaDeStop);        
         SetPlotStyle((vMaxBand+1)*2, 1);        
                   
-  //-------------------------------------------------------------------------------------
-  // BLOCO 2: Regras de Entrada (quando não há posição)
-  //-------------------------------------------------------------------------------------
-  If (not HasPosition)  e TradingAllowed e (not FinancialLock(AlvoDiário_Financeiro)) e ((StopAtr(7, 20, 0)|1|=1)=false) then
-    Begin    
-//     If (Close >= vBandsDown[2]) e (Close <= vBandsUp[2]) then
-//        Begin
-//          BuyLimit(vBandsDown[2], Contratos);
-//          SellShortLimit(vBandsUp[2], Contratos);
-        BuyAtMarket(1);
-        bolPrimeiraCompra:=true;
-  End;
 
-    
-    If IsBought  then  // Se Comprado
+    If TimeOk  then  // Se Comprado
       Begin
         vPosition := BuyPosition / Contratos;  // v2.3 - Correção do bug de pular níveis quanto aumentava os contratos
         //--------------------------------------------------------------     
@@ -185,24 +172,13 @@ begin
         //--------------------------------------------------------------
         for i := vPosition to (vMaxBand-2) do
           Begin
-            nGrid := vBandsDown[i + 2];   
+            nGrid := vBandsDown[i + 2];
+            if(fechamento[0]>nGrid)entao   
             BuyLimit(nGrid, Contratos);
           End;
     
-        //--------------------------------------------------------------     
-        // Posicionamento das ordens Entrada nos respectivos Arrays
-        //--------------------------------------------------------------
-        for i := 0 to (vPosition -1) do // v2.1 - Correção do loop
-          Begin
-            nGrid := vBandsDown[i + 1];
-            SellToCoverLimit(nGrid, Contratos);
-          //--------------------------------------------------------------
-          // Posicionamento do Stop no Final do Array - Atualização v2.1
-          //--------------------------------------------------------------
-            vStop := vBandsDown[vMaxBand] - (vBandsDown[1] - vBandsDown[2]);
-            SellToCoverStop(vStop, vStop, BuyPosition);
-          End;
-    
+           vStop := vBandsDown[vMaxBand] - (vBandsDown[1] - vBandsDown[2]);
+           SellToCoverStop(vStop, vStop, BuyPosition); 
       end;
 
   end;
