@@ -28,10 +28,10 @@ Input
   Versao("18:10 11/12/2025"); // controle de versão              
   bolComprar(true);                    // habilita/desabilita operações de COMPRA
   bolVender(false);                    // habilita/desabilita operações de VENDA
-  ContratosTotal(3);                   // número de contratos por entrada
-  MetaDiaria(250.0);  // valor da meta em R$ ou pontos, como você usar aí
-  MetaLossPorPeriodo(750);
-  DiasRetroativos(10);
+  ContratosTotal(2);                   // número de contratos por entrada
+  MetaDiaria(25000.0);  // valor da meta em R$ ou pontos, como você usar aí
+  MetaLossPorPeriodo(75000);
+  DiasRetroativos(1000);
   bolTerceiraMetaProAgressao(false);
   bolAMercadoNivel1(true);
   bolAMercadoNivel2(true);
@@ -633,7 +633,7 @@ begin
   begin
     fluxoAltaAtivo := false;
     if (contadorAltas >= 2) then
-      nivel50FluxoAlta := inicioFluxoAlta + (topoFluxoAlta - inicioFluxoAlta) * 0.8;
+      nivel50FluxoAlta := inicioFluxoAlta + (topoFluxoAlta - inicioFluxoAlta) * 0.2;
   end;
 end;
 
@@ -729,23 +729,22 @@ end;
   bolSinalVenda:= (SatrVenda>0) and (fechamento[0]<SatrVenda) and ((SatrCompra>0) and (fechamento[0]>SatrCompra)=false);
   BolSinalSemDirecao := not bolSinalCompra and not bolSinalVenda;
 
-   se bolSinalCompra entao
+   se (bolSinalCompra) entao
  begin
   SatrCompra:=StopAtr(7, 20, 0)|0|;
   precoCompra_1:=SatrCompra+50;
   precoCompra_2:= SatrCompra+150;
-  precoCompra_3:= SatrCompra+600;
+  precoCompra_3:= SatrCompra+350;
  end;
 
 
-  se bolSinalVenda entao
+   se (bolSinalVenda) entao
  begin
   SatrVenda:=StopAtr(7, 20, 0)|0|;
   precoVenda_1:=SatrVenda-50;
   precoVenda_2:= SatrVenda-150;
-  precoVenda_3:= SatrVenda-600;
+  precoVenda_3:= SatrVenda-350;
  end;
-
 
  //========================Entrada========================================
   //O codigo precisa rodar das 900 até 1800 , porém minhas entradas de posicao só
@@ -754,38 +753,38 @@ end;
   and bolComprar and (bolSinalCompra  or BolSinalSemDirecao)  entao
  begin
 
+    bolCandleBaixa := (abertura[0]>fechamento[0]);
+    bolCandleALta  :=   (abertura[0]<fechamento[0]);
 
-  if (abertura[0]<fechamento[0]) 
-                      and (bolAMercadoNivel1) 
-                      and   (AccAgressSaldo(1)[1] >= 60000)
-                      and (bolLateral=false) 
-                      and (fechamento[0]>=precoCompra_3)  
-                      and (Position<ContratosTotal)
-                      and not(HasPosition) entao
+if  bolCandleBaixa
+                         and (bolAMercadoNivel3) 
+                         and (fechamento[0]>=precoCompra_3) 
+                         and (fechamento[0]>precoCompra_2)  and(not HasPosition)     entao
 
    BuyAtMarket(ContratosTotal)else 
 
   
-if (abertura[0]>fechamento[0]) 
+   if  bolCandleBaixa
                                   and (bolAMercadoNivel2) 
-                                  and (bolLateral=false) 
                                   and (fechamento[0]>=precoCompra_2)
-                                  and (fechamento[0]<=precoCompra_3) 
-                                  and (not bolFiltro50FluxoCompra)  
-                                  and (Position <= ContratosTotal * 2) 
+                                  and (fechamento[0]<precoCompra_3)  
+                                // and (not bolFiltro50FluxoCompra)  
+                                  and  (abs(Position) < ContratosTotal*3) 
+                                  and not bolFiltro50FluxoCompra 
                                   entao
 
  BuyAtMarket(ContratosTotal)else
 
   
 
-  if  (bolAMercadoNivel3) 
-                                  and (bolLateral=false) 
-                                  and (fechamento[0]>=precoCompra_1)
-                                  and (fechamento[0]<=precoCompra_2)
-                                  and (not bolFiltro50FluxoCompra) 
-                                  and (not bolFiltro50FluxoCompra)   entao
+  if   bolCandleBaixa                and (bolAMercadoNivel1) 
+                                  and (fechamento[0]<precoCompra_2)
+                                  and (fechamento[0]>=precoCompra_1)   
+                                  and  (abs(Position) < ContratosTotal*4) 
+                                  and not bolFiltro50FluxoCompra  entao
    BuyAtMarket(ContratosTotal);
+
+   
 
 end;
 
@@ -796,38 +795,70 @@ end;
  begin
 
    bolCandleBaixa := (abertura[0]>fechamento[0]);
-  bolCandleALta  :=   (abertura[0]<fechamento[0]);
+   bolCandleALta  :=   (abertura[0]<fechamento[0]);
 
-  if                   bolCandleBaixa
-                      and (bolAMercadoNivel1) 
-                      and   (AccAgressSaldo(1)[1] <= -60000)
-                      and (bolLateral=false) 
-                      and (fechamento[0]<=precoVenda_3)
-                      and (not HasPosition)
-                       entao
+  if                  bolCandleALta
+                      and (bolAMercadoNivel1)  
+                             and (fechamento[0]>precoVenda_2)
+                             and (fechamento[0]<=precoVenda_1)  
+                             and (abs(Position) < ContratosTotal*4) 
+                             and not bolFiltro50FluxoCompra  entao
    SellShortAtMarket(ContratosTotal)else 
 
   
    if bolCandleALta 
                                   and (bolAMercadoNivel2) 
-                                  and (bolLateral=false) 
                                   and (fechamento[0]<=precoVenda_2)
-                                  and (fechamento[0]>=precoVenda_3) 
-                                  and (not bolFiltro50FluxoVenda) 
-                                  and (abs(Position) <= ContratosTotal * 2) 
+                                  and (fechamento[0]>=precoVenda_3)  
+                                  and ((abs(Position) < ContratosTotal*3)  )
+                                  and not bolFiltro50FluxoCompra    
                                   entao
   SellShortAtMarket(ContratosTotal)else
 
-  if  (bolAMercadoNivel3) 
-                                  and (bolLateral=false) 
-                                  and (fechamento[0]<=precoVenda_1)
-                                  and (fechamento[0]>=precoVenda_2)
-                                  and (not bolFiltro50FluxoVenda)   entao
+  if  bolCandleALta                 and (bolAMercadoNivel3) 
+                                  and (fechamento[0]<=precoVenda_3) 
+                                  and(not HasPosition)   entao
   SellShortAtMarket(ContratosTotal); 
+
+ 
+
+ end;
+
+   
+ if(IsBought)entao
+ begin
+
+
+   // ✅ Ordem adicional limite se já tiver 4 contratos, com validação de Stop
+  //if IsBought and (abs(Position) = ContratosTotal*4) and (SatrCompra > 0) then
+  //  BuyLimit(SatrCompra+100, ContratosTotal*6);
+
+  if(IsBought) and (abs(Position)<=ContratosTotal*4) entao
+  SellToCoverLimit(BuyPrice+75,abs(Position));
+
+    if(IsBought) and (abs(Position)>ContratosTotal*4) entao
+  SellToCoverLimit(BuyPrice+50,abs(Position));
+  
+  SellToCoverStop(SatrCompra-200,SatrCompra-250,abs(Position));
 
  end;
 
 
+ if(IsSold) entao
+ begin
+
+    // ✅ Ordem adicional limite se já tiver 4 contratos, com validação de Stop
+  if IsSold and (abs(Position) = 4) and (SatrVenda > 0) then
+    SellShortLimit(SatrVenda-100, 6); 
+
+  if(abs(Position)<=4) entao
+  BuyToCoverLimit(SellPrice-75,abs(Position));
+
+   if(abs(Position)>4) entao
+  BuyToCoverLimit(SellPrice-50,abs(Position)); 
+
+  BuyToCoverStop(SatrVenda+250,SatrVenda+300,abs(Position));
+ end;
 
    se(bolComprar)entao
   begin
