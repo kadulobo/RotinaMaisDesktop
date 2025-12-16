@@ -22,16 +22,18 @@
 }
 
 Input
-DiasRetroativos(100);
+DiasRetroativos(300);
 Contratos(1);
-Bandas_Max40(10);
+Bandas_Max40(30);
 VariaçãoEmTicks(true);
-__VariaçãoTicks(40);
-HorarioInicio(0901);
-HorarioDayTrade(1700);
+__VariaçãoTicks(30);
+HorarioInicio(1031);
+HorarioDayTrade(1800);
 CorDaLinhaDeStop(65535);
-AlvoDiário_Financeiro(10000);
-
+quantosManter(5);
+AlvoDiário_Financeiro(1000);
+stopAtrDesvio(4);
+qtdPontosAPegar(40);
 var
 SatrCompra,SatrVenda,InicioGradeCompra, Tick, vStop, acumDif, preçoMedio : float;
 vBandsUp : array[1..40] of float;
@@ -42,7 +44,7 @@ Volq, sSumVol, sSum, nVWAP : float;
 vClose : float;
 sData : string;
 bValue, VwapTimeOk, VwapDateOk : boolean;
-bolSinalCompra, bolSinalVenda, bolSinalSemDirecao,bolPrimeiraCompra:boolean;
+bolSinalCompra, bolSinalVenda, bolSinalSemDirecao,bolPrimeiraCompra,bolTravarCompra:boolean;
 
 
 Function FinancialLock(AlvoDiário_Financeiro : float) : boolean;
@@ -72,36 +74,39 @@ begin
     
     Volq := AgressionVolBuy + AgressionVolSell;
    
-   if Date <> Date[1] then bolPrimeiraCompra :=false;
+   if Date <> Date[1] then bolTravarCompra :=false;
 
-
-
-
-
-
-   if IsBought and bolPrimeiraCompra=true then bolPrimeiraCompra:=false;
   
      //INICIO ATRIBUICAO DE ATR//
-    se ((StopAtr(7, 20, 0)|1|=1)=false) entao
-     SatrCompra:=StopAtr(7, 20, 0)|0|
+    se ((StopAtr(stopAtrDesvio, 20, 0)|1|=1)=false) entao
+     SatrCompra:=StopAtr(stopAtrDesvio, 20, 0)|0|
     else 
-     SatrVenda:=StopAtr(7, 20, 0)|0|;
+     SatrVenda:=StopAtr(stopAtrDesvio, 20, 0)|0|;
     
     bolSinalCompra:= (SatrCompra>0) and (fechamento[0]>SatrCompra) and ((SatrVenda>0) and (fechamento[0]<SatrVenda)=false);
     bolSinalVenda:= (SatrVenda>0) and (fechamento[0]<SatrVenda) and ((SatrCompra>0) and (fechamento[0]>SatrCompra)=false);
     bolSinalSemDirecao := not bolSinalCompra and not bolSinalVenda;
 
    se bolSinalCompra entao
-     SatrCompra:=StopAtr(7, 20, 0)|0|;
+     SatrCompra:=StopAtr(stopAtrDesvio, 20, 0)|0|;
 
    se bolSinalVenda entao
-     SatrVenda:=StopAtr(7, 20, 0)|0|;
+     SatrVenda:=StopAtr(stopAtrDesvio, 20, 0)|0|;
 
-    InicioGradeCompra:=SatrCompra+650;
+    InicioGradeCompra:=SatrCompra;
+
+    if(bolSinalVenda)entao
+    begin
+    bolTravarCompra:=true;
+    end;
+
+    if(bolTravarCompra) e ((StopAtr(stopAtrDesvio, 20, 0)|1|=1)=false) entao
+      bolTravarCompra:=false;
+
 
     //vVwap := Vwap(1);
     Tick := MinPriceIncrement;
-    TimeOk := (Time >= HorarioInicio) e (Time <= HorarioDayTrade);
+    TimeOk := (Time >= HorarioInicio) e (Time <= HorarioDayTrade)e (Date > CalcDate(CurrentAssetDate, -DiasRetroativos));
        TradingAllowed := TimeOk e (Date > CalcDate(CurrentAssetDate, -DiasRetroativos));
 
     if not TradingAllowed then ClosePosition;
@@ -112,15 +117,16 @@ begin
     //-------------------------------------------------------------------------------------
 
     // Cálculo e plotagem das VWAP Bands
-    If TradingAllowed  then
+    If TimeOk   then
       Begin     
         for i := 0 to vMaxBand do
           Begin
             Begin
-             // vBandsUp[i + 1] := (SatrCompra + (i * (Tick * __VariaçãoTicks)));
-             if((InicioGradeCompra - (i * (Tick * __VariaçãoTicks)))>SatrCompra)entao
-              vBandsDown[i + 1] := (InicioGradeCompra - (i * (Tick * __VariaçãoTicks)))else
-              vBandsDown[i + 1] := (InicioGradeCompra - (i * (Tick * 60)));
+
+               vBandsDown[i + 1] :=
+                ((InicioGradeCompra+((Tick * __VariaçãoTicks)*(vMaxBand/2)))
+                 - (i * (Tick * __VariaçãoTicks)));
+
               //Plotn(i + 1, vBandsUp[i+1]);
               Plotn(i + (vMaxBand+2), vBandsDown[i+1]);
             End;
@@ -173,12 +179,22 @@ begin
         for i := vPosition to (vMaxBand-2) do
           Begin
             nGrid := vBandsDown[i + 2];
-            if(fechamento[0]>nGrid)entao   
+            if(fechamento[0]>nGrid) entao   
             BuyLimit(nGrid, Contratos);
+             
           End;
     
            vStop := vBandsDown[vMaxBand] - (vBandsDown[1] - vBandsDown[2]);
            SellToCoverStop(vStop, vStop, BuyPosition); 
+      end;
+
+       If IsBought then  // Se Comprado
+      Begin
+        //--------------------------------------------------------------     
+        // Posicionamento das ordens Entrada nos respectivos Arrays
+        //--------------------------------------------------------------
+        if(fechamento[0]<BuyPrice) e (BuyPosition>contratos) entao
+        SellToCoverLimit(BuyPrice+qtdPontosAPegar, BuyPosition-quantosManter);
       end;
 
   end;
