@@ -1,0 +1,217 @@
+{
+// Atualização v2.1 > -----------------------------------------------------------------
+    1 - Acrescentada uma Ordem de Stop após o último nível da VwapBands;
+    2 - Correção do loop de posicionamento das Ordens de Saída;
+        2.1 - Agora é possível fazer backtests com o setup;
+    3 - Adicionado Horário de Início e Fim de execução
+        3.1 - Função adicionada para aumentar as possibilidades no BackTest;
+
+// Atualização v2.2 > -----------------------------------------------------------------
+    1 - Aumentada a quantidade de canais para 40;
+    2 - Adicionado o Input "TipoVwap" para escolher entre as vwaps Diária, Semanal e Mensal;
+
+// Atualização v3.0 > -----------------------------------------------------------------
+    1 - Corrigido o problema quando se usava mais que 1 contrato (ele pulava os níveis da vwap);
+    2 - Adicionada a possibilidade de usar uma barra de referência e a vwap bands será traçada
+        a partir desse candle referenciado.
+        2.1 - Para usar nesse modo, coloque o Input "TipoVwap" = 4; 
+        2.2 - Então, utilize os parâmetros "__DataRef_AAMMDD" e "__TimeRef" para definir a Data e Hora do candle
+        referencia.
+        2.3 - Essa opção já se utiliza da nova função " VwapDate " implementada recentemente pela Nelogica;
+//-------------------------------------------------------------------------------------
+}
+
+Input
+
+DiasRetroativos(300);
+Contratos(1);
+Bandas_Max40(10);
+VariaçãoEmTicks(true);
+__VariaçãoTicks(40);
+HorarioInicio(900);
+HorarioDayTrade(1800);
+CorDaLinhaDeStop(65535);
+quantosManter(2);
+AlvoDiário_Financeiro(1000);
+stopAtrDesvio(4);
+qtdPontosAPegar(80);
+periodo(20);
+var
+SatrCompra,SatrVenda,InicioGradeCompra, Tick, vStop, acumDif, preçoMedio : float;
+vBandsUp : array[1..40] of float;
+vBandsDown : array[1..40] of float;
+ordens : array[1..40] of float;
+i,iOrdem, nGridABaixo,nGridACima, vMaxBand, vPosition, vBarCount : integer;
+TimeOk ,TradingAllowed: boolean;
+Volq, sSumVol, sSum, nVWAP : float;
+vClose : float;
+sData : string;
+bValue, VwapTimeOk, VwapDateOk : boolean;
+bolSinalCompra, bolSinalVenda, bolSinalSemDirecao,bolPrimeiraCompra,bolTravarCompra:boolean;
+ValorLinhaABaixo:float;
+ValorLinhaACima:float;
+Function FinancialLock(AlvoDiário_Financeiro : float) : boolean;
+Begin
+  if (DailyResult(false) >= AlvoDiário_Financeiro) ou (DailyResult(false) < DailyResult(false)[1])  then
+    Result := true
+  else 
+    Result := false;
+End;
+
+Function BuscarOrdem(ordem : float;ArrayBuscar:array[1..40] of float) : boolean;
+var item:integer; resultado:boolean;
+Begin
+  for item:=0 to 40 do 
+  begin
+  if (ArrayBuscar[item]=ordem) entao
+   resultado :=true;
+  end;
+  result := resultado;
+End;
+
+begin
+
+
+ 
+//If Date >= CalcDate(CurrentDate, -DiasRetroativos) then
+  Begin
+    //-------------------------------------------------------------------------------------
+    // Variáveis Iniciais  
+    //-------------------------------------------------------------------------------------
+    
+    // Alteração do vMaxBands para exibir no Gráfico a Linha de Stop - Atualização v2.1
+    if Bandas_Max40 >= 40 then vMaxBand := 41 else vMaxBand := Bandas_Max40+1;
+    
+    If Time >= HorarioDayTrade then ClosePosition;
+    
+    If Date <> Date[1] then for i := 0 to (vMaxBand * 2) + 2 do NoPlot(i + 1);
+    
+    Volq := AgressionVolBuy + AgressionVolSell;
+   
+   if Date <> Date[1] then bolTravarCompra :=false;
+
+  
+     //INICIO ATRIBUICAO DE ATR//
+    se ((StopAtr(stopAtrDesvio, periodo, 0)|1|=1)=false) entao
+     SatrCompra:=StopAtr(stopAtrDesvio, periodo, 0)|0|
+    else 
+     SatrVenda:=StopAtr(stopAtrDesvio, periodo, 0)|0|;
+    
+    bolSinalCompra:= (SatrCompra>0) and (fechamento[0]>SatrCompra) and ((SatrVenda>0) and (fechamento[0]<SatrVenda)=false);
+    bolSinalVenda:= (SatrVenda>0) and (fechamento[0]<SatrVenda) and ((SatrCompra>0) and (fechamento[0]>SatrCompra)=false);
+    bolSinalSemDirecao := not bolSinalCompra and not bolSinalVenda;
+
+   se bolSinalCompra entao
+     SatrCompra:=StopAtr(stopAtrDesvio, periodo, 0)|0|;
+
+   se bolSinalVenda entao
+     SatrVenda:=StopAtr(stopAtrDesvio, periodo, 0)|0|;
+
+    InicioGradeCompra:=SatrCompra;
+
+    if(bolSinalVenda)entao
+    begin
+    bolTravarCompra:=true;
+    end;
+
+    if(bolTravarCompra) e ((StopAtr(stopAtrDesvio, periodo, 0)|1|=1)=false) entao
+      bolTravarCompra:=false;
+
+
+    //vVwap := Vwap(1);
+    Tick := MinPriceIncrement;
+    TimeOk := (Time >= HorarioInicio) e (Time <= HorarioDayTrade)e (Date > CalcDate(CurrentAssetDate, -DiasRetroativos));
+       TradingAllowed := TimeOk e (Date > CalcDate(CurrentAssetDate, -DiasRetroativos));
+
+    if not TradingAllowed then ClosePosition;
+       
+    //-------------------------------------------------------------------------------------
+    // Loop "for" para preenchimento dos Arrays com os valores 
+    // das Vwap Bands e Plotagem 
+    //-------------------------------------------------------------------------------------
+
+    // Cálculo e plotagem das VWAP Bands
+    If TimeOk   then
+      Begin     
+        for i := 0 to vMaxBand do
+          Begin
+            Begin
+
+                 ValorLinhaABaixo:= InicioGradeCompra - (i * (Tick * (__VariaçãoTicks*2)));
+
+                 ValorLinhaACima:= InicioGradeCompra + (i * (Tick * __VariaçãoTicks));
+                   
+                 vBandsDown[i + 1] :=ValorLinhaABaixo;
+
+                 vBandsUp[i - Bandas_Max40] :=ValorLinhaACima;
+
+               Plotn(i + (vMaxBand+2), vBandsUp[i- Bandas_Max40]);
+               Plotn(i +1, vBandsDown[i+1]);
+            End;
+          End;
+        plot(DailyResult(false));
+      End;
+           
+
+          
+    
+    //-------------------------------------------------------------------------------------
+    // Loop "for" para para Colorir os Plots feitos com as 
+    // estruturas controladora "downto" e "to"
+    //-------------------------------------------------------------------------------------
+    if InicioGradeCompra[1] = 0 then noplot(1);
+
+    for i := vMaxBand downto 2 do
+      Begin                                    
+        SetPlotColor(i, 255);      
+      end;                                                   
+    
+    for i := 2 to vMaxBand do SetPlotColor(i + (vMaxBand+1), clLime);  
+
+        // Adição das Configurações das Linhas de Stop - Atualização v2.1
+        SetPlotColor(vMaxBand+1, CorDaLinhaDeStop);
+        SetPlotStyle(vMaxBand+1, 1);
+        SetPlotColor((vMaxBand+1)*2, CorDaLinhaDeStop);        
+        SetPlotStyle((vMaxBand+1)*2, 1);  
+        
+   
+                  
+
+    If TimeOk  then  // Se Comprado
+      Begin
+        vPosition := BuyPosition / Contratos;  // v2.3 - Correção do bug de pular níveis quanto aumentava os contratos
+        //--------------------------------------------------------------     
+        // Posicionamento das ordens Entrada nos respectivos Arrays
+        //--------------------------------------------------------------
+     //--------------------------------------------------------------
+        for i := vPosition to vMaxBand do
+          Begin
+            nGridACima := vBandsUp[i-vMaxBand];
+            if(fechamento[0]>nGridACima) e (BuyPosition<=4) entao
+            begin
+            BuyLimit(nGridACima, Contratos); 
+            end;      
+          End;
+
+      for i := vPosition to vMaxBand do
+          Begin
+            nGridABaixo := vBandsDown[i];
+            if(fechamento[0]>nGridABaixo)  entao
+            begin
+            BuyLimit(nGridABaixo, Contratos);
+            end;      
+          End;
+            
+           vStop := vBandsDown[vMaxBand]-250;
+           SellToCoverStop(vStop, vStop, BuyPosition); 
+      end;
+     If IsBought then  // Se Comprado
+      Begin
+        //--------------------------------------------------------------     
+        // Posicionamento das ordens Entrada nos respectivos Arrays
+        //--------------------------------------------------------------
+        if(fechamento[0]<=BuyPrice)  entao
+        SellToCoverLimit(BuyPrice+qtdPontosAPegar, BuyPosition  );
+      end;
+  end;
+end;
