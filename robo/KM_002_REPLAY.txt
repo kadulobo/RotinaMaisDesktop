@@ -11,16 +11,27 @@ AtrDesvio4(4);
 
 bolSinalCompra(true);
 bolSinalVenda(false);
+quantidadeMaximaEntrada(3);
 
 periodo(20);
 Var
   Atr1, Atr2, Atr3,Atr4 : Float;
   SinalC, SinalV   : Boolean;
- amp, t, f : Float;
+  amp, t, f : Float;
+  contEntradasCompra, contEntradasVenda : Integer;
+  aguardandoCandleBaixa, aguardandoCandleAlta : Boolean;
 
 
 Begin
   amp := Round(Abs(Abertura[1] - Fechamento[1]));
+
+  Se CurrentBar = 1 entao
+  inicio
+    contEntradasCompra := 0;
+    contEntradasVenda := 0;
+    aguardandoCandleBaixa := false;
+    aguardandoCandleAlta := false;
+  fim;
 
   Se Abertura[1] > Fechamento[1] então
   inicio
@@ -66,13 +77,38 @@ Begin
 
      Se  (time >= HorarioInicio)  and  (Time <= HorarioFinal)   entao
   Inicio
-    Se SinalC  e (bolSinalCompra) e (bolSinalVenda=false)  entao
+    Se aguardandoCandleBaixa e (Abertura[1] > Fechamento[1]) entao
+    inicio
+      aguardandoCandleBaixa := false;
+      contEntradasCompra := 0;
+    fim;
+
+    Se aguardandoCandleAlta e (Fechamento[1] > Abertura[1]) entao
+    inicio
+      aguardandoCandleAlta := false;
+      contEntradasVenda := 0;
+    fim;
+
+    Se SinalC  e (bolSinalCompra) e (bolSinalVenda=false) e (aguardandoCandleBaixa=false) entao
     begin
-    BuyStop(t,t);
+      BuyStop(t,t);
+      contEntradasCompra := contEntradasCompra + 1;
+
+      Se contEntradasCompra >= quantidadeMaximaEntrada entao
+      inicio
+        aguardandoCandleBaixa := true;
+      fim;
     end;
-    Se SinalV e (bolSinalVenda) e (bolSinalCompra=false) entao 
+
+    Se SinalV e (bolSinalVenda) e (bolSinalCompra=false) e (aguardandoCandleAlta=false) entao 
     begin
-    SellShortStop(f,f);
+      SellShortStop(f,f);
+      contEntradasVenda := contEntradasVenda + 1;
+
+      Se contEntradasVenda >= quantidadeMaximaEntrada entao
+      inicio
+        aguardandoCandleAlta := true;
+      fim;
     end;
   fim;
 
