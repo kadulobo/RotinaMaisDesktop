@@ -1,0 +1,271 @@
+Const
+  HorarioInicio = 0900;
+  HorarioFinal  = 1800;
+
+Input
+  // ===== PARÂMETROS ORIGINAIS =====
+  AtrDesvio1(0.5);
+  AtrDesvio2(1);
+  AtrDesvio3(1.5);
+  AtrDesvio4(4);
+  periodo(20);
+
+  // Habilitação dos lados
+  bolSinalCompra(true);
+  bolSinalVenda(true);
+
+  // ===== NOVAS PROTEÇÕES =====
+  MaxEntradas(2);
+  ContratosPorEntrada(1);
+  MaxContratos(2);
+  DistanciaMinimaReentrada(10);
+
+  QtdMaxRenkosAltaSeguidos(6);
+  QtdMaxRenkosBaixaSeguidos(6);
+  QtdRenkosRespiro(2);
+
+  // Janelas de bloqueio de novas entradas (horário cirúrgico)
+  Janela1Inicio(0900);
+  Janela1Fim(0910);
+  Janela2Inicio(0955);
+  Janela2Fim(1005);
+  Janela3Inicio(1455);
+  Janela3Fim(1505);
+
+Var
+  // ===== INDICADORES =====
+  Atr1, Atr2, Atr3, Atr4 : Float;
+  SinalC, SinalV : Boolean;
+
+  // ===== LEITURA DE CANDLE/RENKO =====
+  amp, t, f : Float;
+  bolCandleAlta, bolCandleBaixa : Boolean;
+  bolCandleAltaAnterior, bolCandleBaixaAnterior : Boolean;
+
+  // ===== CONTROLE DE SEQUÊNCIA =====
+  intQtdRenkosAlta, intQtdRenkosBaixa : Integer;
+
+  // ===== DETECÇÃO DE REVERSÃO / RANGE TRAVADO =====
+  valorReversaoTopo, valorReversaoFundo, tmpValor : Float;
+  bolRangeTravadoAtivo, bolEntreRangeTravado : Boolean;
+
+  // ===== BLOQUEIOS DE EXPLOSÃO =====
+  bolBloqueioVendaExplosao, bolBloqueioCompraExplosao : Boolean;
+
+  // ===== REENTRADA / CONTROLE DE RISCO =====
+  contEntradasCompra, contEntradasVenda : Integer;
+  ultimoPrecoEntradaCompra, ultimoPrecoEntradaVenda : Float;
+  bolDistanciaOkCompra, bolDistanciaOkVenda : Boolean;
+  bolLimiteEntradasCompra, bolLimiteEntradasVenda : Boolean;
+  bolLimiteContratosCompra, bolLimiteContratosVenda : Boolean;
+
+  // ===== FILTRO DE HORÁRIO =====
+  bolHorarioBloqueadoEntrada : Boolean;
+
+Begin
+  // ==================================================================
+  // 1) CÁLCULO BÁSICO DE FAIXA DE DISPARO
+  // ==================================================================
+  amp := Round(Abs(Abertura[1] - Fechamento[1]));
+
+  Se Abertura[1] > Fechamento[1] então
+  Inicio
+    t := Abertura[1] + amp;
+    f := Fechamento[1] - amp;
+  fim
+  Senao
+  Inicio
+    f := Abertura[1] - amp;
+    t := Fechamento[1] + amp;
+  fim;
+
+  // ==================================================================
+  // 2) INICIALIZAÇÃO
+  // ==================================================================
+  Se CurrentBar = 1 entao
+  Inicio
+    intQtdRenkosAlta := 0;
+    intQtdRenkosBaixa := 0;
+
+    valorReversaoTopo := 0;
+    valorReversaoFundo := 0;
+    bolRangeTravadoAtivo := false;
+    bolEntreRangeTravado := false;
+
+    bolBloqueioVendaExplosao := false;
+    bolBloqueioCompraExplosao := false;
+
+    contEntradasCompra := 0;
+    contEntradasVenda := 0;
+
+    ultimoPrecoEntradaCompra := 0;
+    ultimoPrecoEntradaVenda := 0;
+  fim;
+
+  // ==================================================================
+  // 3) FECHAMENTO FORÇADO NO HORÁRIO FINAL
+  // ==================================================================
+  Se Time >= HorarioFinal entao
+    ClosePosition;
+
+  // ==================================================================
+  // 4) CÁLCULO DOS INDICADORES (BASE ORIGINAL)
+  // ==================================================================
+  Atr1 := StopAtr(AtrDesvio1, periodo, 2)|0|;
+  Atr2 := StopAtr(AtrDesvio2, periodo, 2)|0|;
+  Atr3 := StopAtr(AtrDesvio3, periodo, 2)|0|;
+  Atr4 := StopAtr(AtrDesvio4, periodo, 2)|0|;
+
+  SinalC := ((Atr1 > Atr2) e (Atr2 > Atr3)) e
+            ((Close > Atr1) e (Close > Atr2) e (Close > Atr3) e (Close > Atr4));
+
+  SinalV := ((Atr1 < Atr2) e (Atr2 < Atr3)) e
+            ((Close < Atr1) e (Close < Atr2) e (Close < Atr3) e (Close < Atr4));
+
+  se (SinalC) entao PaintBar(clGreen);
+  se (SinalV) entao PaintBar(clRed);
+
+  // ==================================================================
+  // 5) LEITURA DE CANDLE/RENKO E CONTADORES CONSECUTIVOS
+  // ==================================================================
+  bolCandleAlta := (Fechamento > Abertura);
+  bolCandleBaixa := (Fechamento < Abertura);
+  bolCandleAltaAnterior := (Fechamento[1] > Abertura[1]);
+  bolCandleBaixaAnterior := (Fechamento[1] < Abertura[1]);
+
+  Se bolCandleAlta entao
+  Inicio
+    intQtdRenkosAlta := intQtdRenkosAlta + 1;
+    intQtdRenkosBaixa := 0;
+  fim;
+
+  Se bolCandleBaixa entao
+  Inicio
+    intQtdRenkosBaixa := intQtdRenkosBaixa + 1;
+    intQtdRenkosAlta := 0;
+  fim;
+
+  // ==================================================================
+  // 6) DETECÇÃO DE REVERSÃO E RANGE TRAVADO
+  // ==================================================================
+  Se bolCandleAlta e bolCandleBaixaAnterior entao
+  Inicio
+    valorReversaoTopo := High[1];
+    valorReversaoFundo := Low;
+    bolRangeTravadoAtivo := true;
+  fim;
+
+  Se bolCandleBaixa e bolCandleAltaAnterior entao
+  Inicio
+    valorReversaoTopo := High;
+    valorReversaoFundo := Low[1];
+    bolRangeTravadoAtivo := true;
+  fim;
+
+  // Normalização de topo/fundo (garante topo >= fundo)
+  Se valorReversaoFundo > valorReversaoTopo entao
+  Inicio
+    tmpValor := valorReversaoTopo;
+    valorReversaoTopo := valorReversaoFundo;
+    valorReversaoFundo := tmpValor;
+  fim;
+
+  // CORREÇÃO OBRIGATÓRIA:
+  // Preço ENTRE topo e fundo só é verdadeiro com "e", não com "ou".
+  bolEntreRangeTravado := bolRangeTravadoAtivo e
+                          (Close <= valorReversaoTopo) e
+                          (Close >= valorReversaoFundo);
+
+  // Quando sair da faixa travada, libera a trava de range
+  Se bolRangeTravadoAtivo e ((Close > valorReversaoTopo) ou (Close < valorReversaoFundo)) entao
+    bolRangeTravadoAtivo := false;
+
+  // ==================================================================
+  // 7) BLOQUEIO DE EXPLOSÃO + LIBERAÇÃO SOMENTE APÓS RESPIRO
+  // ==================================================================
+  Se intQtdRenkosAlta >= QtdMaxRenkosAltaSeguidos entao
+    bolBloqueioVendaExplosao := true;
+
+  Se intQtdRenkosBaixa >= QtdMaxRenkosBaixaSeguidos entao
+    bolBloqueioCompraExplosao := true;
+
+  // Só libera após respiro contrário mínimo
+  Se bolBloqueioVendaExplosao e (intQtdRenkosBaixa >= QtdRenkosRespiro) entao
+    bolBloqueioVendaExplosao := false;
+
+  Se bolBloqueioCompraExplosao e (intQtdRenkosAlta >= QtdRenkosRespiro) entao
+    bolBloqueioCompraExplosao := false;
+
+  // ==================================================================
+  // 8) FILTRO DE HORÁRIO CIRÚRGICO (bloqueia apenas NOVAS entradas)
+  // ==================================================================
+  bolHorarioBloqueadoEntrada :=
+    ((Time >= Janela1Inicio) e (Time <= Janela1Fim)) ou
+    ((Time >= Janela2Inicio) e (Time <= Janela2Fim)) ou
+    ((Time >= Janela3Inicio) e (Time <= Janela3Fim));
+
+  // ==================================================================
+  // 9) RESET DE CONTADORES DE ENTRADA QUANDO FICAR ZERADO
+  // ==================================================================
+  Se (IsBought = false) entao
+  Inicio
+    contEntradasCompra := 0;
+    ultimoPrecoEntradaCompra := 0;
+  fim;
+
+  Se (IsSold = false) entao
+  Inicio
+    contEntradasVenda := 0;
+    ultimoPrecoEntradaVenda := 0;
+  fim;
+
+  // ==================================================================
+  // 10) REGRAS DE DISTÂNCIA E LIMITES (REENTRADA)
+  // ==================================================================
+  bolLimiteEntradasCompra := (contEntradasCompra < MaxEntradas);
+  bolLimiteEntradasVenda := (contEntradasVenda < MaxEntradas);
+
+  bolLimiteContratosCompra := ((contEntradasCompra * ContratosPorEntrada) < MaxContratos);
+  bolLimiteContratosVenda := ((contEntradasVenda * ContratosPorEntrada) < MaxContratos);
+
+  // Primeira entrada sempre libera distância.
+  bolDistanciaOkCompra := (contEntradasCompra = 0) ou
+                          (Close <= (ultimoPrecoEntradaCompra - DistanciaMinimaReentrada));
+
+  bolDistanciaOkVenda := (contEntradasVenda = 0) ou
+                         (Close >= (ultimoPrecoEntradaVenda + DistanciaMinimaReentrada));
+
+  // ==================================================================
+  // 11) GERAÇÃO DE ENTRADAS E REENTRADAS COM PROTEÇÕES
+  // ==================================================================
+  Se (Time >= HorarioInicio) e (Time <= HorarioFinal) entao
+  Inicio
+    // Compra: bloqueada por range, explosão de baixa, horário cirúrgico, limite e distância
+    Se SinalC e bolSinalCompra e (bolHorarioBloqueadoEntrada = false) e
+       (bolEntreRangeTravado = false) e (bolBloqueioCompraExplosao = false) e
+       bolLimiteEntradasCompra e bolLimiteContratosCompra e bolDistanciaOkCompra entao
+    Inicio
+      BuyStop(t + MinPriceIncrement, t + MinPriceIncrement);
+      contEntradasCompra := contEntradasCompra + 1;
+      ultimoPrecoEntradaCompra := Close;
+    fim;
+
+    // Venda: bloqueada por range, explosão de alta, horário cirúrgico, limite e distância
+    Se SinalV e bolSinalVenda e (bolHorarioBloqueadoEntrada = false) e
+       (bolEntreRangeTravado = false) e (bolBloqueioVendaExplosao = false) e
+       bolLimiteEntradasVenda e bolLimiteContratosVenda e bolDistanciaOkVenda entao
+    Inicio
+      SellShortStop(f - MinPriceIncrement, f - MinPriceIncrement);
+      contEntradasVenda := contEntradasVenda + 1;
+      ultimoPrecoEntradaVenda := Close;
+    fim;
+  fim;
+
+  // ==================================================================
+  // 12) PLOTS
+  // ==================================================================
+  Plot(Atr1);
+  Plot2(Atr2);
+  Plot3(Atr3);
+
+End;
