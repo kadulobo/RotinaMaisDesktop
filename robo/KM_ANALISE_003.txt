@@ -26,6 +26,7 @@ renkoAlta,renkoBaixa,renkoReversaoAlta,renkoReversaoBaixa,
 podeOperar,renkoConsecutivo,rangeNaoPodeOperar:boolean;
 valorReversaoTopo,valorReversaoFundo:float;
 bolSinalCompra,bolSinalVenda,bolEntreRengeTravado:boolean;
+bolRangeTravadoValido:boolean;
 
 // ===== CONTROLES ADICIONADOS =====
 intQtdRenkosAlta,intQtdRenkosBaixa:integer;
@@ -103,7 +104,9 @@ end;
 
 // CORREÇÃO CIRÚRGICA:
 // Dentro do range travado somente quando preço estiver ENTRE fundo e topo.
-bolEntreRengeTravado:= (fechamento <= valorReversaoTopo) e (fechamento >= valorReversaoFundo);
+// ALTERAÇÃO PONTUAL: também exige faixa válida (topo maior que fundo) para evitar range "travado" inválido.
+bolRangeTravadoValido := (valorReversaoTopo > valorReversaoFundo);
+bolEntreRengeTravado:= bolRangeTravadoValido e (fechamento <= valorReversaoTopo) e (fechamento >= valorReversaoFundo);
 
 // =============================================================
 // 5) BLOQUEIO POR EXPLOSÃO + LIBERAÇÃO POR RESPIRO (NOVO)
@@ -184,7 +187,8 @@ Inicio
   // Reentrada comprada: mantém lógica original, mas com limite + distância + filtros
   Se (bolHorarioBloqueadoEntrada = false) e (bolSinalCompra) e (IsBought) e
      (bolBloqueioCompraExplosao = false) e
-     (BuyPosition < MaxEntradas) e
+     // ALTERAÇÃO PONTUAL: MaxEntradas limita reentradas adicionais reais (posição atual + entrada inicial).
+     (BuyPosition < (MaxEntradas + 1)) e
      ((BuyPosition = 0) ou (Fechamento <= (BuyPrice - DistanciaMinimaReentrada))) entao
   Inicio
     BuyAtMarket;
@@ -193,7 +197,8 @@ Inicio
   // Reentrada vendida: mantém lógica original, mas com limite + distância + filtros
   Se (bolHorarioBloqueadoEntrada = false) e (bolSinalVenda) e (IsSold) e
      (bolBloqueioVendaExplosao = false) e
-     (SellPosition < MaxEntradas) e
+     // ALTERAÇÃO PONTUAL: MaxEntradas limita reentradas adicionais reais (posição atual + entrada inicial).
+     (SellPosition < (MaxEntradas + 1)) e
      ((SellPosition = 0) ou (Fechamento >= (SellPrice + DistanciaMinimaReentrada))) entao
   Inicio
     SellShortAtMarket;
