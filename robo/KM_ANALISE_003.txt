@@ -32,6 +32,7 @@ bolRangeTravadoValido:boolean;
 intQtdRenkosAlta,intQtdRenkosBaixa:integer;
 bolBloqueioVendaExplosao,bolBloqueioCompraExplosao:boolean;
 bolHorarioBloqueadoEntrada:boolean;
+bolHorarioExplosao_1,bolHorarioExplosao_2,bolHorarioExplosao_3,bolHorarioPermitido:boolean;
 
 Inicio
 // =============================================================
@@ -50,6 +51,19 @@ renkoReversaoAlta:=(fechamento[0] < abertura[0]) e (fechamento[1]>abertura[1]);
 renkoReversaoBaixa:= (fechamento[0]>abertura[0]) e  (fechamento[1] < abertura[1]);
 
 renkoConsecutivo :=  (abertura[0]<>abertura[1]) e (abertura[1]<>abertura[2]);
+
+// =============================================================
+// 1.1) ADICIONAR NOVAS VARIAVEIS CHATGPT - INICIO
+// =============================================================
+bolHorarioExplosao_1:= (Time >= 0850) e (Time <= 0910);
+
+bolHorarioExplosao_2:= (Time >= 0950) e (Time <= 1010);
+
+bolHorarioExplosao_3:= (Time >= 1050) e (Time <= 1110);
+
+bolHorarioPermitido:= (bolHorarioExplosao_1=false) e 
+                      (bolHorarioExplosao_2=false) e 
+                      (bolHorarioExplosao_3=false);
 
 // =============================================================
 // 3) CONTADORES DE RENKOS CONSECUTIVOS (NOVO)
@@ -144,8 +158,8 @@ bolHorarioBloqueadoEntrada :=
 // =============================================================
 // 7) SINAIS ORIGINAIS (MANTIDOS)
 // =============================================================
-bolSinalVenda:= (Fechamento > MediaMax) e (fechamento > Abertura);
-bolSinalCompra:=(Fechamento < MediaMin) e (fechamento < Abertura);
+bolSinalVenda:= (Fechamento > MediaMax) e (fechamento > Abertura) e (bolHorarioPermitido);
+bolSinalCompra:=(Fechamento < MediaMin) e (fechamento < Abertura) e (bolHorarioPermitido);
 
 if(bolSinalVenda) e (bolEntreRengeTravado) e (podeOperar=false)entao
 begin
